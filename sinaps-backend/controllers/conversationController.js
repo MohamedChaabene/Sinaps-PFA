@@ -15,10 +15,25 @@ exports.createConversation = async (req, res) => {
 // Récupérer toutes les conversations (pour la sidebar)
 exports.getConversations = async (req, res) => {
   try {
-    const conversations = await Conversation.find()
-      .populate('client', 'name avatar')
+    const { status, search } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+
+    let query = Conversation.find(filter)
+      .populate('client', 'name avatar email')
       .populate('assignedAgent', 'name avatar')
       .sort({ updatedAt: -1 });
+
+    let conversations = await query;
+
+    if (search) {
+      const term = search.toLowerCase();
+      conversations = conversations.filter((c) =>
+        c.client?.name?.toLowerCase().includes(term) ||
+        c.client?.email?.toLowerCase().includes(term)
+      );
+    }
+
     res.json(conversations);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -124,3 +124,11 @@ export async function findOrCreateConversation(clientId: string) {
   })
   return res.json()
 }
+
+export async function fetchConversationsFiltered(status?: string, search?: string) {
+  const params = new URLSearchParams()
+  if (status) params.set("status", status)
+  if (search) params.set("search", search)
+  const res = await fetch(`${API_URL}/conversations?${params.toString()}`, { headers: getAuthHeaders() })
+  return res.json()
+}

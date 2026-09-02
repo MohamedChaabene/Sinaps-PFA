@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { requireAuth } = require('../middleware/auth');
 const {
   createConversation,
   getConversations,
@@ -11,7 +12,7 @@ const {
 
 router.post('/find-or-create', findOrCreateConversation);
 router.post('/', createConversation);
-router.get('/', getConversations);
+router.get('/', requireAuth, getConversations);
 router.get('/:id', getConversationById);
 router.patch('/:id/escalate', escalateConversation);
 router.patch('/:id/close', closeConversation);
