@@ -20,6 +20,7 @@ import {
     closeConversation as apiCloseConversation,
     mapBackendConversation,
 } from "@/lib/api"
+import { getSocket } from "@/lib/socket"
 
 function initials(name: string) {
     return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
@@ -48,7 +49,28 @@ export default function AgentPage() {
 
     React.useEffect(() => {
         loadList()
-    }, [])
+
+        const socket = getSocket()
+        const handleCreatedOrUpdated = () => {
+            loadList()
+            if (activeId) {
+                fetchConversationById(activeId).then(({ conversation, messages }) => {
+                    const mapped = mapBackendConversation(conversation, messages)
+                    setConversations((prev) => prev.map((c) => (c.id === activeId ? mapped : c)))
+                }).catch(() => {})
+            }
+        }
+
+        socket.on("conversation_created", handleCreatedOrUpdated)
+        socket.on("conversation_updated", handleCreatedOrUpdated)
+        socket.on("message_received", handleCreatedOrUpdated)
+
+        return () => {
+            socket.off("conversation_created", handleCreatedOrUpdated)
+            socket.off("conversation_updated", handleCreatedOrUpdated)
+            socket.off("message_received", handleCreatedOrUpdated)
+        }
+    }, [activeId])
 
     async function handleSelect(id: string) {
         setActiveId(id)

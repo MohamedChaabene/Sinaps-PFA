@@ -16,6 +16,7 @@ import {
   findOrCreateConversation,
   mapBackendConversation,
 } from "@/lib/api"
+import { getSocket, joinConversationRoom, leaveConversationRoom } from "@/lib/socket"
 
 const STORAGE_KEY = "sinaps_client"
 
@@ -26,9 +27,9 @@ export function SupportChatApp() {
   const [loading, setLoading] = React.useState(true)
   const [needsEntry, setNeedsEntry] = React.useState(false)
 
-  async function startSession(name: string, email: string) {
+  async function startSession(name: string, email: string, credential?: string, avatar?: string) {
     try {
-      const user = await findOrCreateUser(name, email)
+      const user = await findOrCreateUser(name, email, credential, avatar)
       const conv = await findOrCreateConversation(user._id)
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: user._id }))
       setConversationId(conv._id)
@@ -70,6 +71,33 @@ export function SupportChatApp() {
     }
     init()
   }, [])
+
+  React.useEffect(() => {
+    if (!conversationId) return
+    const socket = getSocket()
+    joinConversationRoom(conversationId)
+
+    const handleMessageReceived = (data: any) => {
+      if (data?.conversation && data.conversation._id === conversationId) {
+        loadConversation(conversationId)
+      }
+    }
+
+    const handleConversationUpdated = (updated: any) => {
+      if (updated?._id === conversationId) {
+        loadConversation(conversationId)
+      }
+    }
+
+    socket.on("message_received", handleMessageReceived)
+    socket.on("conversation_updated", handleConversationUpdated)
+
+    return () => {
+      leaveConversationRoom(conversationId)
+      socket.off("message_received", handleMessageReceived)
+      socket.off("conversation_updated", handleConversationUpdated)
+    }
+  }, [conversationId])
 
   async function handleSend(text: string) {
     if (!conversationId) return

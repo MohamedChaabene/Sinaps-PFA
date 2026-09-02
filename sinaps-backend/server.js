@@ -2,9 +2,12 @@ const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 require('dotenv').config();
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const { Server } = require('socket.io');
 const connectDB = require('./config/db');
+const { setIO } = require('./socket');
 
 require('./models/User');
 require('./models/Agent');
@@ -18,6 +21,34 @@ const agentRoutes = require('./routes/agentRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+  },
+});
+
+setIO(io);
+
+io.on('connection', (socket) => {
+  socket.on('join_conversation', (conversationId) => {
+    if (conversationId) {
+      socket.join(`conversation_${conversationId}`);
+    }
+  });
+
+  socket.on('leave_conversation', (conversationId) => {
+    if (conversationId) {
+      socket.leave(`conversation_${conversationId}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    // client disconnected
+  });
+});
 
 app.use(cors());
 app.use(express.json());
@@ -35,6 +66,6 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/stats', statsRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`✅ Serveur avec WebSockets démarré sur http://localhost:${PORT}`);
 });

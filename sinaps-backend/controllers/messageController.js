@@ -1,6 +1,7 @@
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const { getAIResponse } = require('../services/geminiService');
+const { emitToConversation, emitGlobal } = require('../socket');
 
 exports.sendMessage = async (req, res) => {
   try {
@@ -13,7 +14,16 @@ exports.sendMessage = async (req, res) => {
       authorName,
     });
 
-    await Conversation.findByIdAndUpdate(conversationId, { updatedAt: new Date() });
+    const updatedConv = await Conversation.findByIdAndUpdate(
+      conversationId,
+      { updatedAt: new Date() },
+      { new: true }
+    )
+      .populate('client', 'name avatar email')
+      .populate('assignedAgent', 'name avatar');
+
+    emitToConversation(conversationId, 'message_received', { message, conversation: updatedConv });
+    emitGlobal('conversation_updated', updatedConv);
 
     let aiMessage = null;
 
@@ -27,6 +37,20 @@ exports.sendMessage = async (req, res) => {
           sender: 'ia',
           content: aiText,
         });
+
+        const reUpdatedConv = await Conversation.findByIdAndUpdate(
+          conversationId,
+          { updatedAt: new Date() },
+          { new: true }
+        )
+          .populate('client', 'name avatar email')
+          .populate('assignedAgent', 'name avatar');
+
+        emitToConversation(conversationId, 'message_received', {
+          message: aiMessage,
+          conversation: reUpdatedConv,
+        });
+        emitGlobal('conversation_updated', reUpdatedConv);
       }
     }
 

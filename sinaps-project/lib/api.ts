@@ -107,11 +107,11 @@ export async function fetchStats() {
   return res.json()
 }
 
-export async function findOrCreateUser(name: string, email: string) {
+export async function findOrCreateUser(name: string, email: string, credential?: string, avatar?: string) {
   const res = await fetch(`${API_URL}/users/find-or-create`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email }),
+    body: JSON.stringify({ name, email, credential, avatar }),
   })
   return res.json()
 }
