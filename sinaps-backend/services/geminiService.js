@@ -1,82 +1,58 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { retrieveRelevantContext } = require('./ragService');
 const knowledgeBase = require('../data/knowledgeBase');
 
-function getFallbackResponse(userMessage) {
-  if (!userMessage) {
-    return "Bonjour ! Comment puis-je vous aider aujourd'hui ? 😊";
-  }
-
-  const query = userMessage.toLowerCase().trim();
-
-  let bestMatch = null;
-  let maxScore = 0;
-
-  // Stop words in French to ignore for matching
-  const stopWords = new Set(['comment', 'faire', 'pour', 'quel', 'quelle', 'un', 'une', 'des', 'les', 'est', 'que', 'mon', 'ma', 'mes', 'du', 'de', 'la', 'le']);
-
-  for (const item of knowledgeBase) {
-    const qText = item.question.toLowerCase();
-    const keywords = qText
-      .split(/\s+/)
-      .map((w) => w.replace(/[^a-z0-9àâäéèêëîïôöùûüç]/gi, ''))
-      .filter((w) => w.length > 2 && !stopWords.has(w));
-
-    let matchCount = 0;
-
-    for (const kw of keywords) {
-      if (query.includes(kw)) {
-        matchCount++;
-      }
-    }
-
-    if (matchCount > maxScore) {
-      maxScore = matchCount;
-      bestMatch = item;
-    }
-  }
-
-  if (bestMatch && maxScore > 0) {
-    return `${bestMatch.answer} 🤖`;
-  }
-
-  return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
-}
-
 async function getAIResponse(userMessage) {
+  // Step 1: RAG Retrieval Stage - Retrieve relevant knowledge snippets
+  const retrievedDocs = retrieveRelevantContext(userMessage, 2);
+
   const apiKey = process.env.GEMINI_API_KEY;
 
+  // Fallback if Gemini key is not provided or invalid
   if (!apiKey || apiKey === 'your_gemini_api_key' || apiKey.trim() === '') {
-    return getFallbackResponse(userMessage);
+    if (retrievedDocs.length > 0) {
+      return `${retrievedDocs[0].answer} 🤖 (RAG Source: ${retrievedDocs[0].question})`;
+    }
+    return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const context = knowledgeBase
-      .map((item) => `Q: ${item.question}\nR: ${item.answer}`)
-      .join('\n\n');
+    // Format retrieved knowledge snippets into context
+    const contextText = retrievedDocs.length > 0
+      ? retrievedDocs.map((doc) => `[Savoir Pertinent]: Q: ${doc.question} => R: ${doc.answer}`).join('\n')
+      : 'Aucun document pertinent trouvé dans la base de connaissances.';
 
-    const prompt = `Tu es un agent de support client sympathique et efficace, qui répond en français.
-Utilise la base de connaissance ci-dessous pour répondre à la question du client.
-Si la question ne correspond à aucune entrée, réponds poliment que tu vas transmettre la demande à un agent humain.
-Reste bref (2-3 phrases max) et utilise des emojis avec modération.
+    const prompt = `Tu es un agent de support client IA pour la plateforme Sinaps.
+Rôle: Répondre de manière claire, concise et amicale en français.
 
-Base de connaissance :
-${context}
+[RAG CONTEXT RETRIEVED]:
+${contextText}
 
-Question du client : ${userMessage}
+Question de l'utilisateur: "${userMessage}"
 
-Réponse :`;
+Consignes:
+- Base-toi prioritairement sur le savoir pertinent extrait ci-dessus.
+- Si le savoir extrait permet de répondre, réponds clairement en 2-3 phrases maximum avec emojis.
+- Si aucun savoir pertinent n'est extrait ou suffisant, informe l'utilisateur poliment et propose-lui d'escalader vers un agent humain.`;
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (text) return text;
-    return getFallbackResponse(userMessage);
+
+    if (retrievedDocs.length > 0) {
+      return `${retrievedDocs[0].answer} 🤖`;
+    }
+    return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
   } catch (err) {
-    console.warn('Gemini API call failed, using local knowledge base fallback:', err.message);
-    return getFallbackResponse(userMessage);
+    console.warn('Gemini API call failed, using local RAG fallback:', err.message);
+    if (retrievedDocs.length > 0) {
+      return `${retrievedDocs[0].answer} 🤖`;
+    }
+    return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
   }
 }
 
-module.exports = { getAIResponse, getFallbackResponse };
+module.exports = { getAIResponse };

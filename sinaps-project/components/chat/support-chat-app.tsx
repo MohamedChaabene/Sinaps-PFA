@@ -99,10 +99,10 @@ export function SupportChatApp() {
     }
   }, [conversationId])
 
-  async function handleSend(text: string) {
+  async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
     if (!conversationId) return
     try {
-      await apiSendMessage(conversationId, "client", text)
+      await apiSendMessage(conversationId, "client", text, attachments)
       await loadConversation(conversationId)
     } catch (error) {
       toast("Erreur lors de l'envoi du message")

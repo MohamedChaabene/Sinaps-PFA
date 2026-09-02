@@ -83,10 +83,10 @@ export default function AgentPage() {
         }
     }
 
-    async function handleSend(text: string) {
+    async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
         if (!activeConversation) return
         try {
-            await apiSendMessage(activeConversation.id, "humain", text)
+            await apiSendMessage(activeConversation.id, "humain", text, attachments)
             const refreshed = await fetchConversationById(activeConversation.id)
             const mapped = mapBackendConversation(refreshed.conversation, refreshed.messages)
             setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? mapped : c)))
