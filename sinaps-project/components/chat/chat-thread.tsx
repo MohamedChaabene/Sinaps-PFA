@@ -1,6 +1,6 @@
 "use client"
 
-import { BotIcon } from "lucide-react"
+import { BotIcon, FileTextIcon, ExternalLinkIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/message-scroller"
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import type { Conversation } from "@/lib/chat-data"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace("/api", "")
+  : "http://localhost:5000"
 
 function initials(name: string) {
   return name
@@ -91,7 +95,46 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                         align={isClient ? "end" : "start"}
                         variant={isClient ? "default" : "secondary"}
                       >
-                        <BubbleContent className="rounded-2xl">{message.content}</BubbleContent>
+                        <BubbleContent className="rounded-2xl space-y-2">
+                          {message.content && <p>{message.content}</p>}
+
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className="space-y-2 pt-1">
+                              {message.attachments.map((att, i) => {
+                                const fullUrl = att.url.startsWith("http") ? att.url : `${API_BASE}${att.url}`
+
+                                if (att.type === "image") {
+                                  return (
+                                    <a key={i} href={fullUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg">
+                                      <img src={fullUrl} alt={att.name || "Image"} className="max-h-60 max-w-xs object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                                    </a>
+                                  )
+                                } else if (att.type === "video") {
+                                  return (
+                                    <video key={i} controls className="max-h-60 max-w-xs rounded-lg">
+                                      <source src={fullUrl} />
+                                      Votre navigateur ne supporte pas la vidéo.
+                                    </video>
+                                  )
+                                } else {
+                                  return (
+                                    <a
+                                      key={i}
+                                      href={fullUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="flex items-center gap-2 rounded-lg bg-background/20 p-2 text-xs font-medium underline hover:bg-background/30"
+                                    >
+                                      <FileTextIcon className="size-4 shrink-0" />
+                                      <span className="truncate">{att.name || "Télécharger la pièce jointe"}</span>
+                                      <ExternalLinkIcon className="size-3 shrink-0 ml-auto" />
+                                    </a>
+                                  )
+                                }
+                              })}
+                            </div>
+                          )}
+                        </BubbleContent>
                       </Bubble>
                       <MessageFooter>{message.time}</MessageFooter>
                     </MessageContent>

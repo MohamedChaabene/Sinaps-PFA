@@ -5,13 +5,14 @@ const { emitToConversation, emitGlobal } = require('../socket');
 
 exports.sendMessage = async (req, res) => {
   try {
-    const { conversationId, sender, content, authorName } = req.body;
+    const { conversationId, sender, content, authorName, attachments } = req.body;
 
     const message = await Message.create({
       conversation: conversationId,
       sender,
-      content,
+      content: content || '',
       authorName,
+      attachments: attachments || [],
     });
 
     const updatedConv = await Conversation.findByIdAndUpdate(
@@ -31,7 +32,7 @@ exports.sendMessage = async (req, res) => {
     if (sender === 'client') {
       const conversation = await Conversation.findById(conversationId);
       if (conversation.handledBy === 'ia') {
-        const aiText = await getAIResponse(content);
+        const aiText = await getAIResponse(content || 'Document joint');
         aiMessage = await Message.create({
           conversation: conversationId,
           sender: 'ia',
