@@ -1,12 +1,18 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const { emitToConversation, emitGlobal } = require('../socket');
 
 // Créer une nouvelle conversation
 exports.createConversation = async (req, res) => {
   try {
     const { clientId } = req.body;
     const conversation = await Conversation.create({ client: clientId });
-    res.status(201).json(conversation);
+    const populated = await Conversation.findById(conversation._id)
+      .populate('client', 'name avatar email')
+      .populate('assignedAgent', 'name avatar');
+
+    emitGlobal('conversation_created', populated);
+    res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -28,9 +34,10 @@ exports.getConversations = async (req, res) => {
 
     if (search) {
       const term = search.toLowerCase();
-      conversations = conversations.filter((c) =>
-        c.client?.name?.toLowerCase().includes(term) ||
-        c.client?.email?.toLowerCase().includes(term)
+      conversations = conversations.filter(
+        (c) =>
+          c.client?.name?.toLowerCase().includes(term) ||
+          c.client?.email?.toLowerCase().includes(term)
       );
     }
 
@@ -60,7 +67,38 @@ exports.escalateConversation = async (req, res) => {
       req.params.id,
       { handledBy: 'humain', status: 'en_attente' },
       { new: true }
-    );
+    )
+      .populate('client', 'name avatar email')
+      .populate('assignedAgent', 'name avatar');
+
+    emitToConversation(req.params.id, 'conversation_updated', conversation);
+    emitGlobal('conversation_updated', conversation);
+
+    res.json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Assigner un agent humain à la conversation
+exports.assignAgent = async (req, res) => {
+  try {
+    const { agentId } = req.body;
+    const conversation = await Conversation.findByIdAndUpdate(
+      req.params.id,
+      {
+        assignedAgent: agentId,
+        handledBy: 'humain',
+        status: 'en_cours',
+      },
+      { new: true }
+    )
+      .populate('client', 'name avatar email')
+      .populate('assignedAgent', 'name avatar');
+
+    emitToConversation(req.params.id, 'conversation_updated', conversation);
+    emitGlobal('conversation_updated', conversation);
+
     res.json(conversation);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -75,7 +113,13 @@ exports.closeConversation = async (req, res) => {
       req.params.id,
       { status: 'resolu', satisfaction: { rating, comment } },
       { new: true }
-    );
+    )
+      .populate('client', 'name avatar email')
+      .populate('assignedAgent', 'name avatar');
+
+    emitToConversation(req.params.id, 'conversation_updated', conversation);
+    emitGlobal('conversation_updated', conversation);
+
     res.json(conversation);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -88,10 +132,18 @@ exports.findOrCreateConversation = async (req, res) => {
     let conversation = await Conversation.findOne({
       client: clientId,
       status: { $ne: 'resolu' },
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .populate('client', 'name avatar email')
+      .populate('assignedAgent', 'name avatar');
 
     if (!conversation) {
       conversation = await Conversation.create({ client: clientId });
+      conversation = await Conversation.findById(conversation._id)
+        .populate('client', 'name avatar email')
+        .populate('assignedAgent', 'name avatar');
+
+      emitGlobal('conversation_created', conversation);
     }
     res.json(conversation);
   } catch (error) {
