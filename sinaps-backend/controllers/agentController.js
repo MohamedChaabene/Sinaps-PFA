@@ -50,7 +50,7 @@ exports.getAgents = async (req, res) => {
 
 exports.approveAgent = async (req, res) => {
   try {
-    const agent = await Agent.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true });
+    const agent = await Agent.findByIdAndUpdate(req.params.id, { status: 'approved' }, { returnDocument: 'after' });
     res.json(agent);
   } catch (error) {
     res.status(500).json({ error: error.message });

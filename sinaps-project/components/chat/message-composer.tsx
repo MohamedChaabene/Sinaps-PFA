@@ -55,7 +55,7 @@ export function MessageComposer({
         toast.error("Échec du téléversement")
       }
     } catch (err) {
-      toast.error("Erreur lors de l'envoi du fichier")
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'envoi du fichier")
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ""

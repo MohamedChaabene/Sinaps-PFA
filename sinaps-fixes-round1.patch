@@ -1,0 +1,186 @@
+diff --git a/sinaps-backend/controllers/conversationController.js b/sinaps-backend/controllers/conversationController.js
+index 6ebe032..b8ce19a 100644
+--- a/sinaps-backend/controllers/conversationController.js
++++ b/sinaps-backend/controllers/conversationController.js
+@@ -109,10 +109,20 @@ exports.assignAgent = async (req, res) => {
+ exports.closeConversation = async (req, res) => {
+   try {
+     const { rating, comment } = req.body;
++    const update = { status: 'resolu' };
++
++    // Une note n'est valide que si le client a réellement choisi 1 à 5 étoiles.
++    // Une clôture sans note (ex: résolution rapide côté agent) ne doit pas
++    // enregistrer satisfaction.rating = 0, sinon ça fausse la moyenne affichée à l'admin.
++    const numericRating = Number(rating);
++    if (Number.isInteger(numericRating) && numericRating >= 1 && numericRating <= 5) {
++      update.satisfaction = { rating: numericRating, comment: comment || '' };
++    }
++
+     const conversation = await Conversation.findByIdAndUpdate(
+       req.params.id,
+-      { status: 'resolu', satisfaction: { rating, comment } },
+-      { new: true }
++      update,
++      { new: true, runValidators: true }
+     )
+       .populate('client', 'name avatar email')
+       .populate('assignedAgent', 'name avatar');
+diff --git a/sinaps-backend/controllers/userController.js b/sinaps-backend/controllers/userController.js
+index a172f0a..1be4683 100644
+--- a/sinaps-backend/controllers/userController.js
++++ b/sinaps-backend/controllers/userController.js
+@@ -4,31 +4,40 @@ exports.findOrCreateUser = async (req, res) => {
+   try {
+     const { name, email, googleId, avatar, credential } = req.body;
+ 
+-    // If Google OAuth credential is provided
++    // If a Google OAuth credential is provided, it MUST verify successfully.
++    // We never fall back to the client-supplied name/email in this branch:
++    // that would let anyone bypass Google auth by sending a fake credential.
+     if (credential) {
++      const googleClientId = process.env.GOOGLE_CLIENT_ID;
++      if (!googleClientId) {
++        console.error('GOOGLE_CLIENT_ID is not configured on the server.');
++        return res.status(500).json({ error: "Authentification Google indisponible (configuration serveur manquante)." });
++      }
++
++      let payload;
+       try {
+         const { OAuth2Client } = require('google-auth-library');
+-        const googleClientId = process.env.GOOGLE_CLIENT_ID;
+         const client = new OAuth2Client(googleClientId);
+-
+         const ticket = await client.verifyIdToken({
+           idToken: credential,
+           audience: googleClientId,
+         });
+-        const payload = ticket.getPayload();
+-        const gEmail = payload.email;
+-        const gName = payload.name || name || 'Utilisateur Google';
+-        const gAvatar = payload.picture || avatar;
+-        const gSub = payload.sub;
+-
+-        let user = await User.findOne({ email: gEmail });
+-        if (!user) {
+-          user = await User.create({ googleId: gSub, name: gName, email: gEmail, avatar: gAvatar });
+-        }
+-        return res.json(user);
++        payload = ticket.getPayload();
+       } catch (tokenErr) {
+-        console.warn('Google ID token verification error, falling back to direct values:', tokenErr.message);
++        console.warn('Google ID token verification failed:', tokenErr.message);
++        return res.status(401).json({ error: "Jeton Google invalide ou expiré. Veuillez réessayer." });
++      }
++
++      const gEmail = payload.email;
++      const gName = payload.name || 'Utilisateur Google';
++      const gAvatar = payload.picture;
++      const gSub = payload.sub;
++
++      let user = await User.findOne({ email: gEmail });
++      if (!user) {
++        user = await User.create({ googleId: gSub, name: gName, email: gEmail, avatar: gAvatar });
+       }
++      return res.json(user);
+     }
+ 
+     if (!email) {
+diff --git a/sinaps-backend/middleware/auth.js b/sinaps-backend/middleware/auth.js
+index 84e8bbc..12cbec9 100644
+--- a/sinaps-backend/middleware/auth.js
++++ b/sinaps-backend/middleware/auth.js
+@@ -19,4 +19,20 @@ function requireAdmin(req, res, next) {
+   next();
+ }
+ 
+-module.exports = { requireAuth, requireAdmin };
+\ No newline at end of file
++function requireAgentOrAdmin(req, res, next) {
++  if (req.agent.role !== 'agent' && req.agent.role !== 'admin') {
++    return res.status(403).json({ error: 'Accès réservé aux agents de support' });
++  }
++  next();
++}
++
++// Anyone could previously POST /api/messages with sender: 'humain' and no
++// credentials at all, impersonating a support agent in any conversation.
++// This only enforces a JWT + agent/admin role when the message claims to be
++// from a human agent; client-authored messages are unaffected.
++function requireAgentForHumanSender(req, res, next) {
++  if (req.body?.sender !== 'humain') return next();
++  return requireAuth(req, res, () => requireAgentOrAdmin(req, res, next));
++}
++
++module.exports = { requireAuth, requireAdmin, requireAgentOrAdmin, requireAgentForHumanSender };
+\ No newline at end of file
+diff --git a/sinaps-backend/routes/conversationRoutes.js b/sinaps-backend/routes/conversationRoutes.js
+index e08c4da..9673d13 100644
+--- a/sinaps-backend/routes/conversationRoutes.js
++++ b/sinaps-backend/routes/conversationRoutes.js
+@@ -1,6 +1,6 @@
+ const express = require('express');
+ const router = express.Router();
+-const { requireAuth } = require('../middleware/auth');
++const { requireAuth, requireAgentOrAdmin } = require('../middleware/auth');
+ const {
+   createConversation,
+   getConversations,
+@@ -16,7 +16,7 @@ router.post('/', createConversation);
+ router.get('/', requireAuth, getConversations);
+ router.get('/:id', getConversationById);
+ router.patch('/:id/escalate', escalateConversation);
+-router.patch('/:id/assign', assignAgent);
++router.patch('/:id/assign', requireAuth, requireAgentOrAdmin, assignAgent);
+ router.patch('/:id/close', closeConversation);
+ 
+ module.exports = router;
+diff --git a/sinaps-backend/routes/messageRoutes.js b/sinaps-backend/routes/messageRoutes.js
+index f089433..d554dad 100644
+--- a/sinaps-backend/routes/messageRoutes.js
++++ b/sinaps-backend/routes/messageRoutes.js
+@@ -1,7 +1,8 @@
+ const express = require('express');
+ const router = express.Router();
+ const { sendMessage } = require('../controllers/messageController');
++const { requireAgentForHumanSender } = require('../middleware/auth');
+ 
+-router.post('/', sendMessage);
++router.post('/', requireAgentForHumanSender, sendMessage);
+ 
+ module.exports = router;
+\ No newline at end of file
+diff --git a/sinaps-project/lib/api.ts b/sinaps-project/lib/api.ts
+index be179f0..5ffd210 100644
+--- a/sinaps-project/lib/api.ts
++++ b/sinaps-project/lib/api.ts
+@@ -19,7 +19,7 @@ export function getAuthHeaders(): Record<string, string> {
+ }
+ 
+ export async function fetchConversations() {
+-  const res = await fetch(`${API_URL}/conversations`)
++  const res = await fetch(`${API_URL}/conversations`, { headers: getAuthHeaders() })
+   return res.json()
+ }
+ 
+@@ -44,9 +44,12 @@ export async function sendMessage(
+   content: string,
+   attachments?: { url: string; type: string; name?: string }[]
+ ) {
++  const headers: Record<string, string> = { "Content-Type": "application/json" }
++  if (sender === "humain") Object.assign(headers, getAuthHeaders())
++
+   const res = await fetch(`${API_URL}/messages`, {
+     method: "POST",
+-    headers: { "Content-Type": "application/json" },
++    headers,
+     body: JSON.stringify({ conversationId, sender, content, attachments }),
+   })
+   return res.json()
+@@ -71,6 +74,7 @@ export function mapBackendMessage(msg: any) {
+     sender: msg.sender,
+     authorName: msg.authorName,
+     content: msg.content,
++    attachments: msg.attachments || [],
+     time: new Date(msg.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+   }
+ }

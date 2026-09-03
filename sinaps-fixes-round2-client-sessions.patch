@@ -1,0 +1,887 @@
+diff --git a/sinaps-backend/controllers/conversationController.js b/sinaps-backend/controllers/conversationController.js
+index b8ce19a..0114a6a 100644
+--- a/sinaps-backend/controllers/conversationController.js
++++ b/sinaps-backend/controllers/conversationController.js
+@@ -138,7 +138,7 @@ exports.closeConversation = async (req, res) => {
+ 
+ exports.findOrCreateConversation = async (req, res) => {
+   try {
+-    const { clientId } = req.body;
++    const clientId = req.client.id;
+     let conversation = await Conversation.findOne({
+       client: clientId,
+       status: { $ne: 'resolu' },
+diff --git a/sinaps-backend/controllers/userController.js b/sinaps-backend/controllers/userController.js
+index 1be4683..01620e6 100644
+--- a/sinaps-backend/controllers/userController.js
++++ b/sinaps-backend/controllers/userController.js
+@@ -1,4 +1,12 @@
+ const User = require('../models/User');
++const jwt = require('jsonwebtoken');
++
++// Client sessions are lower-privilege and longer-lived than agent sessions:
++// a support conversation can span days, and re-doing Google sign-in every
++// time would be a poor experience for what is just "prove you're this user".
++function signClientToken(userId) {
++  return jwt.sign({ id: userId.toString(), role: 'client' }, process.env.JWT_SECRET, { expiresIn: '30d' });
++}
+ 
+ exports.findOrCreateUser = async (req, res) => {
+   try {
+@@ -37,7 +45,7 @@ exports.findOrCreateUser = async (req, res) => {
+       if (!user) {
+         user = await User.create({ googleId: gSub, name: gName, email: gEmail, avatar: gAvatar });
+       }
+-      return res.json(user);
++      return res.json({ user, token: signClientToken(user._id) });
+     }
+ 
+     if (!email) {
+@@ -53,7 +61,7 @@ exports.findOrCreateUser = async (req, res) => {
+         avatar,
+       });
+     }
+-    res.json(user);
++    res.json({ user, token: signClientToken(user._id) });
+   } catch (error) {
+     res.status(500).json({ error: error.message });
+   }
+diff --git a/sinaps-backend/middleware/auth.js b/sinaps-backend/middleware/auth.js
+index 12cbec9..c206664 100644
+--- a/sinaps-backend/middleware/auth.js
++++ b/sinaps-backend/middleware/auth.js
+@@ -1,4 +1,17 @@
+ const jwt = require('jsonwebtoken');
++const Conversation = require('../models/Conversation');
++
++function decodeBearerToken(req) {
++  const authHeader = req.headers.authorization;
++  if (!authHeader) return null;
++  const token = authHeader.split(' ')[1];
++  if (!token) return null;
++  try {
++    return jwt.verify(token, process.env.JWT_SECRET);
++  } catch (error) {
++    return undefined; // present but invalid/expired, distinct from "absent"
++  }
++}
+ 
+ function requireAuth(req, res, next) {
+   const authHeader = req.headers.authorization;
+@@ -26,13 +39,88 @@ function requireAgentOrAdmin(req, res, next) {
+   next();
+ }
+ 
+-// Anyone could previously POST /api/messages with sender: 'humain' and no
+-// credentials at all, impersonating a support agent in any conversation.
+-// This only enforces a JWT + agent/admin role when the message claims to be
+-// from a human agent; client-authored messages are unaffected.
+-function requireAgentForHumanSender(req, res, next) {
+-  if (req.body?.sender !== 'humain') return next();
+-  return requireAuth(req, res, () => requireAgentOrAdmin(req, res, next));
++// Strict guard for the client's own session token (issued after Google
++// verification or the interim direct name/email flow). Used on routes that
++// only make sense as "act as the client I already identified as".
++function requireClientAuth(req, res, next) {
++  const decoded = decodeBearerToken(req);
++  if (decoded === null) return res.status(401).json({ error: 'Session client requise' });
++  if (decoded === undefined) return res.status(401).json({ error: 'Session client invalide ou expirée' });
++  if (decoded.role !== 'client') return res.status(403).json({ error: 'Jeton invalide pour un client' });
++  req.client = decoded;
++  next();
++}
++
++// For routes with a conversation :id param: allow either an authenticated
++// agent/admin, or the client who owns that specific conversation. Previously
++// these routes had no auth at all, so anyone with (or guessing) a
++// conversation ID could read or mutate someone else's support thread.
++async function requireConversationAccess(req, res, next) {
++  const decoded = decodeBearerToken(req);
++  if (decoded === null) return res.status(401).json({ error: 'Authentification requise' });
++  if (decoded === undefined) return res.status(401).json({ error: 'Session invalide ou expirée' });
++
++  if (decoded.role === 'agent' || decoded.role === 'admin') {
++    req.agent = decoded;
++    return next();
++  }
++
++  if (decoded.role === 'client') {
++    try {
++      const conversation = await Conversation.findById(req.params.id).select('client');
++      if (!conversation) return res.status(404).json({ error: 'Conversation introuvable' });
++      if (conversation.client.toString() !== decoded.id) {
++        return res.status(403).json({ error: "Cette conversation ne vous appartient pas" });
++      }
++      req.client = decoded;
++      return next();
++    } catch (error) {
++      return res.status(500).json({ error: error.message });
++    }
++  }
++
++  return res.status(403).json({ error: 'Accès refusé' });
++}
++
++// POST /api/messages: sender: 'humain' must come from an authenticated
++// agent/admin (see prior fix). sender: 'client' must now come from the
++// client's own token, matched against the conversation it's posted into.
++// sender: 'ia' is never accepted from an external request — it's only ever
++// created internally by messageController after a client message.
++async function requireSenderAuth(req, res, next) {
++  const { sender, conversationId } = req.body || {};
++
++  if (sender === 'humain') {
++    return requireAuth(req, res, () => requireAgentOrAdmin(req, res, next));
++  }
++
++  if (sender === 'client') {
++    const decoded = decodeBearerToken(req);
++    if (decoded === null) return res.status(401).json({ error: 'Session client requise' });
++    if (decoded === undefined) return res.status(401).json({ error: 'Session client invalide ou expirée' });
++    if (decoded.role !== 'client') return res.status(403).json({ error: 'Jeton invalide pour un client' });
++
++    try {
++      const conversation = await Conversation.findById(conversationId).select('client');
++      if (!conversation) return res.status(404).json({ error: 'Conversation introuvable' });
++      if (conversation.client.toString() !== decoded.id) {
++        return res.status(403).json({ error: "Cette conversation ne vous appartient pas" });
++      }
++      req.client = decoded;
++      return next();
++    } catch (error) {
++      return res.status(500).json({ error: error.message });
++    }
++  }
++
++  return res.status(403).json({ error: "Type d'expéditeur non autorisé" });
+ }
+ 
+-module.exports = { requireAuth, requireAdmin, requireAgentOrAdmin, requireAgentForHumanSender };
+\ No newline at end of file
++module.exports = {
++  requireAuth,
++  requireAdmin,
++  requireAgentOrAdmin,
++  requireClientAuth,
++  requireConversationAccess,
++  requireSenderAuth,
++};
+\ No newline at end of file
+diff --git a/sinaps-backend/routes/conversationRoutes.js b/sinaps-backend/routes/conversationRoutes.js
+index 9673d13..bbf1f51 100644
+--- a/sinaps-backend/routes/conversationRoutes.js
++++ b/sinaps-backend/routes/conversationRoutes.js
+@@ -1,6 +1,6 @@
+ const express = require('express');
+ const router = express.Router();
+-const { requireAuth, requireAgentOrAdmin } = require('../middleware/auth');
++const { requireAuth, requireAgentOrAdmin, requireClientAuth, requireConversationAccess } = require('../middleware/auth');
+ const {
+   createConversation,
+   getConversations,
+@@ -11,12 +11,12 @@ const {
+   findOrCreateConversation,
+ } = require('../controllers/conversationController');
+ 
+-router.post('/find-or-create', findOrCreateConversation);
++router.post('/find-or-create', requireClientAuth, findOrCreateConversation);
+ router.post('/', createConversation);
+ router.get('/', requireAuth, getConversations);
+-router.get('/:id', getConversationById);
+-router.patch('/:id/escalate', escalateConversation);
++router.get('/:id', requireConversationAccess, getConversationById);
++router.patch('/:id/escalate', requireConversationAccess, escalateConversation);
+ router.patch('/:id/assign', requireAuth, requireAgentOrAdmin, assignAgent);
+-router.patch('/:id/close', closeConversation);
++router.patch('/:id/close', requireConversationAccess, closeConversation);
+ 
+ module.exports = router;
+diff --git a/sinaps-backend/routes/messageRoutes.js b/sinaps-backend/routes/messageRoutes.js
+index d554dad..d98bb4b 100644
+--- a/sinaps-backend/routes/messageRoutes.js
++++ b/sinaps-backend/routes/messageRoutes.js
+@@ -1,8 +1,8 @@
+ const express = require('express');
+ const router = express.Router();
+ const { sendMessage } = require('../controllers/messageController');
+-const { requireAgentForHumanSender } = require('../middleware/auth');
++const { requireSenderAuth } = require('../middleware/auth');
+ 
+-router.post('/', requireAgentForHumanSender, sendMessage);
++router.post('/', requireSenderAuth, sendMessage);
+ 
+ module.exports = router;
+\ No newline at end of file
+diff --git a/sinaps-backend/tests/api.test.js b/sinaps-backend/tests/api.test.js
+index 0686d1b..768ec6d 100644
+--- a/sinaps-backend/tests/api.test.js
++++ b/sinaps-backend/tests/api.test.js
+@@ -1,15 +1,25 @@
+ const request = require('supertest');
+ const express = require('express');
+ const mongoose = require('mongoose');
++const bcrypt = require('bcryptjs');
+ const { MongoMemoryServer } = require('mongodb-memory-server');
+ 
++// Some environments (fresh clones, CI) won't have JWT_SECRET set. Client and
++// agent sessions both depend on it now, so default it here rather than
++// letting every token-issuing test fail with an unrelated 500.
++process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
++
+ require('../models/User');
+ require('../models/Agent');
+ require('../models/Conversation');
+ require('../models/Message');
+ 
++const Agent = require('../models/Agent');
++
+ const userRoutes = require('../routes/userRoutes');
+ const conversationRoutes = require('../routes/conversationRoutes');
++const messageRoutes = require('../routes/messageRoutes');
++const agentRoutes = require('../routes/agentRoutes');
+ const statsRoutes = require('../routes/statsRoutes');
+ 
+ let mongoServer;
+@@ -24,6 +34,8 @@ beforeAll(async () => {
+   app.use(express.json());
+   app.use('/api/users', userRoutes);
+   app.use('/api/conversations', conversationRoutes);
++  app.use('/api/messages', messageRoutes);
++  app.use('/api/agents', agentRoutes);
+   app.use('/api/stats', statsRoutes);
+ });
+ 
+@@ -34,46 +46,196 @@ afterAll(async () => {
+ 
+ describe('User and Conversation API Integration Tests', () => {
+   let userId;
++  let clientToken;
+   let conversationId;
+ 
+-  test('POST /api/users/find-or-create creates or finds a user', async () => {
++  test('POST /api/users/find-or-create creates a user and issues a client session token', async () => {
+     const res = await request(app)
+       .post('/api/users/find-or-create')
+       .send({ name: 'Test User', email: 'test@example.com' });
+ 
+     expect(res.statusCode).toBe(200);
+-    expect(res.body).toHaveProperty('_id');
+-    expect(res.body.email).toBe('test@example.com');
+-    userId = res.body._id;
++    expect(res.body).toHaveProperty('token');
++    expect(res.body.user).toHaveProperty('_id');
++    expect(res.body.user.email).toBe('test@example.com');
++    userId = res.body.user._id;
++    clientToken = res.body.token;
+   });
+ 
+-  test('POST /api/conversations/find-or-create creates a new conversation for user', async () => {
++  test('POST /api/conversations/find-or-create rejects a request with no client session', async () => {
+     const res = await request(app)
+       .post('/api/conversations/find-or-create')
+-      .send({ clientId: userId });
++      .send({});
++
++    expect(res.statusCode).toBe(401);
++  });
++
++  test('POST /api/conversations/find-or-create creates a conversation for the authenticated client', async () => {
++    const res = await request(app)
++      .post('/api/conversations/find-or-create')
++      .set('Authorization', `Bearer ${clientToken}`)
++      .send({});
+ 
+     expect(res.statusCode).toBe(200);
+     expect(res.body).toHaveProperty('_id');
+     expect(res.body.handledBy).toBe('ia');
++    expect(res.body.client._id).toBe(userId);
+     conversationId = res.body._id;
+   });
+ 
++  test('GET /api/conversations/:id rejects a request with no session at all', async () => {
++    const res = await request(app).get(`/api/conversations/${conversationId}`);
++    expect(res.statusCode).toBe(401);
++  });
++
++  test("GET /api/conversations/:id rejects a different client's session (ownership check)", async () => {
++    const otherRes = await request(app)
++      .post('/api/users/find-or-create')
++      .send({ name: 'Someone Else', email: 'someone.else@example.com' });
++    const otherToken = otherRes.body.token;
++
++    const res = await request(app)
++      .get(`/api/conversations/${conversationId}`)
++      .set('Authorization', `Bearer ${otherToken}`);
++
++    expect(res.statusCode).toBe(403);
++  });
++
++  test('GET /api/conversations/:id succeeds for the owning client', async () => {
++    const res = await request(app)
++      .get(`/api/conversations/${conversationId}`)
++      .set('Authorization', `Bearer ${clientToken}`);
++
++    expect(res.statusCode).toBe(200);
++    expect(res.body.conversation._id).toBe(conversationId);
++  });
++
+   test('PATCH /api/conversations/:id/escalate escalates conversation to human agent', async () => {
+     const res = await request(app)
+-      .patch(`/api/conversations/${conversationId}/escalate`);
++      .patch(`/api/conversations/${conversationId}/escalate`)
++      .set('Authorization', `Bearer ${clientToken}`);
+ 
+     expect(res.statusCode).toBe(200);
+     expect(res.body.handledBy).toBe('humain');
+     expect(res.body.status).toBe('en_attente');
+   });
+ 
+-  test('PATCH /api/conversations/:id/close closes conversation with satisfaction rating', async () => {
++  test('PATCH /api/conversations/:id/close closes conversation with a valid satisfaction rating', async () => {
+     const res = await request(app)
+       .patch(`/api/conversations/${conversationId}/close`)
++      .set('Authorization', `Bearer ${clientToken}`)
+       .send({ rating: 5, comment: 'Excellent support !' });
+ 
+     expect(res.statusCode).toBe(200);
+     expect(res.body.status).toBe('resolu');
+     expect(res.body.satisfaction.rating).toBe(5);
+   });
++
++  test('PATCH /api/conversations/:id/close ignores rating:0 instead of persisting a fake score', async () => {
++    // The first conversation is now resolved, so find-or-create opens a fresh one.
++    const secondConvRes = await request(app)
++      .post('/api/conversations/find-or-create')
++      .set('Authorization', `Bearer ${clientToken}`)
++      .send({});
++    const secondConvId = secondConvRes.body._id;
++
++    const res = await request(app)
++      .patch(`/api/conversations/${secondConvId}/close`)
++      .set('Authorization', `Bearer ${clientToken}`)
++      .send({ rating: 0, comment: '' });
++
++    expect(res.statusCode).toBe(200);
++    expect(res.body.status).toBe('resolu');
++    expect(res.body.satisfaction).toBeUndefined();
++  });
++});
++
++describe('Message sender authorization', () => {
++  let clientToken;
++  let conversationId;
++  let agentToken;
++
++  beforeAll(async () => {
++    const userRes = await request(app)
++      .post('/api/users/find-or-create')
++      .send({ name: 'Msg Test User', email: 'msgtest@example.com' });
++    clientToken = userRes.body.token;
++
++    const convRes = await request(app)
++      .post('/api/conversations/find-or-create')
++      .set('Authorization', `Bearer ${clientToken}`)
++      .send({});
++    conversationId = convRes.body._id;
++
++    const hashedPassword = await bcrypt.hash('password123', 10);
++    await Agent.create({
++      name: 'Test Agent',
++      email: 'agent.msgtest@example.com',
++      password: hashedPassword,
++      role: 'agent',
++      status: 'approved',
++    });
++
++    const loginRes = await request(app)
++      .post('/api/agents/login')
++      .send({ email: 'agent.msgtest@example.com', password: 'password123' });
++    agentToken = loginRes.body.token;
++  });
++
++  test('rejects sender:"humain" with no token (agent impersonation)', async () => {
++    const res = await request(app)
++      .post('/api/messages')
++      .send({ conversationId, sender: 'humain', content: 'Bonjour' });
++
++    expect(res.statusCode).toBe(401);
++  });
++
++  test('accepts sender:"humain" with a valid agent token', async () => {
++    const res = await request(app)
++      .post('/api/messages')
++      .set('Authorization', `Bearer ${agentToken}`)
++      .send({ conversationId, sender: 'humain', content: 'Bonjour, je suis là pour vous aider.' });
++
++    expect(res.statusCode).toBe(201);
++  });
++
++  test('rejects sender:"client" with no token', async () => {
++    const res = await request(app)
++      .post('/api/messages')
++      .send({ conversationId, sender: 'client', content: 'Salut' });
++
++    expect(res.statusCode).toBe(401);
++  });
++
++  test("rejects sender:'client' into a conversation the token doesn't own", async () => {
++    const otherRes = await request(app)
++      .post('/api/users/find-or-create')
++      .send({ name: 'Other Msg User', email: 'othermsg@example.com' });
++    const otherToken = otherRes.body.token;
++
++    const res = await request(app)
++      .post('/api/messages')
++      .set('Authorization', `Bearer ${otherToken}`)
++      .send({ conversationId, sender: 'client', content: 'Intrusion' });
++
++    expect(res.statusCode).toBe(403);
++  });
++
++  test("accepts sender:'client' with the owning client's token", async () => {
++    const res = await request(app)
++      .post('/api/messages')
++      .set('Authorization', `Bearer ${clientToken}`)
++      .send({ conversationId, sender: 'client', content: 'Comment suivre ma commande ?' });
++
++    expect(res.statusCode).toBe(201);
++  });
++
++  test("rejects sender:'ia' from an external request (no direct bot-message injection)", async () => {
++    const res = await request(app)
++      .post('/api/messages')
++      .set('Authorization', `Bearer ${clientToken}`)
++      .send({ conversationId, sender: 'ia', content: 'Fake bot message' });
++
++    expect(res.statusCode).toBe(403);
++  });
+ });
+diff --git a/sinaps-backend/tests/auth-middleware.test.js b/sinaps-backend/tests/auth-middleware.test.js
+new file mode 100644
+index 0000000..7fe48b0
+--- /dev/null
++++ b/sinaps-backend/tests/auth-middleware.test.js
+@@ -0,0 +1,222 @@
++// Unit tests for the auth middleware itself (client sessions, conversation
++// ownership, and message sender authorization), mocking the Conversation
++// model so these run without a real MongoDB instance.
++jest.mock('../models/Conversation');
++
++const jwt = require('jsonwebtoken');
++const Conversation = require('../models/Conversation');
++
++process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
++
++const {
++  requireClientAuth,
++  requireConversationAccess,
++  requireSenderAuth,
++} = require('../middleware/auth');
++
++function mockRes() {
++  const res = {};
++  res.status = jest.fn().mockReturnValue(res);
++  res.json = jest.fn().mockReturnValue(res);
++  return res;
++}
++
++function signToken(payload) {
++  return jwt.sign(payload, process.env.JWT_SECRET);
++}
++
++afterEach(() => {
++  jest.clearAllMocks();
++});
++
++describe('requireClientAuth', () => {
++  test('rejects a request with no Authorization header', () => {
++    const req = { headers: {} };
++    const res = mockRes();
++    const next = jest.fn();
++
++    requireClientAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(401);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('rejects a malformed/invalid token', () => {
++    const req = { headers: { authorization: 'Bearer not-a-real-jwt' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    requireClientAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(401);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('rejects a valid token with the wrong role (e.g. an agent token)', () => {
++    const token = signToken({ id: 'agent1', role: 'agent' });
++    const req = { headers: { authorization: `Bearer ${token}` } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    requireClientAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(403);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('accepts a valid client token and sets req.client', () => {
++    const token = signToken({ id: 'client1', role: 'client' });
++    const req = { headers: { authorization: `Bearer ${token}` } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    requireClientAuth(req, res, next);
++
++    expect(next).toHaveBeenCalledTimes(1);
++    expect(req.client.id).toBe('client1');
++  });
++});
++
++describe('requireConversationAccess', () => {
++  test('rejects a request with no session', async () => {
++    const req = { headers: {}, params: { id: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireConversationAccess(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(401);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('allows any agent/admin token through without an ownership lookup', async () => {
++    const token = signToken({ id: 'agent1', role: 'agent' });
++    const req = { headers: { authorization: `Bearer ${token}` }, params: { id: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireConversationAccess(req, res, next);
++
++    expect(next).toHaveBeenCalledTimes(1);
++    expect(Conversation.findById).not.toHaveBeenCalled();
++  });
++
++  test('allows the client who owns the conversation', async () => {
++    Conversation.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ client: 'client1' }) });
++    const token = signToken({ id: 'client1', role: 'client' });
++    const req = { headers: { authorization: `Bearer ${token}` }, params: { id: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireConversationAccess(req, res, next);
++
++    expect(next).toHaveBeenCalledTimes(1);
++    expect(req.client.id).toBe('client1');
++  });
++
++  test("rejects a client who does not own the conversation", async () => {
++    Conversation.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ client: 'client1' }) });
++    const token = signToken({ id: 'client2', role: 'client' });
++    const req = { headers: { authorization: `Bearer ${token}` }, params: { id: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireConversationAccess(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(403);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('returns 404 when the conversation does not exist', async () => {
++    Conversation.findById.mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
++    const token = signToken({ id: 'client1', role: 'client' });
++    const req = { headers: { authorization: `Bearer ${token}` }, params: { id: 'missing' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireConversationAccess(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(404);
++  });
++});
++
++describe('requireSenderAuth (POST /api/messages)', () => {
++  test('rejects sender:"ia" from an external request outright', async () => {
++    const req = { headers: {}, body: { sender: 'ia', conversationId: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireSenderAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(403);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('rejects sender:"humain" with no agent token', async () => {
++    const req = { headers: {}, body: { sender: 'humain', conversationId: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireSenderAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(401);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test('accepts sender:"humain" with a valid agent token', async () => {
++    const token = signToken({ id: 'agent1', role: 'agent' });
++    const req = {
++      headers: { authorization: `Bearer ${token}` },
++      body: { sender: 'humain', conversationId: 'conv1' },
++    };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireSenderAuth(req, res, next);
++
++    expect(next).toHaveBeenCalledTimes(1);
++  });
++
++  test('rejects sender:"client" with no token', async () => {
++    const req = { headers: {}, body: { sender: 'client', conversationId: 'conv1' } };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireSenderAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(401);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test("rejects sender:'client' into a conversation the token doesn't own", async () => {
++    Conversation.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ client: 'someone-else' }) });
++    const token = signToken({ id: 'client9', role: 'client' });
++    const req = {
++      headers: { authorization: `Bearer ${token}` },
++      body: { sender: 'client', conversationId: 'conv1' },
++    };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireSenderAuth(req, res, next);
++
++    expect(res.status).toHaveBeenCalledWith(403);
++    expect(next).not.toHaveBeenCalled();
++  });
++
++  test("accepts sender:'client' with the owning client's token", async () => {
++    Conversation.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ client: 'client9' }) });
++    const token = signToken({ id: 'client9', role: 'client' });
++    const req = {
++      headers: { authorization: `Bearer ${token}` },
++      body: { sender: 'client', conversationId: 'conv1' },
++    };
++    const res = mockRes();
++    const next = jest.fn();
++
++    await requireSenderAuth(req, res, next);
++
++    expect(next).toHaveBeenCalledTimes(1);
++    expect(req.client.id).toBe('client9');
++  });
++});
+diff --git a/sinaps-project/components/chat/support-chat-app.tsx b/sinaps-project/components/chat/support-chat-app.tsx
+index 728dc01..af19785 100644
+--- a/sinaps-project/components/chat/support-chat-app.tsx
++++ b/sinaps-project/components/chat/support-chat-app.tsx
+@@ -15,11 +15,12 @@ import {
+   findOrCreateUser,
+   findOrCreateConversation,
+   mapBackendConversation,
++  getStoredClientSession,
++  storeClientSession,
++  clearClientSession,
+ } from "@/lib/api"
+ import { getSocket, joinConversationRoom, leaveConversationRoom } from "@/lib/socket"
+ 
+-const STORAGE_KEY = "sinaps_client"
+-
+ export function SupportChatApp() {
+   const [conversation, setConversation] = React.useState<Conversation | null>(null)
+   const [conversationId, setConversationId] = React.useState<string | null>(null)
+@@ -29,9 +30,9 @@ export function SupportChatApp() {
+ 
+   async function startSession(name: string, email: string, credential?: string, avatar?: string) {
+     try {
+-      const user = await findOrCreateUser(name, email, credential, avatar)
+-      const conv = await findOrCreateConversation(user._id)
+-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: user._id }))
++      const { user, token } = await findOrCreateUser(name, email, credential, avatar)
++      storeClientSession(user._id, token)
++      const conv = await findOrCreateConversation()
+       setConversationId(conv._id)
+       setNeedsEntry(false)
+       await loadConversation(conv._id)
+@@ -53,18 +54,19 @@ export function SupportChatApp() {
+ 
+   React.useEffect(() => {
+     async function init() {
+-      const stored = localStorage.getItem(STORAGE_KEY)
+-      if (!stored) {
++      const session = getStoredClientSession()
++      if (!session) {
+         setNeedsEntry(true)
+         setLoading(false)
+         return
+       }
+       try {
+-        const { userId } = JSON.parse(stored)
+-        const conv = await findOrCreateConversation(userId)
++        const conv = await findOrCreateConversation()
+         setConversationId(conv._id)
+         await loadConversation(conv._id)
+       } catch (error) {
++        // Session token missing/expired/rejected — fall back to re-identifying.
++        clearClientSession()
+         setNeedsEntry(true)
+         setLoading(false)
+       }
+diff --git a/sinaps-project/lib/api.ts b/sinaps-project/lib/api.ts
+index 5ffd210..d180bd4 100644
+--- a/sinaps-project/lib/api.ts
++++ b/sinaps-project/lib/api.ts
+@@ -1,5 +1,13 @@
+ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+ 
++async function parseOrThrow(res: Response) {
++  const data = await res.json().catch(() => ({}))
++  if (!res.ok) {
++    throw new Error(data?.error || `Erreur ${res.status}`)
++  }
++  return data
++}
++
+ export async function loginAgent(email: string, password: string) {
+   const res = await fetch(`${API_URL}/agents/login`, {
+     method: "POST",
+@@ -18,14 +26,57 @@ export function getAuthHeaders(): Record<string, string> {
+   return token ? { Authorization: `Bearer ${token}` } : {}
+ }
+ 
++// Client sessions: a JWT issued by /users/find-or-create after Google
++// verification (or the interim direct name/email entry), scoped to that one
++// user. Centralized here so the storage key and shape are consistent
++// wherever the client chat needs to prove who it is.
++const CLIENT_STORAGE_KEY = "sinaps_client"
++
++export function getStoredClientSession(): { userId: string; token: string } | null {
++  if (typeof window === "undefined") return null
++  const stored = localStorage.getItem(CLIENT_STORAGE_KEY)
++  if (!stored) return null
++  try {
++    const parsed = JSON.parse(stored)
++    if (!parsed?.userId || !parsed?.token) return null
++    return parsed
++  } catch {
++    return null
++  }
++}
++
++export function storeClientSession(userId: string, token: string) {
++  if (typeof window === "undefined") return
++  localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify({ userId, token }))
++}
++
++export function clearClientSession() {
++  if (typeof window === "undefined") return
++  localStorage.removeItem(CLIENT_STORAGE_KEY)
++}
++
++export function getClientAuthHeaders(): Record<string, string> {
++  const session = getStoredClientSession()
++  return session ? { Authorization: `Bearer ${session.token}` } : {}
++}
++
++// A few routes (GET conversation, close conversation) are used by both the
++// client chat and the agent inbox. Prefer an agent token when one is present
++// (agent browsing), otherwise fall back to the client's own token.
++export function getAnyAuthHeaders(): Record<string, string> {
++  const agentHeaders = getAuthHeaders()
++  if (agentHeaders.Authorization) return agentHeaders
++  return getClientAuthHeaders()
++}
++
+ export async function fetchConversations() {
+   const res = await fetch(`${API_URL}/conversations`, { headers: getAuthHeaders() })
+   return res.json()
+ }
+ 
+ export async function fetchConversationById(id: string) {
+-  const res = await fetch(`${API_URL}/conversations/${id}`)
+-  return res.json()
++  const res = await fetch(`${API_URL}/conversations/${id}`, { headers: getAnyAuthHeaders() })
++  return parseOrThrow(res)
+ }
+ 
+ export async function uploadFile(file: File) {
+@@ -46,27 +97,31 @@ export async function sendMessage(
+ ) {
+   const headers: Record<string, string> = { "Content-Type": "application/json" }
+   if (sender === "humain") Object.assign(headers, getAuthHeaders())
++  if (sender === "client") Object.assign(headers, getClientAuthHeaders())
+ 
+   const res = await fetch(`${API_URL}/messages`, {
+     method: "POST",
+     headers,
+     body: JSON.stringify({ conversationId, sender, content, attachments }),
+   })
+-  return res.json()
++  return parseOrThrow(res)
+ }
+ 
+ export async function escalateConversation(id: string) {
+-  const res = await fetch(`${API_URL}/conversations/${id}/escalate`, { method: "PATCH" })
+-  return res.json()
++  const res = await fetch(`${API_URL}/conversations/${id}/escalate`, {
++    method: "PATCH",
++    headers: getClientAuthHeaders(),
++  })
++  return parseOrThrow(res)
+ }
+ 
+ export async function closeConversation(id: string, rating: number, comment: string) {
+   const res = await fetch(`${API_URL}/conversations/${id}/close`, {
+     method: "PATCH",
+-    headers: { "Content-Type": "application/json" },
++    headers: { "Content-Type": "application/json", ...getAnyAuthHeaders() },
+     body: JSON.stringify({ rating, comment }),
+   })
+-  return res.json()
++  return parseOrThrow(res)
+ }
+ export function mapBackendMessage(msg: any) {
+   return {
+@@ -126,22 +181,24 @@ export async function fetchStats() {
+   return res.json()
+ }
+ 
++// Returns { user, token }. `token` is a client-scoped JWT that must be sent
++// on every subsequent conversation/message request for this user.
+ export async function findOrCreateUser(name: string, email: string, credential?: string, avatar?: string) {
+   const res = await fetch(`${API_URL}/users/find-or-create`, {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ name, email, credential, avatar }),
+   })
+-  return res.json()
++  return parseOrThrow(res)
+ }
+ 
+-export async function findOrCreateConversation(clientId: string) {
++export async function findOrCreateConversation() {
+   const res = await fetch(`${API_URL}/conversations/find-or-create`, {
+     method: "POST",
+-    headers: { "Content-Type": "application/json" },
+-    body: JSON.stringify({ clientId }),
++    headers: { "Content-Type": "application/json", ...getClientAuthHeaders() },
++    body: JSON.stringify({}),
+   })
+-  return res.json()
++  return parseOrThrow(res)
+ }
+ 
+ export async function fetchConversationsFiltered(status?: string, search?: string) {

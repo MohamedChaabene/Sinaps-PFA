@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAgentOrAdmin, requireClientAuth, requireConversationAccess } = require('../middleware/auth');
 const {
   createConversation,
   getConversations,
@@ -11,12 +11,12 @@ const {
   findOrCreateConversation,
 } = require('../controllers/conversationController');
 
-router.post('/find-or-create', findOrCreateConversation);
+router.post('/find-or-create', requireClientAuth, findOrCreateConversation);
 router.post('/', createConversation);
 router.get('/', requireAuth, getConversations);
-router.get('/:id', getConversationById);
-router.patch('/:id/escalate', escalateConversation);
-router.patch('/:id/assign', assignAgent);
-router.patch('/:id/close', closeConversation);
+router.get('/:id', requireConversationAccess, getConversationById);
+router.patch('/:id/escalate', requireConversationAccess, escalateConversation);
+router.patch('/:id/assign', requireAuth, requireAgentOrAdmin, assignAgent);
+router.patch('/:id/close', requireConversationAccess, closeConversation);
 
 module.exports = router;

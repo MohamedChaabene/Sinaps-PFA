@@ -18,7 +18,7 @@ exports.sendMessage = async (req, res) => {
     const updatedConv = await Conversation.findByIdAndUpdate(
       conversationId,
       { updatedAt: new Date() },
-      { new: true }
+      { returnDocument: 'after' }
     )
       .populate('client', 'name avatar email')
       .populate('assignedAgent', 'name avatar');
@@ -42,7 +42,7 @@ exports.sendMessage = async (req, res) => {
         const reUpdatedConv = await Conversation.findByIdAndUpdate(
           conversationId,
           { updatedAt: new Date() },
-          { new: true }
+          { returnDocument: 'after' }
         )
           .populate('client', 'name avatar email')
           .populate('assignedAgent', 'name avatar');

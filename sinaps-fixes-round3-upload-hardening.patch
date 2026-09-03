@@ -1,0 +1,282 @@
+diff --git a/sinaps-backend/middleware/auth.js b/sinaps-backend/middleware/auth.js
+index c206664..44c76db 100644
+--- a/sinaps-backend/middleware/auth.js
++++ b/sinaps-backend/middleware/auth.js
+@@ -116,6 +116,20 @@ async function requireSenderAuth(req, res, next) {
+   return res.status(403).json({ error: "Type d'expéditeur non autorisé" });
+ }
+ 
++// For routes that just need "someone we've identified" — not a specific
++// role. Currently used by the upload endpoint: anyone with a client or
++// agent/admin session can attach a file to their own conversation, but a
++// completely anonymous request cannot use the server as a free file host.
++function requireAnySession(req, res, next) {
++  const decoded = decodeBearerToken(req);
++  if (decoded === null) return res.status(401).json({ error: 'Authentification requise' });
++  if (decoded === undefined) return res.status(401).json({ error: 'Session invalide ou expirée' });
++
++  if (decoded.role === 'client') req.client = decoded;
++  else req.agent = decoded;
++  next();
++}
++
+ module.exports = {
+   requireAuth,
+   requireAdmin,
+@@ -123,4 +137,5 @@ module.exports = {
+   requireClientAuth,
+   requireConversationAccess,
+   requireSenderAuth,
++  requireAnySession,
+ };
+\ No newline at end of file
+diff --git a/sinaps-backend/routes/uploadRoutes.js b/sinaps-backend/routes/uploadRoutes.js
+index 97c619e..6e5b77e 100644
+--- a/sinaps-backend/routes/uploadRoutes.js
++++ b/sinaps-backend/routes/uploadRoutes.js
+@@ -3,26 +3,98 @@ const router = express.Router();
+ const multer = require('multer');
+ const path = require('path');
+ const fs = require('fs');
++const { requireAnySession } = require('../middleware/auth');
+ 
+ const uploadsDir = path.join(__dirname, '../uploads');
+ if (!fs.existsSync(uploadsDir)) {
+   fs.mkdirSync(uploadsDir, { recursive: true });
+ }
+ 
++// Matches what the composer UI actually offers (accept="image/*,video/*,application/pdf,.doc,.docx"):
++// images, short videos, PDFs, and Word documents. Anything else is rejected server-side —
++// the client's `accept` attribute is only a UI hint and is trivially bypassed by calling
++// the API directly, so this is the real enforcement point.
++const ALLOWED_DOCUMENT_MIMES = [
++  'application/pdf',
++  'application/msword',
++  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
++];
++
++// Note: this checks the MIME type the client *declares* in the multipart
++// request, not the file's actual bytes. It stops accidental/casual misuse
++// and honest clients sending the wrong thing, but a determined attacker can
++// still lie about the Content-Type of a given part. True content sniffing
++// (magic-byte inspection) would be a further hardening step beyond this pass.
++function isAllowedMime(mime) {
++  return mime.startsWith('image/') || mime.startsWith('video/') || ALLOWED_DOCUMENT_MIMES.includes(mime);
++}
++
++const MIME_EXTENSIONS = {
++  'image/jpeg': '.jpg',
++  'image/png': '.png',
++  'image/gif': '.gif',
++  'image/webp': '.webp',
++  'video/mp4': '.mp4',
++  'video/webm': '.webm',
++  'video/quicktime': '.mov',
++  'application/pdf': '.pdf',
++  'application/msword': '.doc',
++  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
++};
++
++// Prefer a known extension for the declared MIME type. Falling back to the
++// client-supplied original filename's extension only if it's short and
++// alphanumeric — this avoids trusting arbitrary/crafted filenames for
++// anything that ends up in a path on disk.
++function safeExtension(file) {
++  if (MIME_EXTENSIONS[file.mimetype]) return MIME_EXTENSIONS[file.mimetype];
++  const ext = path.extname(file.originalname || '').toLowerCase();
++  return /^\.[a-z0-9]{1,5}$/.test(ext) ? ext : '.bin';
++}
++
++const MAX_UPLOAD_SIZE_MB = Number(process.env.MAX_UPLOAD_SIZE_MB) || 15;
++
+ const storage = multer.diskStorage({
+   destination: (req, file, cb) => {
+     cb(null, uploadsDir);
+   },
+   filename: (req, file, cb) => {
+     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+-    const ext = path.extname(file.originalname);
+-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
++    cb(null, file.fieldname + '-' + uniqueSuffix + safeExtension(file));
+   },
+ });
+ 
+-const upload = multer({ storage });
++const upload = multer({
++  storage,
++  limits: { fileSize: MAX_UPLOAD_SIZE_MB * 1024 * 1024 },
++  fileFilter: (req, file, cb) => {
++    if (!isAllowedMime(file.mimetype)) {
++      return cb(new Error('Type de fichier non autorisé. Formats acceptés : images, vidéos, PDF, documents Word.'));
++    }
++    cb(null, true);
++  },
++});
++
++// multer's errors (file too large, rejected by fileFilter) surface via the
++// callback passed to upload.single(), not as a thrown exception — wrapping
++// it like this lets us turn them into clean JSON responses instead of
++// Express's default HTML error page / an opaque 500.
++function handleSingleUpload(req, res, next) {
++  upload.single('file')(req, res, (err) => {
++    if (err instanceof multer.MulterError) {
++      if (err.code === 'LIMIT_FILE_SIZE') {
++        return res.status(413).json({ error: `Fichier trop volumineux (max ${MAX_UPLOAD_SIZE_MB} Mo).` });
++      }
++      return res.status(400).json({ error: err.message });
++    }
++    if (err) {
++      return res.status(400).json({ error: err.message || 'Fichier non autorisé.' });
++    }
++    next();
++  });
++}
+ 
+-router.post('/', upload.single('file'), (req, res) => {
++router.post('/', requireAnySession, handleSingleUpload, (req, res) => {
+   try {
+     if (!req.file) {
+       return res.status(400).json({ error: 'Aucun fichier fourni' });
+diff --git a/sinaps-backend/tests/upload.test.js b/sinaps-backend/tests/upload.test.js
+new file mode 100644
+index 0000000..2169f49
+--- /dev/null
++++ b/sinaps-backend/tests/upload.test.js
+@@ -0,0 +1,108 @@
++const request = require('supertest');
++const express = require('express');
++const jwt = require('jsonwebtoken');
++const path = require('path');
++const fs = require('fs');
++
++process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
++// Keep the "file too large" test fast and cheap instead of uploading 15MB+.
++process.env.MAX_UPLOAD_SIZE_MB = '1';
++
++const uploadRoutes = require('../routes/uploadRoutes');
++
++let app;
++const uploadedFiles = [];
++
++beforeAll(() => {
++  app = express();
++  app.use('/api/upload', uploadRoutes);
++});
++
++afterAll(() => {
++  // Clean up anything actually written to disk by these tests.
++  const uploadsDir = path.join(__dirname, '../uploads');
++  for (const name of uploadedFiles) {
++    const filePath = path.join(uploadsDir, name);
++    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
++  }
++});
++
++function clientToken() {
++  return jwt.sign({ id: 'client1', role: 'client' }, process.env.JWT_SECRET);
++}
++
++function agentToken() {
++  return jwt.sign({ id: 'agent1', role: 'agent' }, process.env.JWT_SECRET);
++}
++
++function trackUploaded(res) {
++  if (res.body?.url) uploadedFiles.push(path.basename(res.body.url));
++}
++
++describe('POST /api/upload', () => {
++  test('rejects a request with no session at all', async () => {
++    const res = await request(app)
++      .post('/api/upload')
++      .attach('file', Buffer.from('hello'), { filename: 'note.txt', contentType: 'text/plain' });
++
++    expect(res.statusCode).toBe(401);
++  });
++
++  test('rejects a disallowed file type even with a valid client session', async () => {
++    const res = await request(app)
++      .post('/api/upload')
++      .set('Authorization', `Bearer ${clientToken()}`)
++      .attach('file', Buffer.from('#!/bin/sh\necho hi'), { filename: 'script.sh', contentType: 'application/x-sh' });
++
++    trackUploaded(res);
++    expect(res.statusCode).toBe(400);
++  });
++
++  test('accepts an allowed image type from a client session', async () => {
++    const res = await request(app)
++      .post('/api/upload')
++      .set('Authorization', `Bearer ${clientToken()}`)
++      .attach('file', Buffer.from([0xff, 0xd8, 0xff, 0xe0]), { filename: 'photo.jpg', contentType: 'image/jpeg' });
++
++    trackUploaded(res);
++    expect(res.statusCode).toBe(200);
++    expect(res.body.type).toBe('image');
++    expect(res.body.url).toMatch(/\.jpg$/);
++  });
++
++  test('accepts an allowed PDF document from an agent session', async () => {
++    const res = await request(app)
++      .post('/api/upload')
++      .set('Authorization', `Bearer ${agentToken()}`)
++      .attach('file', Buffer.from('%PDF-1.4 fake content'), { filename: 'invoice.pdf', contentType: 'application/pdf' });
++
++    trackUploaded(res);
++    expect(res.statusCode).toBe(200);
++    expect(res.body.type).toBe('document');
++    expect(res.body.url).toMatch(/\.pdf$/);
++  });
++
++  test('rejects a file larger than the configured limit', async () => {
++    const big = Buffer.alloc(1.5 * 1024 * 1024, 'a'); // 1.5MB, over the 1MB test limit
++    const res = await request(app)
++      .post('/api/upload')
++      .set('Authorization', `Bearer ${clientToken()}`)
++      .attach('file', big, { filename: 'big.jpg', contentType: 'image/jpeg' });
++
++    trackUploaded(res);
++    expect(res.statusCode).toBe(413);
++  });
++
++  test('falls back to a safe extension for an unrecognized-but-allowed mime subtype', async () => {
++    const res = await request(app)
++      .post('/api/upload')
++      .set('Authorization', `Bearer ${clientToken()}`)
++      .attach('file', Buffer.from('fake bmp data'), { filename: 'weird pic!!.bmp', contentType: 'image/x-ms-bmp' });
++
++    trackUploaded(res);
++    expect(res.statusCode).toBe(200);
++    expect(res.body.type).toBe('image');
++    // Not in the MIME_EXTENSIONS table, but the original ".bmp" is short/alphanumeric so it's kept.
++    expect(res.body.url).toMatch(/\.bmp$/);
++  });
++});
+diff --git a/sinaps-project/components/chat/message-composer.tsx b/sinaps-project/components/chat/message-composer.tsx
+index fb2f94d..9d3e519 100644
+--- a/sinaps-project/components/chat/message-composer.tsx
++++ b/sinaps-project/components/chat/message-composer.tsx
+@@ -55,7 +55,7 @@ export function MessageComposer({
+         toast.error("Échec du téléversement")
+       }
+     } catch (err) {
+-      toast.error("Erreur lors de l'envoi du fichier")
++      toast.error(err instanceof Error ? err.message : "Erreur lors de l'envoi du fichier")
+     } finally {
+       setUploading(false)
+       if (fileInputRef.current) fileInputRef.current.value = ""
+diff --git a/sinaps-project/lib/api.ts b/sinaps-project/lib/api.ts
+index d180bd4..74f7a61 100644
+--- a/sinaps-project/lib/api.ts
++++ b/sinaps-project/lib/api.ts
+@@ -84,9 +84,10 @@ export async function uploadFile(file: File) {
+   formData.append("file", file)
+   const res = await fetch(`${API_URL}/upload`, {
+     method: "POST",
++    headers: getAnyAuthHeaders(),
+     body: formData,
+   })
+-  return res.json()
++  return parseOrThrow(res)
+ }
+ 
+ export async function sendMessage(

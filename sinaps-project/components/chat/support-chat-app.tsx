@@ -15,10 +15,11 @@ import {
   findOrCreateUser,
   findOrCreateConversation,
   mapBackendConversation,
+  getStoredClientSession,
+  storeClientSession,
+  clearClientSession,
 } from "@/lib/api"
 import { getSocket, joinConversationRoom, leaveConversationRoom } from "@/lib/socket"
-
-const STORAGE_KEY = "sinaps_client"
 
 export function SupportChatApp() {
   const [conversation, setConversation] = React.useState<Conversation | null>(null)
@@ -29,9 +30,9 @@ export function SupportChatApp() {
 
   async function startSession(name: string, email: string, credential?: string, avatar?: string) {
     try {
-      const user = await findOrCreateUser(name, email, credential, avatar)
-      const conv = await findOrCreateConversation(user._id)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ userId: user._id }))
+      const { user, token } = await findOrCreateUser(name, email, credential, avatar)
+      storeClientSession(user._id, token)
+      const conv = await findOrCreateConversation()
       setConversationId(conv._id)
       setNeedsEntry(false)
       await loadConversation(conv._id)
@@ -53,18 +54,19 @@ export function SupportChatApp() {
 
   React.useEffect(() => {
     async function init() {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (!stored) {
+      const session = getStoredClientSession()
+      if (!session) {
         setNeedsEntry(true)
         setLoading(false)
         return
       }
       try {
-        const { userId } = JSON.parse(stored)
-        const conv = await findOrCreateConversation(userId)
+        const conv = await findOrCreateConversation()
         setConversationId(conv._id)
         await loadConversation(conv._id)
       } catch (error) {
+        // Session token missing/expired/rejected — fall back to re-identifying.
+        clearClientSession()
         setNeedsEntry(true)
         setLoading(false)
       }

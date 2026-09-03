@@ -66,7 +66,7 @@ exports.escalateConversation = async (req, res) => {
     const conversation = await Conversation.findByIdAndUpdate(
       req.params.id,
       { handledBy: 'humain', status: 'en_attente' },
-      { new: true }
+      { returnDocument: 'after' }
     )
       .populate('client', 'name avatar email')
       .populate('assignedAgent', 'name avatar');
@@ -91,7 +91,7 @@ exports.assignAgent = async (req, res) => {
         handledBy: 'humain',
         status: 'en_cours',
       },
-      { new: true }
+      { returnDocument: 'after' }
     )
       .populate('client', 'name avatar email')
       .populate('assignedAgent', 'name avatar');
@@ -109,10 +109,20 @@ exports.assignAgent = async (req, res) => {
 exports.closeConversation = async (req, res) => {
   try {
     const { rating, comment } = req.body;
+    const update = { status: 'resolu' };
+
+    // Une note n'est valide que si le client a réellement choisi 1 à 5 étoiles.
+    // Une clôture sans note (ex: résolution rapide côté agent) ne doit pas
+    // enregistrer satisfaction.rating = 0, sinon ça fausse la moyenne affichée à l'admin.
+    const numericRating = Number(rating);
+    if (Number.isInteger(numericRating) && numericRating >= 1 && numericRating <= 5) {
+      update.satisfaction = { rating: numericRating, comment: comment || '' };
+    }
+
     const conversation = await Conversation.findByIdAndUpdate(
       req.params.id,
-      { status: 'resolu', satisfaction: { rating, comment } },
-      { new: true }
+      update,
+      { returnDocument: 'after', runValidators: true }
     )
       .populate('client', 'name avatar email')
       .populate('assignedAgent', 'name avatar');
@@ -128,7 +138,7 @@ exports.closeConversation = async (req, res) => {
 
 exports.findOrCreateConversation = async (req, res) => {
   try {
-    const { clientId } = req.body;
+    const clientId = req.client.id;
     let conversation = await Conversation.findOne({
       client: clientId,
       status: { $ne: 'resolu' },
