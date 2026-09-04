@@ -71,7 +71,7 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="flex-1">
         <MessageScrollerViewport>
-          <MessageScrollerContent className="px-4 py-5 sm:px-6">
+          <MessageScrollerContent className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
             <Marker variant="separator">
               <MarkerContent>Aujourd&apos;hui</MarkerContent>
             </Marker>
@@ -114,7 +114,7 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                           {message.sender === "ia" ? (
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="rounded-full bg-primary/15 text-primary text-[11px] font-medium">
-                                🤖 Agent IA
+                                Agent IA
                               </Badge>
                               <span className="text-[10px] text-muted-foreground font-mono">
                                 Gemini 3.5 + RAG
@@ -202,7 +202,7 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                   <MessageContent>
                     <MessageHeader>
                       <Badge variant="secondary" className="rounded-full bg-primary/15 text-primary text-[11px] font-medium">
-                        🤖 Agent IA
+                        Agent IA
                       </Badge>
                     </MessageHeader>
                     <Bubble align="start" variant="secondary">

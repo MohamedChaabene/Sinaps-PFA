@@ -149,9 +149,12 @@ export function SupportChatApp() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Chargement...</p>
-      </div>
+      <main className="flex min-h-screen w-full items-center justify-center bg-background p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="size-8 animate-pulse rounded-full bg-primary/20 ring-8 ring-primary/5" aria-hidden="true" />
+          <p className="text-sm font-medium text-muted-foreground">Préparation de votre espace de support...</p>
+        </div>
+      </main>
     )
   }
 

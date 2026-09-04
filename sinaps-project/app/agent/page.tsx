@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { LogOutIcon, HeadsetIcon, CheckIcon, Zap } from "lucide-react"
+import { LogOutIcon, HeadsetIcon, CheckIcon, Zap, MenuIcon, XIcon } from "lucide-react"
 import { logout } from "@/components/auth-guard"
 import * as React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -30,6 +30,7 @@ export default function AgentPage() {
     const [conversations, setConversations] = React.useState<Conversation[]>([])
     const [activeId, setActiveId] = React.useState<string | null>(null)
     const [loading, setLoading] = React.useState(true)
+    const [queueOpen, setQueueOpen] = React.useState(false)
     const router = useRouter()
 
     const activeConversation = conversations.find((c) => c.id === activeId) ?? null
@@ -118,7 +119,7 @@ export default function AgentPage() {
     return (
         <AuthGuard requiredRole="agent">
             <div className="flex h-screen w-full overflow-hidden bg-background">
-                <aside className="w-80 shrink-0 border-r border-sidebar-border bg-sidebar/50 flex flex-col">
+                <aside className={`${queueOpen ? "flex" : "hidden"} fixed inset-y-0 left-0 z-40 w-[min(20rem,calc(100vw-2rem))] shrink-0 border-r border-sidebar-border bg-sidebar shadow-xl md:static md:flex md:w-80 md:shadow-none flex-col`}>
                     <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-3.5 bg-card/60">
                         <HeadsetIcon className="size-5 text-primary" />
                         <span className="font-heading text-sm font-bold">File d'attente</span>
@@ -127,9 +128,14 @@ export default function AgentPage() {
                                 {conversations.length}
                             </Badge>
                         )}
-                        <Button variant="ghost" size="icon-sm" onClick={() => logout(router)} className="ml-auto rounded-full text-muted-foreground hover:text-destructive" aria-label="Déconnexion" title="Se déconnecter">
-                            <LogOutIcon className="size-4" />
-                        </Button>
+                        <div className="ml-auto flex items-center gap-1">
+                            <Button variant="ghost" size="icon-sm" onClick={() => setQueueOpen(false)} className="rounded-full text-muted-foreground md:hidden" aria-label="Fermer la file d'attente">
+                                <XIcon className="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon-sm" onClick={() => logout(router)} className="rounded-full text-muted-foreground hover:text-destructive" aria-label="Déconnexion" title="Se déconnecter">
+                                <LogOutIcon className="size-4" />
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex flex-col flex-1 overflow-y-auto">
                         {conversations.length === 0 && (
@@ -144,7 +150,7 @@ export default function AgentPage() {
                             return (
                                 <button
                                     key={c.id}
-                                    onClick={() => handleSelect(c.id)}
+                                    onClick={() => { handleSelect(c.id); setQueueOpen(false) }}
                                     className={`flex items-start gap-3 border-b border-sidebar-border/60 px-4 py-3 text-left transition-all ${
                                         isSelected
                                             ? "border-l-3 border-l-primary bg-primary/10 font-medium"
@@ -173,8 +179,11 @@ export default function AgentPage() {
                 <main className="flex min-w-0 flex-1 flex-col">
                     {activeConversation ? (
                         <>
-                            <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-xs px-4 py-3 sm:px-6">
-                                <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 px-4 py-3 shadow-sm backdrop-blur-xs sm:px-6">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <Button variant="ghost" size="icon-sm" onClick={() => setQueueOpen(true)} className="md:hidden" aria-label="Ouvrir la file d'attente">
+                                        <MenuIcon className="size-4" />
+                                    </Button>
                                     <Avatar className="size-9 ring-2 ring-primary/20">
                                         <AvatarImage src={activeConversation.clientAvatar || "/placeholder.svg"} />
                                         <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials(activeConversation.clientName)}</AvatarFallback>

@@ -25,7 +25,7 @@ export function ChatHeader({
   onLogout?: () => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-xs px-4 py-3 sm:px-6 shadow-xs">
+    <header className="flex items-center justify-between gap-3 border-b border-border bg-card/95 px-4 py-3 shadow-sm backdrop-blur-xs sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <div className="relative">
           <Avatar className="size-9.5 shrink-0 ring-2 ring-primary/20">
@@ -96,6 +96,6 @@ export function ChatHeader({
           </Button>
         )}
       </div>
-    </div>
+    </header>
   )
 }
