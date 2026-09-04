@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { LogOutIcon, HeadsetIcon, CheckIcon, Zap } from "lucide-react"
+import { LogOutIcon, HeadsetIcon, CheckIcon, Zap, ChevronLeft, Loader2 } from "lucide-react"
 import { logout } from "@/components/auth-guard"
 import * as React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -109,8 +109,9 @@ export default function AgentPage() {
 
     if (loading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <p className="text-sm text-muted-foreground">Chargement...</p>
+            <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background">
+                <Loader2 className="size-8 animate-spin text-primary" />
+                <p className="text-sm font-medium text-muted-foreground">Chargement de l'espace agent...</p>
             </div>
         )
     }
@@ -118,7 +119,11 @@ export default function AgentPage() {
     return (
         <AuthGuard requiredRole="agent">
             <div className="flex h-screen w-full overflow-hidden bg-background">
-                <aside className="w-80 shrink-0 border-r border-sidebar-border bg-sidebar/50 flex flex-col">
+                <aside
+                    className={`${
+                        activeId ? "hidden md:flex" : "flex"
+                    } w-full md:w-80 shrink-0 border-r border-sidebar-border bg-sidebar/50 flex-col transition-all duration-200`}
+                >
                     <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-3.5 bg-card/60">
                         <HeadsetIcon className="size-5 text-primary" />
                         <span className="font-heading text-sm font-bold">File d'attente</span>
@@ -127,16 +132,23 @@ export default function AgentPage() {
                                 {conversations.length}
                             </Badge>
                         )}
-                        <Button variant="ghost" size="icon-sm" onClick={() => logout(router)} className="ml-auto rounded-full text-muted-foreground hover:text-destructive" aria-label="Déconnexion" title="Se déconnecter">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => logout(router)}
+                            className="ml-auto rounded-full text-muted-foreground hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive"
+                            aria-label="Déconnexion"
+                            title="Se déconnecter"
+                        >
                             <LogOutIcon className="size-4" />
                         </Button>
                     </div>
                     <div className="flex flex-col flex-1 overflow-y-auto">
                         {conversations.length === 0 && (
-                            <div className="p-6 text-center text-sm text-muted-foreground space-y-1">
-                                <p className="text-2xl">🎉</p>
-                                <p className="font-medium">File d'attente vide</p>
-                                <p className="text-xs">Toutes les demandes clients sont traitées !</p>
+                            <div className="p-8 text-center text-sm text-muted-foreground space-y-2">
+                                <p className="text-3xl">🎉</p>
+                                <p className="font-semibold text-foreground">File d'attente vide</p>
+                                <p className="text-xs leading-relaxed">Toutes les demandes clients sont traitées ou assignées !</p>
                             </div>
                         )}
                         {conversations.map((c) => {
@@ -145,7 +157,7 @@ export default function AgentPage() {
                                 <button
                                     key={c.id}
                                     onClick={() => handleSelect(c.id)}
-                                    className={`flex items-start gap-3 border-b border-sidebar-border/60 px-4 py-3 text-left transition-all ${
+                                    className={`flex items-start gap-3 border-b border-sidebar-border/60 px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                                         isSelected
                                             ? "border-l-3 border-l-primary bg-primary/10 font-medium"
                                             : "hover:bg-muted/50"
@@ -170,11 +182,25 @@ export default function AgentPage() {
                     </div>
                 </aside>
 
-                <main className="flex min-w-0 flex-1 flex-col">
+                <main
+                    className={`${
+                        !activeId ? "hidden md:flex" : "flex"
+                    } min-w-0 flex-1 flex-col transition-all duration-200`}
+                >
                     {activeConversation ? (
                         <>
                             <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-xs px-4 py-3 sm:px-6">
                                 <div className="flex items-center gap-3">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => setActiveId(null)}
+                                        className="md:hidden -ml-2 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                                        aria-label="Retour à la file d'attente"
+                                        title="Retour à la file d'attente"
+                                    >
+                                        <ChevronLeft className="size-5" />
+                                    </Button>
                                     <Avatar className="size-9 ring-2 ring-primary/20">
                                         <AvatarImage src={activeConversation.clientAvatar || "/placeholder.svg"} />
                                         <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials(activeConversation.clientName)}</AvatarFallback>
@@ -186,7 +212,12 @@ export default function AgentPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <Button onClick={handleResolve} variant="secondary" size="sm" className="rounded-full text-xs font-medium">
+                                <Button
+                                    onClick={handleResolve}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="rounded-full text-xs font-medium focus-visible:ring-2 focus-visible:ring-primary"
+                                >
                                     <CheckIcon className="size-3.5 text-success" data-icon="inline-start" />
                                     Marquer résolu
                                 </Button>
@@ -210,7 +241,7 @@ export default function AgentPage() {
                                                 key={idx}
                                                 type="button"
                                                 onClick={() => handleSend(template)}
-                                                className="inline-flex items-center rounded-full border border-border/80 bg-card px-3 py-1 text-xs font-medium text-foreground/90 transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-95"
+                                                className="inline-flex items-center rounded-full border border-border/80 bg-card px-3 py-1 text-xs font-medium text-foreground/90 transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                             >
                                                 {template}
                                             </button>
@@ -222,10 +253,14 @@ export default function AgentPage() {
                             <MessageComposer onSend={handleSend} />
                         </>
                     ) : (
-                        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center p-6">
-                            <HeadsetIcon className="size-10 text-muted-foreground/40" />
-                            <p className="text-sm font-medium text-foreground">Aucune conversation sélectionnée</p>
-                            <p className="text-xs text-muted-foreground">Sélectionnez une demande dans la colonne de gauche pour répondre au client.</p>
+                        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center p-6">
+                            <div className="rounded-full bg-muted/60 p-4">
+                                <HeadsetIcon className="size-10 text-muted-foreground/50" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-base font-semibold text-foreground">Aucune conversation sélectionnée</p>
+                                <p className="max-w-sm text-xs text-muted-foreground">Sélectionnez une demande dans la file d'attente pour répondre au client.</p>
+                            </div>
                         </div>
                     )}
                 </main>

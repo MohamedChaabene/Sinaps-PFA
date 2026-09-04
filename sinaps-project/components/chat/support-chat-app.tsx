@@ -8,7 +8,7 @@ import { SatisfactionDialog } from "@/components/chat/satisfaction-dialog"
 import { ClientEntryForm } from "@/components/chat/client-entry-form"
 import { QuickPrompts } from "@/components/chat/quick-prompts"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import type { Conversation } from "@/lib/chat-data"
 import {
@@ -149,8 +149,9 @@ export function SupportChatApp() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Chargement...</p>
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <p className="text-sm font-medium text-muted-foreground">Initialisation du support Sinaps...</p>
       </div>
     )
   }
