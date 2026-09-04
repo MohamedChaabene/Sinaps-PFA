@@ -2,6 +2,7 @@ const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const { getAIResponse } = require('../services/geminiService');
 const { emitToConversation, emitGlobal } = require('../socket');
+const { populateConversation } = require('../utils/queryHelpers');
 
 exports.sendMessage = async (req, res) => {
   try {
@@ -15,13 +16,13 @@ exports.sendMessage = async (req, res) => {
       attachments: attachments || [],
     });
 
-    const updatedConv = await Conversation.findByIdAndUpdate(
-      conversationId,
-      { updatedAt: new Date() },
-      { returnDocument: 'after' }
-    )
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar');
+    const updatedConv = await populateConversation(
+      Conversation.findByIdAndUpdate(
+        conversationId,
+        { updatedAt: new Date() },
+        { returnDocument: 'after' }
+      )
+    );
 
     emitToConversation(conversationId, 'message_received', { message, conversation: updatedConv });
     emitGlobal('conversation_updated', updatedConv);
@@ -39,13 +40,13 @@ exports.sendMessage = async (req, res) => {
           content: aiText,
         });
 
-        const reUpdatedConv = await Conversation.findByIdAndUpdate(
-          conversationId,
-          { updatedAt: new Date() },
-          { returnDocument: 'after' }
-        )
-          .populate('client', 'name avatar email')
-          .populate('assignedAgent', 'name avatar');
+        const reUpdatedConv = await populateConversation(
+          Conversation.findByIdAndUpdate(
+            conversationId,
+            { updatedAt: new Date() },
+            { returnDocument: 'after' }
+          )
+        );
 
         emitToConversation(conversationId, 'message_received', {
           message: aiMessage,

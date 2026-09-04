@@ -2,6 +2,7 @@ const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 require('dotenv').config();
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'sinaps-super-secret-key-pfa-2026';
 const http = require('http');
 const express = require('express');
 const cors = require('cors');

@@ -3,31 +3,52 @@ const Message = require('../models/Message');
 
 exports.getStats = async (req, res) => {
   try {
-    const total = await Conversation.countDocuments();
-    const resolvedByIA = await Conversation.countDocuments({ status: 'resolu', handledBy: 'ia' });
-    const resolvedByHuman = await Conversation.countDocuments({ status: 'resolu', handledBy: 'humain' });
-
-    const satisfactionAgg = await Conversation.aggregate([
-      { $match: { 'satisfaction.rating': { $exists: true, $ne: null } } },
-      { $group: { _id: null, avg: { $avg: '$satisfaction.rating' } } },
+    const [total, resolvedByIA, resolvedByHuman, satisfactionAgg] = await Promise.all([
+      Conversation.countDocuments(),
+      Conversation.countDocuments({ status: 'resolu', handledBy: 'ia' }),
+      Conversation.countDocuments({ status: 'resolu', handledBy: 'humain' }),
+      Conversation.aggregate([
+        { $match: { 'satisfaction.rating': { $exists: true, $ne: null } } },
+        { $group: { _id: null, avg: { $avg: '$satisfaction.rating' } } },
+      ]),
     ]);
 
     // Temps de réponse moyen : délai entre le 1er message client et la 1ère réponse (IA ou humain)
-    const conversations = await Conversation.find();
+    // Optimisé en 1 seule requête globale au lieu d'une boucle N+1 séquentielle
+    const messages = await Message.find({
+      sender: { $in: ['client', 'ia', 'humain'] },
+    }).sort({ createdAt: 1 });
+
+    const conversationFirstMsgs = new Map();
+    for (const msg of messages) {
+      const convId = msg.conversation.toString();
+      if (!conversationFirstMsgs.has(convId)) {
+        conversationFirstMsgs.set(convId, { firstClient: null, firstResponse: null });
+      }
+      const state = conversationFirstMsgs.get(convId);
+      if (!state.firstClient && msg.sender === 'client') {
+        state.firstClient = msg;
+      } else if (!state.firstResponse && (msg.sender === 'ia' || msg.sender === 'humain')) {
+        state.firstResponse = msg;
+      }
+    }
+
     let totalResponseTime = 0;
     let countedConversations = 0;
 
-    for (const conv of conversations) {
-      const messages = await Message.find({ conversation: conv._id }).sort({ createdAt: 1 });
-      const firstClientMsg = messages.find((m) => m.sender === 'client');
-      const firstResponse = messages.find((m) => m.sender === 'ia' || m.sender === 'humain');
-      if (firstClientMsg && firstResponse && firstResponse.createdAt > firstClientMsg.createdAt) {
-        totalResponseTime += (firstResponse.createdAt - firstClientMsg.createdAt) / 1000;
+    for (const [, state] of conversationFirstMsgs) {
+      if (
+        state.firstClient &&
+        state.firstResponse &&
+        state.firstResponse.createdAt > state.firstClient.createdAt
+      ) {
+        totalResponseTime += (state.firstResponse.createdAt - state.firstClient.createdAt) / 1000;
         countedConversations++;
       }
     }
 
-    const avgResponseTimeSeconds = countedConversations > 0 ? Math.round(totalResponseTime / countedConversations) : 0;
+    const avgResponseTimeSeconds =
+      countedConversations > 0 ? Math.round(totalResponseTime / countedConversations) : 0;
 
     res.json({
       total,

@@ -18,28 +18,39 @@ async function getAIResponse(userMessage) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const candidateModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest'];
 
     // Format retrieved knowledge snippets into context
     const contextText = retrievedDocs.length > 0
       ? retrievedDocs.map((doc) => `[Savoir Pertinent]: Q: ${doc.question} => R: ${doc.answer}`).join('\n')
-      : 'Aucun document pertinent trouvé dans la base de connaissances.';
+      : 'Aucun document spécifique trouvé dans la base de connaissances.';
 
-    const prompt = `Tu es un agent de support client IA pour la plateforme Sinaps.
-Rôle: Répondre de manière claire, concise et amicale en français.
+    const prompt = `Tu es l'agent d'assistance client IA de la plateforme Sinaps.
+Ton rôle: Répondre de manière chaleureuse, naturelle, serviable et professionnelle en français.
 
-[RAG CONTEXT RETRIEVED]:
+[BASE DE CONNAISSANCES SINAPS (RAG)]:
 ${contextText}
 
-Question de l'utilisateur: "${userMessage}"
+Message de l'utilisateur: "${userMessage}"
 
-Consignes:
-- Base-toi prioritairement sur le savoir pertinent extrait ci-dessus.
-- Si le savoir extrait permet de répondre, réponds clairement en 2-3 phrases maximum avec emojis.
-- Si aucun savoir pertinent n'est extrait ou suffisant, informe l'utilisateur poliment et propose-lui d'escalader vers un agent humain.`;
+Consignes pour ta réponse:
+- Si l'utilisateur salue simplement (ex: "Bonjour", "Salut"), salue-le cordialement, présente-toi brièvement comme l'assistant IA de Sinaps et demande-lui comment tu peux l'aider aujourd'hui avec un emoji amical 😊.
+- Si le savoir pertinent ci-dessus contient la réponse exacte à sa question (commandes, retours, remboursements, mots de passe, facturation), utilise-le pour lui expliquer clairement la démarche en 2 à 3 phrases avec des emojis.
+- Si l'utilisateur pose une question générale sur les services ou souhaite discuter, réponds-lui poliment, intelligemment et naturellement.
+- Si sa demande nécessite une intervention manuelle sur son compte ou si tu ne connais pas la réponse, explique-lui gentiment et propose-lui de cliquer sur "Basculer vers un agent humain" en haut à droite pour parler à un opérateur.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    let text = null;
+    for (const modelName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        text = result.response.text();
+        if (text) break;
+      } catch (mErr) {
+        console.warn(`Model ${modelName} call failed:`, mErr.message);
+      }
+    }
+
     if (text) return text;
 
     if (retrievedDocs.length > 0) {

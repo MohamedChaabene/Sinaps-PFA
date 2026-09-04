@@ -41,7 +41,7 @@ exports.signupAgent = async (req, res) => {
 
 exports.getAgents = async (req, res) => {
   try {
-    const agents = await Agent.find();
+    const agents = await Agent.find().select('-password');
     res.json(agents);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -50,7 +50,11 @@ exports.getAgents = async (req, res) => {
 
 exports.approveAgent = async (req, res) => {
   try {
-    const agent = await Agent.findByIdAndUpdate(req.params.id, { status: 'approved' }, { returnDocument: 'after' });
+    const agent = await Agent.findByIdAndUpdate(
+      req.params.id,
+      { status: 'approved' },
+      { returnDocument: 'after' }
+    ).select('-password');
     res.json(agent);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,12 +1,12 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { LogOutIcon } from "lucide-react"
+import { LogOutIcon, HeadsetIcon, CheckIcon, Zap } from "lucide-react"
 import { logout } from "@/components/auth-guard"
 import * as React from "react"
-import { HeadsetIcon, CheckIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { StatusBadge } from "@/components/chat/status-badge"
 import { ChatThread } from "@/components/chat/chat-thread"
 import { MessageComposer } from "@/components/chat/message-composer"
@@ -118,63 +118,114 @@ export default function AgentPage() {
     return (
         <AuthGuard requiredRole="agent">
             <div className="flex h-screen w-full overflow-hidden bg-background">
-                <aside className="w-72 shrink-0 border-r border-sidebar-border">
-                    <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-4">
+                <aside className="w-80 shrink-0 border-r border-sidebar-border bg-sidebar/50 flex flex-col">
+                    <div className="flex items-center gap-2 border-b border-sidebar-border px-4 py-3.5 bg-card/60">
                         <HeadsetIcon className="size-5 text-primary" />
-                        <span className="font-heading text-sm font-bold">File d'attente agent</span>
-                        <Button variant="ghost" size="icon-sm" onClick={() => logout(router)} className="ml-auto" aria-label="Déconnexion">
+                        <span className="font-heading text-sm font-bold">File d'attente</span>
+                        {conversations.length > 0 && (
+                            <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary text-xs font-semibold px-2">
+                                {conversations.length}
+                            </Badge>
+                        )}
+                        <Button variant="ghost" size="icon-sm" onClick={() => logout(router)} className="ml-auto rounded-full text-muted-foreground hover:text-destructive" aria-label="Déconnexion" title="Se déconnecter">
                             <LogOutIcon className="size-4" />
                         </Button>
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col flex-1 overflow-y-auto">
                         {conversations.length === 0 && (
-                            <p className="p-4 text-sm text-muted-foreground">Aucune conversation en attente 🎉</p>
+                            <div className="p-6 text-center text-sm text-muted-foreground space-y-1">
+                                <p className="text-2xl">🎉</p>
+                                <p className="font-medium">File d'attente vide</p>
+                                <p className="text-xs">Toutes les demandes clients sont traitées !</p>
+                            </div>
                         )}
-                        {conversations.map((c) => (
-                            <button
-                                key={c.id}
-                                onClick={() => handleSelect(c.id)}
-                                className={`flex items-center gap-3 border-b border-sidebar-border px-4 py-3 text-left hover:bg-muted ${c.id === activeId ? "bg-muted" : ""
+                        {conversations.map((c) => {
+                            const isSelected = c.id === activeId
+                            return (
+                                <button
+                                    key={c.id}
+                                    onClick={() => handleSelect(c.id)}
+                                    className={`flex items-start gap-3 border-b border-sidebar-border/60 px-4 py-3 text-left transition-all ${
+                                        isSelected
+                                            ? "border-l-3 border-l-primary bg-primary/10 font-medium"
+                                            : "hover:bg-muted/50"
                                     }`}
-                            >
-                                <Avatar className="size-8">
-                                    <AvatarImage src={c.clientAvatar || "/placeholder.svg"} />
-                                    <AvatarFallback>{initials(c.clientName)}</AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                    <p className="truncate text-sm font-medium">{c.clientName}</p>
-                                    <p className="truncate text-xs text-muted-foreground">{c.lastMessage}</p>
-                                </div>
-                            </button>
-                        ))}
+                                >
+                                    <Avatar className="size-8.5 shrink-0 ring-1 ring-primary/20">
+                                        <AvatarImage src={c.clientAvatar || "/placeholder.svg"} />
+                                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                            {initials(c.clientName)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-1">
+                                            <p className="truncate text-xs font-semibold text-foreground">{c.clientName}</p>
+                                            <StatusBadge status={c.status} />
+                                        </div>
+                                        <p className="truncate text-xs text-muted-foreground mt-0.5">{c.lastMessage || "Nouveau message client..."}</p>
+                                    </div>
+                                </button>
+                            )
+                        })}
                     </div>
                 </aside>
 
                 <main className="flex min-w-0 flex-1 flex-col">
                     {activeConversation ? (
                         <>
-                            <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 sm:px-6">
+                            <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-xs px-4 py-3 sm:px-6">
                                 <div className="flex items-center gap-3">
-                                    <Avatar className="size-9">
+                                    <Avatar className="size-9 ring-2 ring-primary/20">
                                         <AvatarImage src={activeConversation.clientAvatar || "/placeholder.svg"} />
-                                        <AvatarFallback>{initials(activeConversation.clientName)}</AvatarFallback>
+                                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials(activeConversation.clientName)}</AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <p className="font-heading text-sm font-bold">{activeConversation.clientName}</p>
-                                        <StatusBadge status={activeConversation.status} />
+                                        <div className="mt-0.5">
+                                            <StatusBadge status={activeConversation.status} />
+                                        </div>
                                     </div>
                                 </div>
-                                <Button onClick={handleResolve} variant="secondary" size="sm" className="rounded-full">
-                                    <CheckIcon data-icon="inline-start" />
+                                <Button onClick={handleResolve} variant="secondary" size="sm" className="rounded-full text-xs font-medium">
+                                    <CheckIcon className="size-3.5 text-success" data-icon="inline-start" />
                                     Marquer résolu
                                 </Button>
                             </div>
                             <ChatThread conversation={activeConversation} />
+
+                            {/* Canned Responses for Agent */}
+                            <div className="border-t border-border/60 bg-muted/30 px-4 py-2 sm:px-6">
+                                <div className="flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
+                                    <div className="flex items-center gap-1 font-medium text-muted-foreground shrink-0">
+                                        <Zap className="size-3.5 text-amber-500" />
+                                        <span>Réponses types :</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        {[
+                                            "Bonjour, je prends en charge votre demande !",
+                                            "J'ai bien vérifié votre dossier, tout est en ordre.",
+                                            "Votre demande est résolue, merci pour votre confiance !",
+                                        ].map((template, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => handleSend(template)}
+                                                className="inline-flex items-center rounded-full border border-border/80 bg-card px-3 py-1 text-xs font-medium text-foreground/90 transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-95"
+                                            >
+                                                {template}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
                             <MessageComposer onSend={handleSend} />
                         </>
                     ) : (
-                        <div className="flex flex-1 items-center justify-center">
-                            <p className="text-sm text-muted-foreground">Sélectionnez une conversation à gauche.</p>
+                        <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center p-6">
+                            <HeadsetIcon className="size-10 text-muted-foreground/40" />
+                            <p className="text-sm font-medium text-foreground">Aucune conversation sélectionnée</p>
+                            <p className="text-xs text-muted-foreground">Sélectionnez une demande dans la colonne de gauche pour répondre au client.</p>
                         </div>
                     )}
                 </main>

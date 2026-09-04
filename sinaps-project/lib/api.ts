@@ -1,6 +1,8 @@
+import type { Agent, Stats, Conversation, ChatMessage, ClientSession } from "./types"
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 
-async function parseOrThrow(res: Response) {
+async function parseOrThrow<T = any>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     throw new Error(data?.error || `Erreur ${res.status}`)
@@ -14,11 +16,7 @@ export async function loginAgent(email: string, password: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   })
-  if (!res.ok) {
-    const err = await res.json()
-    throw new Error(err.error || "Erreur de connexion")
-  }
-  return res.json()
+  return parseOrThrow(res)
 }
 
 export function getAuthHeaders(): Record<string, string> {
@@ -60,18 +58,28 @@ export function getClientAuthHeaders(): Record<string, string> {
   return session ? { Authorization: `Bearer ${session.token}` } : {}
 }
 
-// A few routes (GET conversation, close conversation) are used by both the
-// client chat and the agent inbox. Prefer an agent token when one is present
-// (agent browsing), otherwise fall back to the client's own token.
+// A few routes (GET conversation, upload, close conversation) are shared by
+// both the client chat and the agent inbox. Route the right token based on the
+// current page context so a stale agent token never interferes with client chat.
 export function getAnyAuthHeaders(): Record<string, string> {
+  if (typeof window !== "undefined") {
+    if (window.location.pathname.startsWith("/agent") || window.location.pathname.startsWith("/admin")) {
+      const agentHeaders = getAuthHeaders()
+      if (agentHeaders.Authorization) return agentHeaders
+    }
+  }
+  const clientHeaders = getClientAuthHeaders()
+  if (clientHeaders.Authorization) return clientHeaders
+
   const agentHeaders = getAuthHeaders()
   if (agentHeaders.Authorization) return agentHeaders
-  return getClientAuthHeaders()
+
+  return {}
 }
 
-export async function fetchConversations() {
+export async function fetchConversations(): Promise<any[]> {
   const res = await fetch(`${API_URL}/conversations`, { headers: getAuthHeaders() })
-  return res.json()
+  return parseOrThrow<any[]>(res)
 }
 
 export async function fetchConversationById(id: string) {
@@ -135,7 +143,7 @@ export function mapBackendMessage(msg: any) {
   }
 }
 
-export function mapBackendConversation(conv: any, messages: any[] = []) {
+export function mapBackendConversation(conv: any, messages: any[] = []): Conversation {
   return {
     id: conv._id,
     clientName: conv.client?.name || "Client",
@@ -143,6 +151,7 @@ export function mapBackendConversation(conv: any, messages: any[] = []) {
     lastMessage: messages.length ? messages[messages.length - 1].content : "",
     unreadCount: 0,
     status: conv.status,
+    handledBy: conv.handledBy || "ia",
     messages: messages.map(mapBackendMessage),
   }
 }
@@ -153,33 +162,33 @@ export async function signupAgent(name: string, email: string, password: string,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password, skills }),
   })
-  return res.json()
+  return parseOrThrow(res)
 }
 
-export async function fetchAgents() {
+export async function fetchAgents(): Promise<any[]> {
   const res = await fetch(`${API_URL}/agents`, { headers: getAuthHeaders() })
-  return res.json()
+  return parseOrThrow<any[]>(res)
 }
 
-export async function approveAgent(id: string) {
+export async function approveAgent(id: string): Promise<any> {
   const res = await fetch(`${API_URL}/agents/${id}/approve`, {
     method: "PATCH",
     headers: getAuthHeaders(),
   })
-  return res.json()
+  return parseOrThrow(res)
 }
 
-export async function rejectAgent(id: string) {
+export async function rejectAgent(id: string): Promise<any> {
   const res = await fetch(`${API_URL}/agents/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   })
-  return res.json()
+  return parseOrThrow(res)
 }
 
-export async function fetchStats() {
+export async function fetchStats(): Promise<Stats> {
   const res = await fetch(`${API_URL}/stats`, { headers: getAuthHeaders() })
-  return res.json()
+  return parseOrThrow<Stats>(res)
 }
 
 // Returns { user, token }. `token` is a client-scoped JWT that must be sent
@@ -202,10 +211,10 @@ export async function findOrCreateConversation() {
   return parseOrThrow(res)
 }
 
-export async function fetchConversationsFiltered(status?: string, search?: string) {
+export async function fetchConversationsFiltered(status?: string, search?: string): Promise<any[]> {
   const params = new URLSearchParams()
   if (status) params.set("status", status)
   if (search) params.set("search", search)
   const res = await fetch(`${API_URL}/conversations?${params.toString()}`, { headers: getAuthHeaders() })
-  return res.json()
+  return parseOrThrow<any[]>(res)
 }

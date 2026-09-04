@@ -1,15 +1,14 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const { emitToConversation, emitGlobal } = require('../socket');
+const { populateConversation } = require('../utils/queryHelpers');
 
 // Créer une nouvelle conversation
 exports.createConversation = async (req, res) => {
   try {
     const { clientId } = req.body;
     const conversation = await Conversation.create({ client: clientId });
-    const populated = await Conversation.findById(conversation._id)
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar');
+    const populated = await populateConversation(Conversation.findById(conversation._id));
 
     emitGlobal('conversation_created', populated);
     res.status(201).json(populated);
@@ -25,10 +24,7 @@ exports.getConversations = async (req, res) => {
     const filter = {};
     if (status) filter.status = status;
 
-    let query = Conversation.find(filter)
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar')
-      .sort({ updatedAt: -1 });
+    let query = populateConversation(Conversation.find(filter)).sort({ updatedAt: -1 });
 
     let conversations = await query;
 
@@ -50,9 +46,7 @@ exports.getConversations = async (req, res) => {
 // Récupérer une conversation avec ses messages
 exports.getConversationById = async (req, res) => {
   try {
-    const conversation = await Conversation.findById(req.params.id)
-      .populate('client', 'name avatar')
-      .populate('assignedAgent', 'name avatar');
+    const conversation = await populateConversation(Conversation.findById(req.params.id));
     const messages = await Message.find({ conversation: req.params.id }).sort({ createdAt: 1 });
     res.json({ conversation, messages });
   } catch (error) {
@@ -63,13 +57,13 @@ exports.getConversationById = async (req, res) => {
 // Basculer vers un agent humain
 exports.escalateConversation = async (req, res) => {
   try {
-    const conversation = await Conversation.findByIdAndUpdate(
-      req.params.id,
-      { handledBy: 'humain', status: 'en_attente' },
-      { returnDocument: 'after' }
-    )
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar');
+    const conversation = await populateConversation(
+      Conversation.findByIdAndUpdate(
+        req.params.id,
+        { handledBy: 'humain', status: 'en_attente' },
+        { returnDocument: 'after' }
+      )
+    );
 
     emitToConversation(req.params.id, 'conversation_updated', conversation);
     emitGlobal('conversation_updated', conversation);
@@ -84,17 +78,17 @@ exports.escalateConversation = async (req, res) => {
 exports.assignAgent = async (req, res) => {
   try {
     const { agentId } = req.body;
-    const conversation = await Conversation.findByIdAndUpdate(
-      req.params.id,
-      {
-        assignedAgent: agentId,
-        handledBy: 'humain',
-        status: 'en_cours',
-      },
-      { returnDocument: 'after' }
-    )
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar');
+    const conversation = await populateConversation(
+      Conversation.findByIdAndUpdate(
+        req.params.id,
+        {
+          assignedAgent: agentId,
+          handledBy: 'humain',
+          status: 'en_cours',
+        },
+        { returnDocument: 'after' }
+      )
+    );
 
     emitToConversation(req.params.id, 'conversation_updated', conversation);
     emitGlobal('conversation_updated', conversation);
@@ -111,21 +105,18 @@ exports.closeConversation = async (req, res) => {
     const { rating, comment } = req.body;
     const update = { status: 'resolu' };
 
-    // Une note n'est valide que si le client a réellement choisi 1 à 5 étoiles.
-    // Une clôture sans note (ex: résolution rapide côté agent) ne doit pas
-    // enregistrer satisfaction.rating = 0, sinon ça fausse la moyenne affichée à l'admin.
     const numericRating = Number(rating);
     if (Number.isInteger(numericRating) && numericRating >= 1 && numericRating <= 5) {
       update.satisfaction = { rating: numericRating, comment: comment || '' };
     }
 
-    const conversation = await Conversation.findByIdAndUpdate(
-      req.params.id,
-      update,
-      { returnDocument: 'after', runValidators: true }
-    )
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar');
+    const conversation = await populateConversation(
+      Conversation.findByIdAndUpdate(
+        req.params.id,
+        update,
+        { returnDocument: 'after', runValidators: true }
+      )
+    );
 
     emitToConversation(req.params.id, 'conversation_updated', conversation);
     emitGlobal('conversation_updated', conversation);
@@ -139,19 +130,16 @@ exports.closeConversation = async (req, res) => {
 exports.findOrCreateConversation = async (req, res) => {
   try {
     const clientId = req.client.id;
-    let conversation = await Conversation.findOne({
-      client: clientId,
-      status: { $ne: 'resolu' },
-    })
-      .sort({ createdAt: -1 })
-      .populate('client', 'name avatar email')
-      .populate('assignedAgent', 'name avatar');
+    let conversation = await populateConversation(
+      Conversation.findOne({
+        client: clientId,
+        status: { $ne: 'resolu' },
+      }).sort({ createdAt: -1 })
+    );
 
     if (!conversation) {
       conversation = await Conversation.create({ client: clientId });
-      conversation = await Conversation.findById(conversation._id)
-        .populate('client', 'name avatar email')
-        .populate('assignedAgent', 'name avatar');
+      conversation = await populateConversation(Conversation.findById(conversation._id));
 
       emitGlobal('conversation_created', conversation);
     }

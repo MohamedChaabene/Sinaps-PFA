@@ -8,7 +8,22 @@ import { LogOut } from "lucide-react"
 import { logout } from "@/components/auth-guard"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { BarChart3, Check, ChevronDown, ClipboardList, LayoutDashboard, Menu, ShieldCheck, Users, X } from "lucide-react"
+import {
+  BarChart3,
+  Check,
+  ChevronDown,
+  ClipboardList,
+  LayoutDashboard,
+  Menu,
+  ShieldCheck,
+  Users,
+  X,
+  MessageSquare,
+  Bot,
+  UserCheck,
+  Star,
+  Clock,
+} from "lucide-react"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -17,9 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { fetchAgents, approveAgent, rejectAgent, fetchStats } from "@/lib/api"
-
-type Agent = { id: string; name: string; email: string; initials: string; skills: string[]; conversations: number; avatar: string }
-type Stats = { total: number; resolvedByIA: number; resolvedByHuman: number; avgSatisfaction: string; avgResponseTimeSeconds: number }
+import type { Agent, Stats } from "@/lib/types"
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
@@ -211,6 +224,56 @@ function AdminContent({ pending, approved, approve, reject, stats }: { pending: 
     human: Math.round((stats.resolvedByHuman / stats.total) * 100),
   } : { ia: 0, human: 0 }
 
-  return <main className="min-w-0 flex-1 px-4 py-7 sm:px-8 lg:px-12 lg:py-10"><div className="mx-auto flex max-w-7xl flex-col gap-8"><div className="flex flex-col gap-1"><p className="text-sm font-semibold text-primary">Centre de contrôle</p><h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">Vue d&apos;ensemble</h1><p className="text-sm leading-6 text-muted-foreground">Suivez votre équipe et gardez un œil sur la qualité du support.</p></div><section id="stats" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><Stat title="Total conversations" value={String(stats?.total ?? 0)} detail="" /><Stat title="Résolu par IA" value={`${resolvedPct.ia} %`} detail="" /><Stat title="Résolu par agent" value={`${resolvedPct.human} %`} detail="" /><Stat title="Satisfaction moyenne" value={`${stats?.avgSatisfaction ?? 0} / 5`} detail="" /><Stat title="Temps de réponse moyen" value={formatDuration(stats?.avgResponseTimeSeconds ?? 0)} detail="" /></section><section id="agents" className="flex flex-col gap-4"><div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="font-heading text-2xl font-bold">Agents en attente de validation</h2><p className="text-sm leading-6 text-muted-foreground">Examinez les nouveaux profils avant leur activation.</p></div><Badge variant="outline" className="w-fit">{pending.length} en attente</Badge></div><Card><CardContent className="p-0">{pending.length ? <div className="divide-y">{pending.map((agent) => <div key={agent.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between"><div className="flex items-center gap-3"><AgentAvatar agent={agent} /><div className="min-w-0"><p className="truncate font-semibold">{agent.name}</p><p className="truncate text-sm text-muted-foreground">{agent.email}</p></div></div><SkillBadges skills={agent.skills} /><div className="flex gap-2"><Button size="sm" onClick={() => approve(agent)}><Check data-icon="inline-start" />Valider</Button><Button size="sm" variant="outline" onClick={() => reject(agent)}><X data-icon="inline-start" />Rejeter</Button></div></div>)}</div> : <div className="flex flex-col items-center gap-2 p-10 text-center"><ClipboardList className="size-8 text-muted-foreground" /><p className="font-semibold">Tout est à jour</p><p className="text-sm text-muted-foreground">Aucun agent en attente de validation.</p></div>}</CardContent></Card></section><section id="overview" className="flex flex-col gap-4"><div><h2 className="font-heading text-2xl font-bold">Agents validés</h2><p className="text-sm leading-6 text-muted-foreground">Les membres actifs de votre équipe support.</p></div><Card><CardContent className="overflow-x-auto p-0"><Table><TableHeader><TableRow><TableHead>Agent</TableHead><TableHead>Compétences</TableHead><TableHead>Conversations</TableHead><TableHead>Statut</TableHead></TableRow></TableHeader><TableBody>{approved.map((agent) => <TableRow key={agent.id}><TableCell><div className="flex items-center gap-3"><AgentAvatar agent={agent} /><div><p className="font-semibold">{agent.name}</p><p className="text-xs text-muted-foreground">{agent.email}</p></div></div></TableCell><TableCell><SkillBadges skills={agent.skills} /></TableCell><TableCell className="font-semibold">{agent.conversations}</TableCell><TableCell><Badge className="bg-success text-success-foreground hover:bg-success">Actif</Badge></TableCell></TableRow>)}</TableBody></Table></CardContent></Card></section><ConversationHistory /></div></main>
+  return <main className="min-w-0 flex-1 px-4 py-7 sm:px-8 lg:px-12 lg:py-10"><div className="mx-auto flex max-w-7xl flex-col gap-8"><div className="flex flex-col gap-1"><p className="text-sm font-semibold text-primary">Centre de contrôle</p><h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">Vue d&apos;ensemble</h1><p className="text-sm leading-6 text-muted-foreground">Suivez votre équipe et gardez un œil sur la qualité du support.</p></div><section id="stats" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><EnhancedStatCard title="Total conversations" value={String(stats?.total ?? 0)} icon={MessageSquare} subtitle="Tickets enregistrés" color="primary" /><EnhancedStatCard title="Résolu par IA" value={`${resolvedPct.ia} %`} icon={Bot} progress={resolvedPct.ia} subtitle="Autonome (RAG + Gemini)" color="violet" /><EnhancedStatCard title="Résolu par agent" value={`${resolvedPct.human} %`} icon={UserCheck} progress={resolvedPct.human} subtitle="Escalade humaine" color="blue" /><EnhancedStatCard title="Satisfaction client" value={`${stats?.avgSatisfaction ?? 0} / 5`} icon={Star} progress={(Number(stats?.avgSatisfaction ?? 0) / 5) * 100} subtitle="Moyenne des avis" color="amber" /><EnhancedStatCard title="Temps de réponse" value={formatDuration(stats?.avgResponseTimeSeconds ?? 0)} icon={Clock} subtitle="Délai moyen SLA" color="emerald" /></section><section id="agents" className="flex flex-col gap-4"><div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="font-heading text-2xl font-bold">Agents en attente de validation</h2><p className="text-sm leading-6 text-muted-foreground">Examinez les nouveaux profils avant leur activation.</p></div><Badge variant="outline" className="w-fit">{pending.length} en attente</Badge></div><Card><CardContent className="p-0">{pending.length ? <div className="divide-y">{pending.map((agent) => <div key={agent.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between"><div className="flex items-center gap-3"><AgentAvatar agent={agent} /><div className="min-w-0"><p className="truncate font-semibold">{agent.name}</p><p className="truncate text-sm text-muted-foreground">{agent.email}</p></div></div><SkillBadges skills={agent.skills} /><div className="flex gap-2"><Button size="sm" onClick={() => approve(agent)}><Check data-icon="inline-start" />Valider</Button><Button size="sm" variant="outline" onClick={() => reject(agent)}><X data-icon="inline-start" />Rejeter</Button></div></div>)}</div> : <div className="flex flex-col items-center gap-2 p-10 text-center"><ClipboardList className="size-8 text-muted-foreground" /><p className="font-semibold">Tout est à jour</p><p className="text-sm text-muted-foreground">Aucun agent en attente de validation.</p></div>}</CardContent></Card></section><section id="overview" className="flex flex-col gap-4"><div><h2 className="font-heading text-2xl font-bold">Agents validés</h2><p className="text-sm leading-6 text-muted-foreground">Les membres actifs de votre équipe support.</p></div><Card><CardContent className="overflow-x-auto p-0"><Table><TableHeader><TableRow><TableHead>Agent</TableHead><TableHead>Compétences</TableHead><TableHead>Conversations</TableHead><TableHead>Statut</TableHead></TableRow></TableHeader><TableBody>{approved.map((agent) => <TableRow key={agent.id}><TableCell><div className="flex items-center gap-3"><AgentAvatar agent={agent} /><div><p className="font-semibold">{agent.name}</p><p className="text-xs text-muted-foreground">{agent.email}</p></div></div></TableCell><TableCell><SkillBadges skills={agent.skills} /></TableCell><TableCell className="font-semibold">{agent.conversations}</TableCell><TableCell><Badge className="bg-success text-success-foreground hover:bg-success">Actif</Badge></TableCell></TableRow>)}</TableBody></Table></CardContent></Card></section><ConversationHistory /></div></main>
 }
-function Stat({ title, value, detail }: { title: string; value: string; detail: string }) { return <Card><CardHeader className="flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle><ChevronDown className="size-4 rotate-[-45deg] text-primary" /></CardHeader><CardContent><p className="font-heading text-3xl font-bold">{value}</p>{detail && <p className="mt-2 text-xs text-success">{detail}</p>}</CardContent></Card> }
+
+function EnhancedStatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  progress,
+  color = "primary",
+}: {
+  title: string
+  value: string
+  subtitle?: string
+  icon: any
+  progress?: number
+  color?: "primary" | "emerald" | "violet" | "amber" | "blue"
+}) {
+  const colorMap = {
+    primary: "text-primary bg-primary/10",
+    emerald: "text-emerald-500 bg-emerald-500/10",
+    violet: "text-purple-500 bg-purple-500/10",
+    amber: "text-amber-500 bg-amber-500/10",
+    blue: "text-blue-500 bg-blue-500/10",
+  }
+
+  return (
+    <Card className="relative overflow-hidden transition-all hover:shadow-md hover:border-primary/30">
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
+        <div className={`flex size-8 items-center justify-center rounded-xl ${colorMap[color]}`}>
+          <Icon className="size-4" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="font-heading text-2xl font-extrabold tracking-tight text-foreground">{value}</p>
+        {progress !== undefined ? (
+          <div className="space-y-1">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              />
+            </div>
+            {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+          </div>
+        ) : (
+          subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
