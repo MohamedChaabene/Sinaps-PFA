@@ -1,0 +1,24 @@
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Ce rapport présente le travail réalisé dans le cadre du Projet de Fin d'Année (PFA) de 2\textsuperscript{e} année du cycle ingénieur en Génie Logiciel à l'ISIMS de Sfax. Le stage, effectué à distance au sein de \textbf{SINAPS} (Solutions Innovations For Networks, Applications \& Portable Systems) du 22~juin au 6~septembre~2026, a consisté à concevoir et développer \textbf{Op Support IA}, une application web de support client assisté par un agent d'intelligence artificielle.
+
+Le système permet à un client d'ouvrir une conversation, d'obtenir une réponse automatique fondée sur une base de connaissances (approche RAG) et, si besoin, de basculer vers un agent humain en temps réel. Un espace agent gère la file d'attente des demandes escaladées ; un espace administrateur valide les comptes, consulte l'historique et affiche des indicateurs (volume, résolution IA ou humaine, satisfaction, délai de réponse).
+
+La solution est organisée en deux applications : un frontend \textbf{Next.js} (React, TypeScript) et un backend \textbf{Node.js / Express}, avec persistance \textbf{MongoDB}, authentification JWT et Google, génération de réponses via \textbf{Gemini} et un retriever local TF-IDF / similarité cosinus. Des tests automatisés (Jest, Supertest) couvrent l'API, l'authentification, le téléversement et le retriever.
+
+\vspace{8pt}
+\noindent\textbf{Mots-clés :} support client, agent IA, RAG, Next.js, Express, MongoDB, Socket.io, JWT, PFA.
+
+\vspace{1.4cm}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This report describes a second-year software engineering internship project (PFA) at ISIMS Sfax. The remote internship at \textbf{SINAPS} ran from 22~June to 6~September~2026. The resulting system, \textbf{Op Support IA}, is a web application for AI-assisted customer support.
+
+A client can start a conversation, receive an automatic answer grounded in a knowledge base (RAG), and escalate to a human agent when needed. Support agents handle the escalated queue; administrators approve accounts and inspect history and SLA-oriented statistics.
+
+The implementation uses a \textbf{Next.js} frontend and a \textbf{Node.js / Express} backend, with \textbf{MongoDB}, JWT and Google authentication, \textbf{Gemini} plus a local TF-IDF/cosine retriever, and automated tests with Jest and Supertest.
+
+\vspace{8pt}
+\noindent\textbf{Keywords:} customer support, AI agent, RAG, Next.js, Express, MongoDB, Socket.io, JWT.

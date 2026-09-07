@@ -1,0 +1,315 @@
+\chapter{Conception du système}
+
+Ce chapitre traduit les besoins du chapitre~2 en vues d'architecture, de données et de comportement. Les diagrammes correspondent au \textbf{système implémenté}, pas à la stack maximale listée dans le document de sujet (Python, PostgreSQL, React Native, Kafka, etc.).
+
+\section{Architecture générale}
+
+Le système est une architecture \textbf{à deux applications} communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw=sinapsbleu, rounded corners=3pt, align=center, inner sep=7pt, fill=white, drop shadow},
+  title/.style={font=\bfseries\small\color{sinapsbleu}}
+]
+\node[box, fill=sinapsbleu!8, minimum width=4.2cm] (fe) {\textbf{Frontend}\\ Next.js 16 / React 19\\ TypeScript, Tailwind\\ \texttt{:3000}};
+\node[box, fill=sinapsbleu!8, minimum width=4.6cm, right=1.3cm of fe] (be) {\textbf{Backend}\\ Node.js / Express 5\\ Socket.io, JWT, Multer\\ \texttt{:5000}};
+\node[box, fill=grisclair, minimum width=3.6cm, below=1.15cm of be] (db) {\textbf{MongoDB Atlas}\\ User, Agent,\\ Conversation, Message};
+\node[box, fill=grisclair, minimum width=3.6cm, left=1.1cm of db] (ai) {\textbf{IA}\\ Retriever TF-IDF\\ + API Gemini};
+\node[box, fill=grisclair, minimum width=3.4cm, right=1.1cm of db] (ext) {\textbf{Externes}\\ Google OAuth\\ fichiers \texttt{/uploads}};
+
+\draw[-{Latex}] (fe) -- node[above, font=\scriptsize]{REST JSON} (be);
+\draw[-{Latex}] (be) -- node[above, font=\scriptsize]{Socket.io} (fe);
+\draw[-{Latex}] (be) -- (db);
+\draw[-{Latex}] (be) -- (ai);
+\draw[-{Latex}] (be) -- (ext);
+\end{tikzpicture}
+\caption{Architecture logique d'Op Support IA (vue déployable en local)}
+\label{fig:archi}
+\end{figure}
+
+Les flux principaux sont :
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item le navigateur charge l'UI Next.js (routes App Router) ;
+  \item les appels métier passent par \texttt{/api/...} sur Express ;
+  \item après un message client, si la conversation est en mode IA, le backend appelle le retriever puis Gemini (ou le repli) et enregistre un message \texttt{ia} ;
+  \item Socket.io notifie la salle \texttt{conversation\_<id>} et, pour les listes, un événement global ;
+  \item les fichiers sont stockés sur disque sous \texttt{uploads/} et servis en statique.
+\end{enumerate}
+
+Cette vue correspond à la figure \og Clients / Frontend / Backend / Agent IA / Base / Admin \fg{} du sujet, avec des choix figés : \textbf{pas} de React Native, \textbf{pas} de Python, \textbf{MongoDB} (et non PostgreSQL), \textbf{Gemini} (et non OpenAI / LangChain).
+
+\section{Diagramme de cas d'utilisation}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\footnotesize,
+  actor/.style={align=center},
+  uc/.style={draw, ellipse, minimum width=2.9cm, minimum height=0.85cm, align=center, inner sep=1pt},
+  sys/.style={draw=sinapsbleu, thick, dashed, inner sep=12pt, rounded corners}
+]
+\node[actor] (c) at (0,0) {\textbf{Client}};
+\node[actor] (a) at (0,-5.2) {\textbf{Agent}};
+\node[actor] (ad) at (11.2,-2.4) {\textbf{Admin}};
+
+\node[uc] (u1) at (4.6,1.6) {S'identifier};
+\node[uc] (u2) at (4.6,0.5) {Discuter (IA)};
+\node[uc] (u3) at (4.6,-0.6) {Joindre un fichier};
+\node[uc] (u4) at (4.6,-1.7) {Escalader / revenir IA};
+\node[uc] (u5) at (4.6,-2.8) {Clôturer + noter};
+
+\node[uc] (u6) at (4.6,-4.2) {Se connecter};
+\node[uc] (u7) at (4.6,-5.3) {Répondre (humain)};
+\node[uc] (u8) at (4.6,-6.4) {Prendre une conversation};
+
+\node[uc] (u9) at (8.6,-0.4) {Valider / rejeter agent};
+\node[uc] (u10) at (8.6,-1.6) {Voir les statistiques};
+\node[uc] (u11) at (8.6,-2.8) {Filtrer l'historique};
+\node[uc] (u12) at (8.6,-4.2) {S'inscrire (pending)};
+
+\node[sys, fit=(u1)(u2)(u3)(u4)(u5)(u6)(u7)(u8)(u9)(u10)(u11)(u12)] (sys) {};
+\node[above] at (sys.north) {\textbf{Op Support IA}};
+
+\draw (c) -- (u1);
+\draw (c) -- (u2);
+\draw (c) -- (u3);
+\draw (c) -- (u4);
+\draw (c) -- (u5);
+\draw (a) -- (u6);
+\draw (a) -- (u7);
+\draw (a) -- (u8);
+\draw (a) -- (u3);
+\draw (ad) -- (u9);
+\draw (ad) -- (u10);
+\draw (ad) -- (u11);
+\draw (a) -- (u12);
+\end{tikzpicture}%
+}
+\caption{Cas d'utilisation principaux}
+\label{fig:cu}
+\end{figure}
+
+\todofig{Figure complémentaire (optionnelle) : reprendre ce diagramme dans un outil UML (StarUML, PlantUML) pour une version plus lisible en impression A4.}
+
+\section{Description des cas d'utilisation principaux}
+
+\subsection{CU01 --- S'identifier (client)}
+
+Le client fournit un \textbf{jeton Google} (vérifié avec \texttt{GOOGLE\_CLIENT\_ID}) ou un couple nom / e-mail. Le serveur trouve ou crée un \texttt{User} et délivre un JWT de rôle \texttt{client} (durée 30~jours). Une conversation non résolue est réutilisée, sinon une nouvelle conversation est créée (\texttt{handledBy = ia}, \texttt{status = en\_cours}).
+
+\subsection{CU02 --- Envoyer un message}
+
+Précondition : session client et conversation ouverte. Le message est persisté. Si \texttt{handledBy = ia}, le service IA produit une réponse enregistrée comme message \texttt{ia}. Les deux messages sont émis sur Socket.io.
+
+\subsection{CU03 --- Escalader}
+
+Le client (ou un profil autorisé sur la conversation) passe \texttt{handledBy} à \texttt{humain} et \texttt{status} à \texttt{en\_attente}. Les agents voient le fil dans la file.
+
+\subsection{CU04 --- Traiter une demande (agent)}
+
+L'agent authentifié (compte \texttt{approved}) consulte la liste, peut être assigné (\texttt{assignedAgent}, statut \texttt{en\_cours}), répond avec \texttt{sender = humain}, puis clôture.
+
+\subsection{CU05 --- Administrer}
+
+L'admin consulte \texttt{GET /api/stats} et \texttt{GET /api/conversations}, approuve (\texttt{status = approved}) ou supprime un agent en attente.
+
+\section{Modèle de données}
+
+MongoDB stocke quatre collections Mongoose. Les relations sont des références \texttt{ObjectId}.
+
+\begin{table}[H]
+\centering
+\caption{Collection \texttt{users} (clients)}
+\label{tab:user}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Champ & Type & Commentaire \\
+\midrule
+googleId & String, unique, requis & Identifiant Google ou, en flux direct, souvent l'e-mail \\
+name, email & String, requis & Profil affiché \\
+avatar & String & URL d'avatar \\
+timestamps & Date & \texttt{createdAt}, \texttt{updatedAt} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Collection \texttt{agents} (opérateurs et administrateurs)}
+\label{tab:agent}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Champ & Type & Commentaire \\
+\midrule
+name, email & String (e-mail unique) & Identité de connexion \\
+password & String & Hash bcrypt \\
+role & \texttt{agent} $\mid$ \texttt{admin} & Défaut : agent \\
+skills & [String] & Saisies à l'inscription ; \textbf{non utilisées} pour un routage automatique \\
+status & \texttt{pending} $\mid$ \texttt{approved} & Un agent non approuvé ne peut pas se connecter \\
+avatar & String & Optionnel \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Collection \texttt{conversations}}
+\label{tab:conv}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Champ & Type & Commentaire \\
+\midrule
+client & ObjectId $\rightarrow$ User & Propriétaire \\
+assignedAgent & ObjectId $\rightarrow$ Agent & Peut être nul \\
+status & \texttt{en\_cours} $\mid$ \texttt{en\_attente} $\mid$ \texttt{resolu} & Cycle de vie \\
+handledBy & \texttt{ia} $\mid$ \texttt{humain} & Qui répond \\
+satisfaction.rating & Number 1--5 & Optionnel à la clôture \\
+satisfaction.comment & String & Optionnel \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Collection \texttt{messages}}
+\label{tab:msg}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Champ & Type & Commentaire \\
+\midrule
+conversation & ObjectId & Fil parent \\
+sender & \texttt{client} $\mid$ \texttt{ia} $\mid$ \texttt{humain} & Provenance \\
+authorName & String & Affichage \\
+content & String & Texte (peut être vide si pièce jointe) \\
+attachments[] & url, type, name & \texttt{image} $\mid$ \texttt{video} $\mid$ \texttt{document} $\mid$ \texttt{link} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Diagramme de classes (vue d'analyse)}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  cls/.style={draw=sinapsbleu, rectangle split, rectangle split parts=2, rounded corners=2pt, align=left, fill=white, inner sep=4pt}
+]
+\node[cls] (user) {
+  \textbf{User}\\
+  googleId\\ name\\ email\\ avatar
+  \nodepart{two}
+  timestamps
+};
+\node[cls, right=0.55cm of user] (agent) {
+  \textbf{Agent}\\
+  name\\ email\\ password\\ role\\ skills[]\\ status\\ avatar
+  \nodepart{two}
+  login / signup
+};
+\node[cls, below=1.3cm of user] (conv) {
+  \textbf{Conversation}\\
+  status\\ handledBy\\ satisfaction
+  \nodepart{two}
+  escalate()\\ deescalate()\\ assign()\\ close()
+};
+\node[cls, right=0.7cm of conv] (msg) {
+  \textbf{Message}\\
+  sender\\ authorName\\ content\\ attachments[]
+  \nodepart{two}
+  ---
+};
+
+\draw[-{Latex}] (conv) -- node[left, font=\tiny]{1} (user);
+\node[font=\tiny] at ($(conv)!0.5!(user)+(0.35,0)$) {*};
+\draw[-{Latex}] (conv.east) -- node[above, font=\tiny]{0..1} (agent.south);
+\draw[-{Latex}] (msg) -- node[above, font=\tiny]{*} node[below, font=\tiny]{1} (conv);
+\end{tikzpicture}
+\caption{Diagramme de classes aligné sur les schémas Mongoose}
+\label{fig:classes}
+\end{figure}
+
+\section{Scénarios dynamiques}
+
+\subsection{Envoi d'un message client et réponse IA}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\scriptsize, x=1.7cm, y=-0.55cm]
+\foreach \x/\n in {0/Client, 2/Next.js, 4/Express, 6/MongoDB, 8/RAG+Gemini} {
+  \node[font=\bfseries\scriptsize] at (\x,0) {\n};
+  \draw[thin] (\x,-0.4) -- (\x,-11.2);
+}
+\draw[-{Latex}] (0,-1) -- node[above]{\texttt{POST /messages}} (4,-1);
+\draw[-{Latex}] (4,-2) -- node[above]{insert Message client} (6,-2);
+\draw[-{Latex}] (6,-3) -- (4,-3);
+\draw[-{Latex}] (4,-4) -- node[above]{retrieve + generate} (8,-4);
+\draw[-{Latex}] (8,-5.2) -- (4,-5.2);
+\draw[-{Latex}] (4,-6.4) -- node[above]{insert Message ia} (6,-6.4);
+\draw[-{Latex}] (4,-7.6) -- node[above]{Socket \texttt{message\_received}} (2,-7.6);
+\draw[-{Latex}] (2,-8.8) -- (0,-8.8);
+\node[align=left] at (4,-10.2) {Uniquement si \texttt{handledBy = ia}.\\Sinon, pas d'appel IA.};
+\end{tikzpicture}%
+}
+\caption{Séquence : message client et génération IA}
+\label{fig:seq-ia}
+\end{figure}
+
+\subsection{Escalade vers un humain}
+
+Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe à \texttt{handledBy = humain}, \texttt{status = en\_attente}. Socket.io émet \texttt{conversation\_updated} vers la salle et en global, afin que l'espace agent rafraîchisse la file.
+
+\subsection{Clôture et satisfaction}
+
+\texttt{PATCH /conversations/:id/close} accepte une note entière entre 1 et 5. Une valeur hors intervalle (par exemple 0) \textbf{n'est pas} enregistrée comme satisfaction, afin d'éviter de fausser la moyenne. Le statut devient \texttt{resolu}.
+
+\section{Conception de l'authentification et des droits}
+
+Deux familles de jetons JWT signés avec \texttt{JWT\_SECRET} coexistent.
+
+\begin{table}[H]
+\centering
+\caption{Politique d'authentification}
+\label{tab:auth}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Profil & Mécanisme \\
+\midrule
+Client & JWT \texttt{role=client}, 30~jours, après Google (ID token vérifié) ou find-or-create e-mail. Stockage navigateur : \texttt{sinaps\_client}. \\
+Agent / admin & JWT \texttt{role=agent$\mid$admin}, 7~jours, après e-mail + mot de passe. Refus si agent \texttt{pending}. Stockage : \texttt{sinaps\_token}. \\
+Middleware & \texttt{requireAuth}, \texttt{requireAdmin}, \texttt{requireAgentOrAdmin}, \texttt{requireClientAuth}, \texttt{requireConversationAccess}, \texttt{requireSenderAuth}, \texttt{requireAnySession}. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Règles importantes :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item un client ne lit et ne modifie que \textbf{sa} conversation ;
+  \item \texttt{sender = humain} exige un JWT agent/admin ;
+  \item \texttt{sender = ia} est refusé s'il vient d'une requête externe (création interne seulement) ;
+  \item l'upload exige une session client ou agent (pas d'anonyme).
+\end{itemize}
+
+En production, le serveur \textbf{refuse de démarrer} sans \texttt{JWT\_SECRET}. En développement, une clé de test est utilisée avec un avertissement.
+
+\section{Conception du moteur RAG et de l'escalade}
+
+\subsection{Retriever}
+
+La base \texttt{data/knowledgeBase.js} contient un tableau \texttt{\{ question, answer \}}. Chaque document est tokenisé (minuscules, suppression de mots vides français), indexé en TF, pondéré par IDF, puis comparé à la requête par \textbf{similarité cosinus}. Les extraits dont le score dépasse $0{,}05$ sont retenus (\texttt{topK = 2} pour le prompt).
+
+Ce n'est \textbf{pas} un RAG vectoriel (pas d'embeddings, pas de base vectorielle). C'est un RAG \og lexical \fg{} suffisant pour une petite FAQ de démonstration.
+
+\subsection{Génération}
+
+Si une clé Gemini valide est présente, un prompt français injecte les extraits \og Savoir pertinent \fg{} et demande une réponse courte, avec consigne d'orienter vers le bouton d'escalade si l'action sur compte est manuelle. Plusieurs noms de modèles sont essayés en cascade (\texttt{gemini-3.5-flash}, \texttt{gemini-3.6-flash}, \texttt{gemini-flash-latest}). En échec, le premier extrait RAG ou un message d'invitation humaine est renvoyé.
+
+\subsection{Escalade}
+
+L'escalade n'est \textbf{pas automatique} selon un score de confiance. Elle est \textbf{décidée par l'utilisateur} (ou un acteur autorisé sur la conversation) via l'API. C'est un choix volontaire du MVP, cohérent avec le bouton \og Basculer vers un agent humain \fg{} du sujet.

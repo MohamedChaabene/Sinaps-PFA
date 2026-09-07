@@ -1,0 +1,14 @@
+\chapter*{Conclusion générale}
+\addcontentsline{toc}{chapter}{Conclusion générale}
+
+Ce PFA a consisté à concevoir et réaliser \textbf{Op Support IA}, une application web de support client dans laquelle un agent IA s'appuie sur une petite base de connaissances, un opérateur humain peut prendre le relais, et un administrateur pilote comptes, historique et indicateurs.
+
+Le travail a été mené \textbf{seul}, à \textbf{distance}, de façon \textbf{informelle}, du 22~juin au 6~septembre~2026, sur un sujet proposé par \textbf{M.~Kais} (SINAPS). L'application livrée comprend un frontend Next.js, un backend Express, une persistance MongoDB Atlas, une authentification Google et JWT, un moteur RAG lexical couplé à Gemini, des WebSockets, un téléversement de fichiers contrôlé, et une suite de tests backend.
+
+Par rapport au document de sujet, le cœur fonctionnel (chat, RAG, escalade, agents, admin, SLA, contenus riches sous forme de pièces jointes, tests) est en place. En revanche, l'\textbf{application mobile native}, le \textbf{routage par compétences}, le \textbf{RAG vectoriel} et le \textbf{déploiement} d'hébergement public n'ont pas été réalisés --- par choix de périmètre, compte tenu de la durée et du caractère individuel du stage.
+
+Sur le plan pédagogique, la principale difficulté a été l'\textbf{apprentissage simultané} de l'écosystème utilisé : Node.js, Express, React, Next.js, et les notions de RAG. Cette montée en compétence a été nécessaire pour livrer une chaîne fullstack cohérente plutôt qu'un prototype d'interface isolé.
+
+Les perspectives naturelles, si le projet se poursuivait (par exemple dans un PFE), seraient : déployer l'application, remplacer le retriever TF-IDF par des embeddings si la base s'enrichit, affecter les files selon les compétences, durcir l'upload (inspection des octets), et ajouter des tests de bout en bout sur l'UI. Ces pistes ne sont pas des engagements déjà tenus.
+
+Nous remercions à nouveau l'encadrant professionnel et, dès qu'il sera désigné, l'encadrant académique, pour l'accompagnement de ce premier projet de fin d'année d'ingénierie logicielle.

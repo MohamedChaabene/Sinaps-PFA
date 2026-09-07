@@ -95,13 +95,13 @@ export function ClientEntryForm({
             <CardDescription>Connectez-vous via Google ou entrez vos coordonnées pour démarrer le chat support.</CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5 px-6 sm:px-10">
+        <CardContent className="flex flex-col gap-5 px-6 pb-2 sm:px-10 sm:pb-4">
           <div className="flex flex-col items-center justify-center w-full gap-2 my-1">
             {isGoogleConfigured ? (
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={() => toast.error("Échec de la connexion Google")}
-                shape="pill"
+                shape="rectangular"
                 text="signin_with"
                 width="100%"
               />
@@ -109,7 +109,7 @@ export function ClientEntryForm({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full rounded-full border-muted-foreground/30 py-5 font-medium shadow-sm hover:bg-muted"
+                className="w-full rounded-xl border-muted-foreground/30 py-5 font-medium shadow-2xs hover:bg-muted"
                 onClick={handleGoogleDemoClick}
                 disabled={loading}
               >
@@ -155,9 +155,9 @@ export function ClientEntryForm({
           </form>
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 px-6 pb-7 pt-2 sm:px-10">
-          <Button type="submit" form="direct-form" className="w-full" disabled={loading}>
-            {loading ? "Connexion..." : "Démarrer la conversation (Direct)"}
+        <CardFooter className="flex flex-col gap-3 px-6 pb-7 pt-4 sm:px-10">
+          <Button type="submit" form="direct-form" className="w-full rounded-lg" disabled={loading}>
+            {loading ? "Connexion..." : "Démarrer la conversation"}
           </Button>
         </CardFooter>
       </Card>

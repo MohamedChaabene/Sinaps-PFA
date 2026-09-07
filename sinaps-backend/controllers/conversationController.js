@@ -148,3 +148,23 @@ exports.findOrCreateConversation = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Basculer vers l'IA
+exports.deescalateConversation = async (req, res) => {
+  try {
+    const conversation = await populateConversation(
+      Conversation.findByIdAndUpdate(
+        req.params.id,
+        { handledBy: 'ia', status: 'en_cours' },
+        { returnDocument: 'after' }
+      )
+    );
+
+    emitToConversation(req.params.id, 'conversation_updated', conversation);
+    emitGlobal('conversation_updated', conversation);
+
+    res.json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

@@ -1,34 +1,36 @@
 "use client"
 
-import { SearchIcon, History } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { fetchConversationsFiltered } from "@/lib/api"
-import { useRouter } from "next/navigation"
-import { LogOut } from "lucide-react"
-import { logout } from "@/components/auth-guard"
-import { useState, useEffect } from "react"
-import Link from "next/link"
 import {
   BarChart3,
+  Bot,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  LayoutDashboard,
-  Menu,
-  ShieldCheck,
-  Users,
-  X,
-  MessageSquare,
-  Bot,
-  UserCheck,
-  Star,
   Clock,
+  History,
+  LayoutDashboard,
   Loader2,
+  LogOut,
+  Menu,
+  MessageSquare,
   PanelLeft,
   PanelLeftClose,
+  SearchIcon,
+  ShieldCheck,
+  Star,
+  UserCheck,
+  Users,
+  X,
 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { fetchConversationsFiltered } from "@/lib/api"
+import { useRouter } from "next/navigation"
+import { logout } from "@/components/auth-guard"
+import { useState, useEffect } from "react"
+import Link from "next/link"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -37,11 +39,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { fetchAgents, approveAgent, rejectAgent, fetchStats } from "@/lib/api"
+import { getInitials } from "@/lib/utils"
+import { StatusBadge } from "@/components/chat/status-badge"
 import type { Agent, Stats } from "@/lib/types"
-
-function initials(name: string) {
-  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
-}
 
 function formatDuration(seconds: number) {
   if (seconds < 60) return `${seconds}s`
@@ -55,15 +55,33 @@ function mapAgent(a: any): Agent {
     id: a._id,
     name: a.name,
     email: a.email,
-    initials: initials(a.name),
+    initials: getInitials(a.name),
     skills: a.skills || [],
     conversations: 0,
     avatar: "",
   }
 }
 
-function AgentAvatar({ agent }: { agent: Agent }) { return <Avatar className="size-10"><AvatarImage src={agent.avatar || "/placeholder.svg"} alt={`Avatar de ${agent.name}`} /><AvatarFallback>{agent.initials}</AvatarFallback></Avatar> }
-function SkillBadges({ skills }: { skills: string[] }) { return <div className="flex flex-wrap gap-1.5">{skills.map((skill) => <Badge key={skill} variant="secondary" className="font-normal">{skill}</Badge>)}</div> }
+function AgentAvatar({ agent }: { agent: Agent }) {
+  return (
+    <Avatar className="size-10 rounded-xl ring-2 ring-primary/20">
+      <AvatarImage src={agent.avatar || "/placeholder.svg"} alt={`Avatar de ${agent.name}`} className="rounded-xl" />
+      <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-semibold text-xs">{agent.initials}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+function SkillBadges({ skills }: { skills: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {skills.map((skill) => (
+        <Badge key={skill} variant="secondary" className="font-normal rounded-md border border-border/60">
+          {skill}
+        </Badge>
+      ))}
+    </div>
+  )
+}
 
 function ConversationHistory() {
   const [conversations, setConversations] = useState<any[]>([])
@@ -88,80 +106,222 @@ function ConversationHistory() {
     return () => clearTimeout(timeout)
   }, [statusFilter, search])
 
-  const statusLabels: Record<string, string> = {
-    en_cours: "En cours",
-    en_attente: "En attente",
-    resolu: "Résolu",
-  }
+  const filterTabs = [
+    { value: "", label: "Toutes", count: conversations.length },
+    { value: "en_cours", label: "En cours" },
+    { value: "en_attente", label: "En attente" },
+    { value: "resolu", label: "Résolues" },
+  ]
 
   return (
-    <section id="history" className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-heading text-2xl font-bold">Historique des demandes</h2>
-        <p className="text-sm leading-6 text-muted-foreground">Consultez et filtrez toutes les conversations.</p>
+    <section id="history" className="flex flex-col gap-5 scroll-mt-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+              Historique des demandes
+            </h2>
+            <Badge variant="secondary" className="rounded-md border border-border/70 font-semibold px-2">
+              {conversations.length}
+            </Badge>
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground mt-0.5">
+            Consultez, filtrez et analysez toutes les conversations support.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={load}
+          disabled={loading}
+          className="w-fit rounded-lg border-border/80 text-xs font-medium gap-1.5 shadow-2xs hover:bg-muted"
+          title="Actualiser la liste"
+        >
+          <Loader2 className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Actualiser</span>
+        </Button>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
+      {/* Search and Quick Filters Bar */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative flex-1 max-w-md">
+          <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70" />
           <Input
-            placeholder="Rechercher par nom ou email..."
+            placeholder="Rechercher par client, email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-8 h-9 rounded-lg border-border/80 bg-card text-sm focus-visible:ring-2 focus-visible:ring-primary shadow-2xs"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Effacer la recherche"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="en_cours">En cours</option>
-          <option value="en_attente">En attente</option>
-          <option value="resolu">Résolu</option>
-        </select>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+          {filterTabs.map((tab) => {
+            const isSelected = statusFilter === tab.value
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setStatusFilter(tab.value)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all shadow-2xs ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "border border-border/80 bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {tab.value === "en_cours" && (
+                  <span className={`size-1.5 rounded-full ${isSelected ? "bg-primary-foreground" : "bg-primary animate-pulse"}`} />
+                )}
+                {tab.value === "en_attente" && (
+                  <span className={`size-1.5 rounded-full ${isSelected ? "bg-primary-foreground" : "bg-amber-500"}`} />
+                )}
+                {tab.value === "resolu" && (
+                  <span className={`size-1.5 rounded-full ${isSelected ? "bg-primary-foreground" : "bg-emerald-500"}`} />
+                )}
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
-      <Card>
+
+      {/* Table Container */}
+      <Card className="border border-border/80 bg-card shadow-xs overflow-hidden rounded-xl">
         <CardContent className="overflow-x-auto p-0">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Traité par</TableHead>
-                <TableHead>Satisfaction</TableHead>
-                <TableHead>Date</TableHead>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="border-b border-border/70 hover:bg-transparent">
+                <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Client</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Statut</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Traité par</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Satisfaction</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Loader2 className="size-5 animate-spin text-primary" />
-                      <span>Chargement de l'historique...</span>
+                  <TableCell colSpan={5} className="py-14 text-center text-sm text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2.5">
+                      <Loader2 className="size-6 animate-spin text-primary" />
+                      <span className="font-medium text-xs">Chargement de l&apos;historique...</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : conversations.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">Aucune conversation trouvée.</TableCell></TableRow>
-              ) : (
-                conversations.map((c) => (
-                  <TableRow key={c._id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-semibold">{c.client?.name || "Client"}</p>
-                        <p className="text-xs text-muted-foreground">{c.client?.email}</p>
+                <TableRow>
+                  <TableCell colSpan={5} className="py-14 text-center text-sm text-muted-foreground">
+                    <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                      <div className="rounded-xl bg-muted/60 p-3 text-muted-foreground">
+                        <SearchIcon className="size-6 text-muted-foreground/60" />
                       </div>
-                    </TableCell>
-                    <TableCell><Badge variant="secondary">{statusLabels[c.status] || c.status}</Badge></TableCell>
-                    <TableCell className="capitalize">{c.handledBy === "ia" ? "Agent IA" : "Agent humain"}</TableCell>
-                    <TableCell>{c.satisfaction?.rating ? `${c.satisfaction.rating} / 5` : "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {new Date(c.createdAt).toLocaleDateString("fr-FR")}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <p className="font-semibold text-foreground text-sm">Aucune conversation trouvée</p>
+                      <p className="text-xs text-muted-foreground">
+                        {search || statusFilter
+                          ? "Aucun résultat ne correspond à vos critères de recherche."
+                          : "Aucune conversation n'a encore été enregistrée."}
+                      </p>
+                      {(search || statusFilter) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSearch("")
+                            setStatusFilter("")
+                          }}
+                          className="mt-2 rounded-lg text-xs"
+                        >
+                          Effacer les filtres
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                conversations.map((c) => {
+                  const rating = c.satisfaction?.rating
+                  const isIA = c.handledBy === "ia"
+
+                  return (
+                    <TableRow key={c._id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+                      <TableCell className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-8.5 rounded-lg ring-1 ring-primary/20 shrink-0">
+                            <AvatarImage src={c.client?.avatar || "/placeholder.svg"} className="rounded-lg" />
+                            <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-xs">
+                              {getInitials(c.client?.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-xs sm:text-sm text-foreground">
+                              {c.client?.name || "Client inconnu"}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">{c.client?.email || "—"}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-3 px-4">
+                        <StatusBadge status={c.status} />
+                      </TableCell>
+
+                      <TableCell className="py-3 px-4">
+                        {isIA ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-purple-500/25 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-600 dark:text-purple-400">
+                            <Bot className="size-3 text-purple-500 shrink-0" />
+                            <span>Agent IA</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/25 bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+                            <UserCheck className="size-3 text-blue-500 shrink-0" />
+                            <span className="truncate max-w-[120px]">{c.assignedAgent?.name || "Humain"}</span>
+                          </span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="py-3 px-4">
+                        {rating ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center text-amber-400">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`size-3 ${
+                                    star <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">{rating}/5</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/60">—</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {new Date(c.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {new Date(c.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -205,20 +365,42 @@ function AdminSidebar({
   return (
     <aside
       className={`flex h-full flex-col border-r border-border bg-card transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20 px-3 py-6" : "w-64 px-5 py-6"
+        isCollapsed ? "w-20 px-3 py-5" : "w-64 px-5 py-6"
       }`}
     >
       {/* Brand & Toggle Header */}
-      <div className="flex items-center justify-between gap-2">
-        <Link
-          href="/"
-          className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          title="Sinaps Support"
-        >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary font-heading text-lg font-extrabold text-primary-foreground shadow-xs">
+      {isCollapsed ? (
+        <div className="flex flex-col items-center gap-3 pb-4">
+          <Link
+            href="/"
+            className="flex size-10 items-center justify-center rounded-xl bg-primary font-heading text-lg font-extrabold text-primary-foreground shadow-xs transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Sinaps Support"
+          >
             S
-          </div>
-          {!isCollapsed && (
+          </Link>
+          {onToggleCollapse && !onClose && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onToggleCollapse}
+              aria-label="Développer le menu"
+              title="Développer le menu"
+              className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+            >
+              <PanelLeft className="size-4" />
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2 pb-2">
+          <Link
+            href="/"
+            className="flex items-center gap-3 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Sinaps Support"
+          >
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-lg font-extrabold text-primary-foreground shadow-xs">
+              S
+            </div>
             <div className="flex flex-col min-w-0">
               <span className="truncate font-heading text-base font-bold tracking-tight text-foreground">
                 Sinaps Support
@@ -227,38 +409,36 @@ function AdminSidebar({
                 Administration
               </span>
             </div>
+          </Link>
+
+          {onClose ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onClose}
+              aria-label="Fermer le menu"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <X className="size-5" />
+            </Button>
+          ) : (
+            onToggleCollapse && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onToggleCollapse}
+                aria-label="Réduire le menu"
+                title="Réduire le menu"
+                className="hidden md:flex size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+              >
+                <PanelLeftClose className="size-4" />
+              </Button>
+            )
           )}
-        </Link>
+        </div>
+      )}
 
-        {/* Mobile close button */}
-        {onClose && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onClose}
-            aria-label="Fermer le menu"
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <X className="size-5" />
-          </Button>
-        )}
-
-        {/* Desktop & Tablet Collapse Toggle Button */}
-        {onToggleCollapse && !onClose && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={onToggleCollapse}
-            aria-label={isCollapsed ? "Développer le menu" : "Réduire le menu"}
-            title={isCollapsed ? "Développer" : "Réduire"}
-            className="hidden md:flex text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            {isCollapsed ? <PanelLeft className="size-4" /> : <PanelLeftClose className="size-4" />}
-          </Button>
-        )}
-      </div>
-
-      <Separator className="my-6" />
+      <Separator className="my-4" />
 
       {/* Navigation list */}
       <nav className="flex flex-col gap-1.5" aria-label="Navigation administration">
@@ -270,17 +450,17 @@ function AdminSidebar({
               href={`#${id}`}
               onClick={(e) => handleNavClick(id, e)}
               title={label}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                isCollapsed ? "justify-center px-0" : ""
+              className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                isCollapsed ? "justify-center px-0 size-10 mx-auto" : ""
               } ${
                 isActive
-                  ? "bg-primary/10 text-primary font-semibold shadow-xs"
+                  ? "bg-primary/10 text-primary font-semibold shadow-2xs border-l-2 border-l-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <Icon
-                className={`size-4.5 shrink-0 transition-transform duration-200 ${
-                  isActive ? "text-primary scale-110" : "group-hover:scale-105"
+                className={`size-4.5 shrink-0 transition-transform duration-150 ${
+                  isActive ? "text-primary scale-105" : "group-hover:scale-105"
                 }`}
               />
               {!isCollapsed && <span className="truncate">{label}</span>}
@@ -290,21 +470,21 @@ function AdminSidebar({
       </nav>
 
       {/* Footer Area: Security Badge & Logout */}
-      <div className="mt-auto flex flex-col gap-3">
+      <div className="mt-auto flex flex-col gap-3 pt-4">
         {!isCollapsed ? (
-          <div className="rounded-2xl border border-border/60 bg-secondary/40 p-4">
+          <div className="rounded-xl border border-border/70 bg-secondary/30 p-3.5 shadow-2xs">
             <div className="flex items-center gap-2 text-primary">
-              <ShieldCheck className="size-4.5" />
-              <p className="text-xs font-bold uppercase tracking-wider">Espace sécurisé</p>
+              <ShieldCheck className="size-4" />
+              <p className="text-[11px] font-bold uppercase tracking-wider">Espace sécurisé</p>
             </div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Gérez les accès de votre équipe et surveillez le support.
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              Accès restreint aux administrateurs Sinaps.
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => logout(router)}
-              className="mt-3 w-full justify-start gap-2 text-xs font-semibold hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 focus-visible:ring-2 focus-visible:ring-destructive"
+              className="mt-3 w-full justify-start gap-2 text-xs font-semibold rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
             >
               <LogOut className="size-3.5" />
               Déconnexion
@@ -318,7 +498,7 @@ function AdminSidebar({
               onClick={() => logout(router)}
               title="Déconnexion"
               aria-label="Déconnexion"
-              className="size-10 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive"
+              className="size-9 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
             >
               <LogOut className="size-4" />
             </Button>
@@ -405,6 +585,8 @@ export function AdminDashboard() {
             approve={approve}
             reject={reject}
             stats={stats}
+            onRefresh={loadData}
+            refreshing={loading}
           />
         </div>
       </div>
@@ -437,6 +619,8 @@ export function AdminDashboard() {
             approve={approve}
             reject={reject}
             stats={stats}
+            onRefresh={loadData}
+            refreshing={loading}
           />
         </div>
       </div>
@@ -469,12 +653,16 @@ function AdminContent({
   approve,
   reject,
   stats,
+  onRefresh,
+  refreshing,
 }: {
   pending: Agent[]
   approved: Agent[]
   approve: (agent: Agent) => void
   reject: (agent: Agent) => void
   stats: Stats | null
+  onRefresh?: () => void
+  refreshing?: boolean
 }) {
   const resolvedPct = stats && stats.total > 0 ? {
     ia: Math.round((stats.resolvedByIA / stats.total) * 100),
@@ -482,104 +670,245 @@ function AdminContent({
   } : { ia: 0, human: 0 }
 
   return (
-    <main className="min-w-0 flex-1 px-4 py-7 sm:px-8 lg:px-12 lg:py-10">
+    <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:px-10 lg:py-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold text-primary">Centre de contrôle</p>
-          <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">Vue d&apos;ensemble</h1>
-          <p className="text-sm leading-6 text-muted-foreground">Suivez votre équipe et gardez un œil sur la qualité du support.</p>
+        {/* Top Header Banner */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-6">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Centre de contrôle</span>
+              <span className="text-muted-foreground/40">•</span>
+              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Opérationnel
+              </span>
+            </div>
+            <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+              Vue d&apos;ensemble
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Supervisez votre équipe support, suivez les KPI et examinez les demandes clients.
+            </p>
+          </div>
+
+          {onRefresh && (
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="rounded-lg text-xs font-medium gap-1.5 shadow-2xs hover:bg-muted"
+                title="Actualiser les données"
+              >
+                <Loader2 className={`size-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+                <span>Actualiser</span>
+              </Button>
+            </div>
+          )}
         </div>
 
-        <section id="stats" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 scroll-mt-10">
-          <EnhancedStatCard title="Total conversations" value={String(stats?.total ?? 0)} icon={MessageSquare} subtitle="Tickets enregistrés" color="primary" />
-          <EnhancedStatCard title="Résolu par IA" value={`${resolvedPct.ia} %`} icon={Bot} progress={resolvedPct.ia} subtitle="Autonome (RAG + Gemini)" color="violet" />
-          <EnhancedStatCard title="Résolu par agent" value={`${resolvedPct.human} %`} icon={UserCheck} progress={resolvedPct.human} subtitle="Escalade humaine" color="blue" />
-          <EnhancedStatCard title="Satisfaction client" value={`${stats?.avgSatisfaction ?? 0} / 5`} icon={Star} progress={(Number(stats?.avgSatisfaction ?? 0) / 5) * 100} subtitle="Moyenne des avis" color="amber" />
-          <EnhancedStatCard title="Temps de réponse" value={formatDuration(stats?.avgResponseTimeSeconds ?? 0)} icon={Clock} subtitle="Délai moyen SLA" color="emerald" />
+        {/* KPI Stats Grid */}
+        <section id="stats" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 scroll-mt-6">
+          <EnhancedStatCard
+            title="Total conversations"
+            value={String(stats?.total ?? 0)}
+            icon={MessageSquare}
+            subtitle="Tickets enregistrés"
+            color="primary"
+          />
+          <EnhancedStatCard
+            title="Résolu par IA"
+            value={`${resolvedPct.ia} %`}
+            icon={Bot}
+            progress={resolvedPct.ia}
+            subtitle="Autonome (RAG + Gemini)"
+            color="violet"
+          />
+          <EnhancedStatCard
+            title="Résolu par agent"
+            value={`${resolvedPct.human} %`}
+            icon={UserCheck}
+            progress={resolvedPct.human}
+            subtitle="Escalade humaine"
+            color="blue"
+          />
+          <EnhancedStatCard
+            title="Satisfaction client"
+            value={`${stats?.avgSatisfaction ?? 0} / 5`}
+            icon={Star}
+            progress={(Number(stats?.avgSatisfaction ?? 0) / 5) * 100}
+            subtitle="Moyenne des avis"
+            color="amber"
+          />
+          <EnhancedStatCard
+            title="Temps de réponse"
+            value={formatDuration(stats?.avgResponseTimeSeconds ?? 0)}
+            icon={Clock}
+            subtitle="Délai moyen SLA"
+            color="emerald"
+          />
         </section>
 
-        <section id="agents" className="flex flex-col gap-4 scroll-mt-10">
+        {/* Pending Agents Section */}
+        <section id="agents" className="flex flex-col gap-4 scroll-mt-6">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="font-heading text-2xl font-bold">Agents en attente de validation</h2>
-              <p className="text-sm leading-6 text-muted-foreground">Examinez les nouveaux profils avant leur activation.</p>
+              <div className="flex items-center gap-2">
+                <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+                  Agents en attente de validation
+                </h2>
+                <Badge
+                  variant="outline"
+                  className={`rounded-md font-semibold text-xs px-2 ${
+                    pending.length > 0
+                      ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  }`}
+                >
+                  {pending.length > 0 ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      {pending.length} en attente
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <Check className="size-3 text-emerald-500" />
+                      À jour
+                    </span>
+                  )}
+                </Badge>
+              </div>
+              <p className="text-sm leading-6 text-muted-foreground mt-0.5">
+                Examinez et approuvez les nouveaux profils d&apos;agents avant leur mise en service.
+              </p>
             </div>
-            <Badge variant="outline" className="w-fit">{pending.length} en attente</Badge>
           </div>
-          <Card>
+
+          <Card className="border border-border/80 bg-card shadow-xs overflow-hidden rounded-xl">
             <CardContent className="p-0">
               {pending.length ? (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/60">
                   {pending.map((agent) => (
-                    <div key={agent.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div
+                      key={agent.id}
+                      className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between hover:bg-muted/30 transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <AgentAvatar agent={agent} />
                         <div className="min-w-0">
-                          <p className="truncate font-semibold">{agent.name}</p>
-                          <p className="truncate text-sm text-muted-foreground">{agent.email}</p>
+                          <p className="truncate font-semibold text-sm text-foreground">{agent.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">{agent.email}</p>
                         </div>
                       </div>
-                      <SkillBadges skills={agent.skills} />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => approve(agent)} className="focus-visible:ring-2 focus-visible:ring-primary">
-                          <Check data-icon="inline-start" />Valider
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-medium hidden lg:inline">Compétences :</span>
+                        <SkillBadges skills={agent.skills} />
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          onClick={() => approve(agent)}
+                          className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs gap-1.5 shadow-2xs focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        >
+                          <Check className="size-3.5" />
+                          <span>Valider</span>
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => reject(agent)} className="focus-visible:ring-2 focus-visible:ring-destructive">
-                          <X data-icon="inline-start" />Rejeter
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => reject(agent)}
+                          className="rounded-lg border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/60 font-medium text-xs gap-1.5 focus-visible:ring-2 focus-visible:ring-destructive"
+                        >
+                          <X className="size-3.5" />
+                          <span>Rejeter</span>
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2 p-10 text-center">
-                  <ClipboardList className="size-8 text-muted-foreground" />
-                  <p className="font-semibold">Tout est à jour</p>
-                  <p className="text-sm text-muted-foreground">Aucun agent en attente de validation.</p>
+                <div className="flex flex-col items-center justify-center gap-2.5 p-10 text-center">
+                  <div className="rounded-xl bg-emerald-500/10 text-emerald-500 p-3">
+                    <CheckCircle2 className="size-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm text-foreground">Toutes les demandes sont traitées</p>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      Aucun nouvel agent en attente de validation pour le moment.
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
         </section>
 
-        <section id="overview" className="flex flex-col gap-4 scroll-mt-10">
-          <div>
-            <h2 className="font-heading text-2xl font-bold">Agents validés</h2>
-            <p className="text-sm leading-6 text-muted-foreground">Les membres actifs de votre équipe support.</p>
+        {/* Validated Agents Section */}
+        <section id="overview" className="flex flex-col gap-4 scroll-mt-6">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+                  Agents validés
+                </h2>
+                <Badge variant="secondary" className="rounded-md border border-border/70 font-semibold px-2">
+                  {approved.length} actif{approved.length > 1 ? "s" : ""}
+                </Badge>
+              </div>
+              <p className="text-sm leading-6 text-muted-foreground mt-0.5">
+                Membres actifs de votre équipe support habilités à répondre aux clients.
+              </p>
+            </div>
           </div>
-          <Card>
+
+          <Card className="border border-border/80 bg-card shadow-xs overflow-hidden rounded-xl">
             <CardContent className="overflow-x-auto p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Agent</TableHead>
-                    <TableHead>Compétences</TableHead>
-                    <TableHead>Conversations</TableHead>
-                    <TableHead>Statut</TableHead>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="border-b border-border/70 hover:bg-transparent">
+                    <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Agent</TableHead>
+                    <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Domaines de compétences</TableHead>
+                    <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Conversations</TableHead>
+                    <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Statut</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {approved.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                        Aucun agent validé pour le moment.
+                      <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Users className="size-6 text-muted-foreground/60" />
+                          <p className="font-medium text-xs">Aucun agent validé pour le moment.</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     approved.map((agent) => (
-                      <TableRow key={agent.id}>
-                        <TableCell>
+                      <TableRow key={agent.id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
+                        <TableCell className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <AgentAvatar agent={agent} />
-                            <div>
-                              <p className="font-semibold">{agent.name}</p>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-foreground">{agent.name}</p>
                               <p className="text-xs text-muted-foreground">{agent.email}</p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell><SkillBadges skills={agent.skills} /></TableCell>
-                        <TableCell className="font-semibold">{agent.conversations}</TableCell>
-                        <TableCell><Badge className="bg-success text-success-foreground hover:bg-success">Actif</Badge></TableCell>
+                        <TableCell className="py-3 px-4">
+                          <SkillBadges skills={agent.skills} />
+                        </TableCell>
+                        <TableCell className="py-3 px-4 font-semibold text-sm">
+                          <Badge variant="secondary" className="rounded-md font-mono text-xs">
+                            {agent.conversations}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-3 px-4">
+                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md font-semibold hover:bg-emerald-500/15 gap-1.5">
+                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Actif
+                          </Badge>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -589,6 +918,7 @@ function AdminContent({
           </Card>
         </section>
 
+        {/* Conversation History Section */}
         <ConversationHistory />
       </div>
     </main>
@@ -611,32 +941,40 @@ function EnhancedStatCard({
   color?: "primary" | "emerald" | "violet" | "amber" | "blue"
 }) {
   const colorMap = {
-    primary: "text-primary bg-primary/10",
-    emerald: "text-emerald-500 bg-emerald-500/10",
-    violet: "text-purple-500 bg-purple-500/10",
-    amber: "text-amber-500 bg-amber-500/10",
-    blue: "text-blue-500 bg-blue-500/10",
+    primary: "text-primary bg-primary/10 border-primary/20",
+    emerald: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+    violet: "text-purple-500 bg-purple-500/10 border-purple-500/20",
+    amber: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+    blue: "text-blue-500 bg-blue-500/10 border-blue-500/20",
+  }
+
+  const barColorMap = {
+    primary: "bg-primary",
+    emerald: "bg-emerald-500",
+    violet: "bg-purple-500",
+    amber: "bg-amber-500",
+    blue: "bg-blue-500",
   }
 
   return (
-    <Card className="relative overflow-hidden transition-all hover:shadow-md hover:border-primary/30">
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
-        <div className={`flex size-8 items-center justify-center rounded-xl ${colorMap[color]}`}>
+    <Card className="relative overflow-hidden rounded-xl border border-border/80 bg-card/90 shadow-2xs hover:shadow-md hover:border-primary/40 transition-all duration-200">
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4">
+        <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
+        <div className={`flex size-8 items-center justify-center rounded-lg border ${colorMap[color]} shadow-2xs`}>
           <Icon className="size-4" />
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <p className="font-heading text-2xl font-extrabold tracking-tight text-foreground">{value}</p>
+      <CardContent className="space-y-2 px-4 pb-4">
+        <p className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">{value}</p>
         {progress !== undefined ? (
-          <div className="space-y-1">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="space-y-1.5">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
               <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
+                className={`h-full rounded-full ${barColorMap[color]} transition-all duration-500`}
                 style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
               />
             </div>
-            {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+            {subtitle && <p className="text-[11px] text-muted-foreground font-medium">{subtitle}</p>}
           </div>
         ) : (
           subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>

@@ -120,6 +120,16 @@ describe('User and Conversation API Integration Tests', () => {
     expect(res.body.status).toBe('en_attente');
   });
 
+  test('PATCH /api/conversations/:id/de-escalate switches conversation back to AI mode', async () => {
+    const res = await request(app)
+      .patch(`/api/conversations/${conversationId}/de-escalate`)
+      .set('Authorization', `Bearer ${clientToken}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.handledBy).toBe('ia');
+    expect(res.body.status).toBe('en_cours');
+  });
+
   test('PATCH /api/conversations/:id/close closes conversation with a valid satisfaction rating', async () => {
     const res = await request(app)
       .patch(`/api/conversations/${conversationId}/close`)

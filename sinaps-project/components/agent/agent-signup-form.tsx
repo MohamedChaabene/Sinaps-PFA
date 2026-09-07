@@ -75,7 +75,7 @@ export function AgentSignupForm() {
                 </div>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="flex flex-col gap-5 px-6 sm:px-10">
+                <CardContent className="flex flex-col gap-5 px-6 pb-3 sm:px-10 sm:pb-4">
                     <div className="flex flex-col gap-2">
                         <Label htmlFor="name">Nom complet</Label>
                         <Input id="name" name="name" placeholder="Ex. Sophie Martin" required />
@@ -88,7 +88,7 @@ export function AgentSignupForm() {
                         <Label htmlFor="password">Mot de passe</Label>
                         <Input id="password" name="password" type="password" minLength={8} placeholder="8 caractères minimum" required />
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2.5 pb-2">
                         <Label id="skills-label">Vos compétences</Label>
                         <Popover open={open} onOpenChange={setOpen}>
                             <PopoverTrigger
@@ -134,9 +134,9 @@ export function AgentSignupForm() {
                             </PopoverContent>
                         </Popover>
                         {selectedSkills.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 pt-1">
                                 {selectedSkills.map((skill) => (
-                                    <Badge key={skill} variant="secondary" className="gap-1">
+                                    <Badge key={skill} variant="secondary" className="gap-1 rounded-md">
                                         {skill}
                                         <button type="button" aria-label={`Retirer ${skill}`} onClick={() => toggleSkill(skill)}>
                                             <X className="size-3" />
@@ -147,11 +147,19 @@ export function AgentSignupForm() {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-3 px-6 pb-7 pt-6 sm:px-10">
+                <CardFooter className="flex flex-col gap-3.5 px-6 pb-7 pt-6 sm:px-10">
                     <Button type="submit" className="w-full" disabled={loading}>
                         {loading ? "Envoi..." : "S'inscrire"}
                     </Button>
-                    <p className="text-center text-xs leading-5 text-muted-foreground">Votre compte sera vérifié par un administrateur avant activation.</p>
+                    <div className="flex flex-col items-center gap-1.5 text-center text-xs leading-5 text-muted-foreground">
+                        <p>Votre compte sera vérifié par un administrateur avant activation.</p>
+                        <p>
+                            Déjà un compte ?{" "}
+                            <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
+                                Se connecter
+                            </Link>
+                        </p>
+                    </div>
                 </CardFooter>
             </form>
         </Card>

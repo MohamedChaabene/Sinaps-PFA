@@ -1,0 +1,154 @@
+% =============================================================================
+% Rapport de PFA — Mohamed Chaabene
+% Cycle ingénieur Génie Logiciel, 2e année — ISIMS Sfax
+% Projet : Op Support IA (SINAPS)
+% Compilation : pdflatex (deux fois) ou latexmk -pdf main.tex
+% =============================================================================
+\documentclass[12pt,a4paper,oneside]{report}
+
+% --- Encodage et langue ------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Mise en page ------------------------------------------------------------
+\usepackage[a4paper,margin=2.5cm,includeheadfoot]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+% --- Graphiques, tableaux, couleurs ------------------------------------------
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{colortbl}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% --- Listings, liens, chemins ------------------------------------------------
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{csquotes}
+\usepackage{appendix}
+
+% --- UML / schémas -----------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,shadows,shapes.multipart}
+
+% --- Couleurs institutionnelles ----------------------------------------------
+\definecolor{sinapsbleu}{HTML}{1B365D}
+\definecolor{sinapsvert}{HTML}{8DC63F}
+\definecolor{grisclair}{HTML}{F4F6F8}
+\definecolor{codebg}{HTML}{F7F7F7}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=sinapsbleu,
+  citecolor=sinapsbleu,
+  urlcolor=sinapsbleu,
+  pdftitle={Rapport de PFA --- Op Support IA},
+  pdfauthor={Mohamed Chaabene},
+  pdfsubject={Conception et réalisation d'une application web de support client assisté par IA}
+}
+
+\captionsetup{font=small,labelfont=bf,skip=6pt}
+
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{sinapsbleu}}
+  {\chaptertitlename\ \thechapter}{14pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{sinapsbleu}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{sinapsbleu}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Rapport de PFA --- Op Support IA}
+\fancyhead[R]{\small Mohamed Chaabene}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{black!15},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  keywordstyle=\bfseries\color{sinapsbleu},
+  commentstyle=\itshape\color{black!50},
+  stringstyle=\color{sinapsvert!70!black},
+  tabsize=2,
+  captionpos=b
+}
+
+\newcommand{\todofig}[1]{%
+  \begin{center}
+  \fcolorbox{sinapsbleu!40}{grisclair}{%
+    \parbox{0.92\textwidth}{\centering\vspace{1.4cm}\textit{#1}\vspace{1.4cm}}%
+  }
+  \end{center}
+}
+
+\newcommand{\acompleter}[1]{\textcolor{red}{\textbf{[À COMPLÉTER : #1]}}}
+
+\begin{document}
+
+% Pages liminaires (romain)
+\pagenumbering{roman}
+\input{pages/garde}
+\newpage
+\input{pages/resume}
+\newpage
+\input{pages/dedicace}
+\newpage
+\input{pages/remerciements}
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+\input{pages/abreviations}
+
+% Corps
+\clearpage
+\pagenumbering{arabic}
+\input{chapitres/introduction}
+\input{chapitres/chapitre1}
+\input{chapitres/chapitre2}
+\input{chapitres/chapitre3}
+\input{chapitres/chapitre4}
+\input{chapitres/chapitre5}
+\input{chapitres/conclusion}
+
+\begin{thebibliography}{99}
+\input{chapitres/biblio}
+\end{thebibliography}
+
+\appendix
+\input{chapitres/annexes}
+
+\end{document}

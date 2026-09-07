@@ -14,7 +14,6 @@ function getIO() {
 function emitToConversation(conversationId, event, data) {
   if (io) {
     io.to(`conversation_${conversationId}`).emit(event, data);
-    io.emit(event, data); // broadcast globally for list updates if needed
   }
 }
 

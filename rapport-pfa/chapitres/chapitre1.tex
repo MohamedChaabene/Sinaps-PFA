@@ -1,0 +1,83 @@
+\chapter{Cadre et contexte du projet}
+
+\section{Présentation de l'établissement d'accueil}
+
+L'organisme d'accueil du stage est \textbf{SINAPS}, acronyme de \textit{Solutions Innovations For Networks, Applications \& Portable Systems}. Le stage a été proposé et suivi par \textbf{M.~Kais}, contacté à l'adresse \texttt{sinapstec@gmail.com}.
+
+Le travail a été réalisé \textbf{à distance}, sans présence physique dans des locaux décrits dans les documents disponibles. Les informations suivantes n'ont pas pu être établies de manière fiable à partir des sources du projet :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item siège social, ville et forme juridique : \acompleter{coordonnées officielles de SINAPS} ;
+  \item date de création, effectif, organigramme : \acompleter{présentation institutionnelle} ;
+  \item historique détaillé des activités : \acompleter{si un livret d'entreprise est fourni}.
+\end{itemize}
+
+Dans le cadre de ce PFA, SINAPS intervient comme \textbf{commanditaire du sujet} : le besoin fonctionnel, la stack suggérée et le périmètre (chat de support, RAG, escalade humaine, administration) ont été définis par l'encadrant professionnel, puis réalisés en autonomie.
+
+\section{Présentation de l'ISIMS et du cadre académique}
+
+L'\textbf{Institut Supérieur d'Informatique et de Multimédia de Sfax} (ISIMS) est un établissement de l'\textbf{Université de Sfax}. Il forme notamment des ingénieurs en informatique. Le présent travail correspond à un \textbf{Projet de Fin d'Année} (PFA) de \textbf{2\textsuperscript{e} année} du \textbf{cycle ingénieur en Génie Logiciel}, année universitaire \textbf{2026--2027}.
+
+Le PFA précède le Projet de Fin d'Études (PFE). Il vise à confronter l'étudiant à un développement logiciel complet --- spécification, conception, implémentation, tests --- dans un volume compatible avec un stage de quelques mois, sans prétendre à l'ampleur d'un PFE de fin de cycle.
+
+L'encadrant académique n'est pas encore renseigné dans ce document : \acompleter{nom, grade et laboratoire ou département}.
+
+\section{Contexte et déroulement du stage}
+
+\begin{table}[H]
+\centering
+\caption{Fiche signalétique du stage}
+\label{tab:fiche-stage}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Intitulé} & Conception et réalisation d'une application web de support client assisté par un agent IA (Op Support IA) \\
+\midrule
+Organisme & SINAPS \\
+Encadrant professionnel & M.~Kais (\texttt{sinapstec@gmail.com}) \\
+Encadrant académique & \acompleter{identité} \\
+Étudiant & Mohamed Chaabene \\
+Période & du 22 juin 2026 au 6 septembre 2026 \\
+Durée & environ deux mois et demi \\
+Modalité & à distance \\
+Équipe projet & un seul stagiaire (réalisation intégrale) \\
+Organisation du travail & informelle, sans sprints ni outils de gestion de projet dédiés \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Le document de sujet fourni par l'encadrant mentionnait une durée de référence de \textbf{12 semaines} et un calendrier \og juillet 2026 \fg{}. La période retenue pour ce rapport est celle effectivement indiquée pour le stage : \textbf{22 juin -- 6 septembre 2026}. Le même document évoquait une \og équipe agile \fg{} ; dans les faits, le développement a été \textbf{individuel} et \textbf{informel}.
+
+\section{Présentation du projet Op Support IA}
+
+Le projet, intitulé dans le cahier des charges \textit{Projet de stage --- Support by IA} / \textit{Op Support IA}, consiste à concevoir une application de support dans laquelle :
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item le client émet une demande dans une interface de chat ;
+  \item un \textbf{agent IA} interroge une base de connaissances (RAG) et répond ;
+  \item un \textbf{workflow} suit la demande (prise en charge IA, attente d'un humain, résolution) ;
+  \item le client peut \textbf{basculer} vers un opérateur humain ;
+  \item l'échange peut inclure des pièces jointes ;
+  \item la clôture s'accompagne d'une \textbf{note de satisfaction} ;
+  \item l'administrateur valide les agents et consulte statistiques et historique.
+\end{enumerate}
+
+Le produit livré est une application \textbf{web} (interface responsive). Le sujet suggérait également une application mobile native (React Native / Flutter) : celle-ci \textbf{n'a pas été développée} pendant le stage.
+
+\section{Objectifs du projet}
+
+À partir du cahier des charges et des choix techniques retenus avec l'encadrant (React / Next.js, Express, MongoDB, Gemini, JWT), les objectifs opérationnels ont été :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item disposer d'un chat client francophone, authentifié (Google ou identification par nom et e-mail) ;
+  \item répondre automatiquement via RAG + Gemini, avec un repli local si l'API générative est indisponible ;
+  \item permettre l'escalade et le retour vers l'IA, l'affectation d'un agent, et la clôture notée ;
+  \item offrir un espace agent (file, réponses, pièces jointes) et un espace admin (validation, SLA, historique) ;
+  \item persister les données sur MongoDB Atlas et diffuser les mises à jour par WebSocket (Socket.io) ;
+  \item documenter et tester le backend (santé API, autorisations, upload, retriever).
+\end{itemize}
+
+\section{Organisation du travail}
+
+Le stage n'a pas suivi un cadre Scrum (pas de sprints planifiés, pas de daily, pas de tableau Kanban documenté). Le travail s'est organisé de manière \textbf{itérative et informelle} : lecture du sujet, choix d'architecture, implémentation fullstack, sécurisation des routes, ajout des tests, puis rédaction du présent rapport.
+
+Les outils utilisés en plus du code source sont : \textbf{Visual Studio Code}, \textbf{Cursor}, \textbf{Antigravity}, \textbf{GitHub}, \textbf{Postman}, ainsi que les consoles \textbf{Google} (OAuth, Gemini) et \textbf{MongoDB Atlas}.

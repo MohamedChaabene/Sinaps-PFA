@@ -4,17 +4,8 @@ import { SearchIcon, SparklesIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
+import { cn, getInitials } from "@/lib/utils"
 import type { Conversation } from "@/lib/chat-data"
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
-}
 
 export function ConversationSidebar({
   conversations,
@@ -66,7 +57,7 @@ export function ConversationSidebar({
                 >
                   <Avatar className="size-10 shrink-0">
                     <AvatarImage src={conversation.clientAvatar || "/placeholder.svg"} alt={conversation.clientName} />
-                    <AvatarFallback>{initials(conversation.clientName)}</AvatarFallback>
+                    <AvatarFallback>{getInitials(conversation.clientName)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">

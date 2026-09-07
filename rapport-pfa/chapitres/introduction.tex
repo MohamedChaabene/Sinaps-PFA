@@ -1,0 +1,19 @@
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+
+Le support client constitue un point de contact critique entre une organisation et ses utilisateurs. Lorsqu'il repose uniquement sur des opérateurs humains, il subit des files d'attente, des délais variables et une répétition des mêmes questions (suivi de commande, remboursement, mot de passe, etc.). À l'inverse, une FAQ statique ne dialogue pas, n'orchestre pas un dossier et n'offre pas de bascule vers un humain lorsque la demande sort du cadre prévu.
+
+Le sujet de stage proposé par M.~Kais au sein de \textbf{SINAPS} vise à concevoir une application de support \og assistée par un agent IA \fg{}, proche d'un canal de discussion de type Slack : l'utilisateur pose une question, un agent IA s'appuie sur une \textbf{base de connaissances} (approche RAG) pour répondre, un \textbf{workflow} suit la demande, et l'utilisateur peut à tout moment \textbf{basculer vers un opérateur humain}. Un administrateur valide les comptes des agents et supervise l'historique ainsi que des indicateurs de type SLA et satisfaction.
+
+Ce Projet de Fin d'Année s'inscrit dans le cycle ingénieur en \textbf{Génie Logiciel} (2\textsuperscript{e} année) à l'\textbf{ISIMS} (Université de Sfax). Le stage s'est déroulé \textbf{à distance}, du \textbf{22 juin 2026} au \textbf{6 septembre 2026}, et a été réalisé \textbf{seul}. Le livrable logiciel est une application \textbf{web} fullstack, responsive, et non une application mobile native --- ce dernier volet, évoqué dans le document de sujet, a été volontairement reporté.
+
+Les objectifs poursuivis ont été les suivants :
+\begin{itemize}[leftmargin=1.4em]
+  \item analyser le besoin exprimé dans le cahier des charges du stage et le traduire en exigences réalisables à l'échelle d'un PFA ;
+  \item concevoir une architecture frontend / backend / base de données cohérente avec les choix validés (Next.js, Express, MongoDB, Gemini) ;
+  \item implémenter les trois espaces (client, agent, administrateur), le moteur IA et l'escalade temps réel ;
+  \item sécuriser les accès (sessions client, JWT agent/admin, contrôle d'appartenance des conversations) ;
+  \item valider le comportement par des tests automatisés et une utilisation réelle de Google Sign-In, Gemini et MongoDB Atlas.
+\end{itemize}
+
+Le présent rapport est organisé comme suit. Le \textbf{chapitre~1} situe le cadre académique et professionnel du projet. Le \textbf{chapitre~2} analyse l'existant, le cahier des charges et les besoins. Le \textbf{chapitre~3} présente la conception (architecture, UML, données, RAG, authentification). Le \textbf{chapitre~4} décrit la réalisation effective. Le \textbf{chapitre~5} expose les tests présents dans le dépôt. Une \textbf{conclusion générale} dresse le bilan et les perspectives, sans inventer de résultats d'exploitation.

@@ -20,19 +20,20 @@ import {
 } from "@/components/ui/message-scroller"
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import { MarkdownContent } from "@/components/chat/markdown-content"
+import { getInitials } from "@/lib/utils"
+import { API_BASE_URL } from "@/lib/api"
 import type { Conversation } from "@/lib/chat-data"
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? process.env.NEXT_PUBLIC_API_URL.replace("/api", "")
-  : "http://localhost:5000"
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
+function safeAttachmentUrl(rawUrl?: string): string {
+  if (!rawUrl) return "#"
+  const trimmed = rawUrl.trim()
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed
+  }
+  if (trimmed.startsWith("/")) {
+    return `${API_BASE_URL}${trimmed}`
+  }
+  return "#"
 }
 
 function CopyMessageButton({ text }: { text: string }) {
@@ -66,6 +67,38 @@ function CopyMessageButton({ text }: { text: string }) {
   )
 }
 
+function EmptyConversationState() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center text-center px-4 py-12 my-auto">
+      <div className="relative mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary shadow-xs border border-primary/20">
+        <BotIcon className="size-8" />
+        <span className="absolute -top-1 -right-1 flex size-3">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex size-3 rounded-full bg-emerald-500" />
+        </span>
+      </div>
+      <h3 className="font-heading text-xl font-bold text-foreground mb-1.5">
+        Bienvenue sur Sinaps Support
+      </h3>
+      <p className="max-w-md text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed">
+        Comment pouvons-nous vous aider aujourd&apos;hui ? Posez votre question ou utilisez les suggestions rapides ci-dessous.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[11px] font-medium">
+          <BotIcon className="size-3 text-primary" />
+          IA Gemini 3.5 &amp; RAG
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[11px] font-medium">
+          ⚡ Réponses instantanées
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[11px] font-medium">
+          👤 Escalade humaine possible
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function ChatThread({ conversation }: { conversation: Conversation }) {
   return (
     <MessageScrollerProvider autoScroll>
@@ -75,6 +108,8 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
             <Marker variant="separator">
               <MarkerContent>Aujourd&apos;hui</MarkerContent>
             </Marker>
+
+            {conversation.messages.length === 0 && <EmptyConversationState />}
 
             {conversation.messages.map((message) => {
               const isClient = message.sender === "client"
@@ -87,24 +122,26 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                   <Message align={isClient ? "end" : "start"}>
                     <MessageAvatar>
                       {message.sender === "ia" ? (
-                        <div className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
                           <BotIcon className="size-4" />
                         </div>
                       ) : message.sender === "humain" ? (
-                        <Avatar className="size-8 ring-2 ring-primary/20">
+                        <Avatar className="size-8 rounded-xl ring-2 ring-primary/20">
                           <AvatarImage
                             src={message.authorAvatar || "/placeholder.svg"}
                             alt={message.authorName ?? "Agent"}
+                            className="rounded-xl"
                           />
-                          <AvatarFallback>SA</AvatarFallback>
+                          <AvatarFallback className="rounded-xl">SA</AvatarFallback>
                         </Avatar>
                       ) : (
-                        <Avatar className="size-8 ring-2 ring-primary/20">
+                        <Avatar className="size-8 rounded-xl ring-2 ring-primary/20">
                           <AvatarImage
                             src={conversation.clientAvatar || "/placeholder.svg"}
                             alt={conversation.clientName}
+                            className="rounded-xl"
                           />
-                          <AvatarFallback>{initials(conversation.clientName)}</AvatarFallback>
+                          <AvatarFallback className="rounded-xl">{getInitials(conversation.clientName)}</AvatarFallback>
                         </Avatar>
                       )}
                     </MessageAvatar>
@@ -113,7 +150,7 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                         <MessageHeader>
                           {message.sender === "ia" ? (
                             <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="rounded-full bg-primary/15 text-primary text-[11px] font-medium">
+                              <Badge variant="secondary" className="rounded-md bg-primary/10 text-primary text-[11px] font-medium border border-primary/20">
                                 🤖 Agent IA
                               </Badge>
                               <span className="text-[10px] text-muted-foreground font-mono">
@@ -132,7 +169,7 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                         variant={isClient ? "default" : "secondary"}
                         className="group relative shadow-xs"
                       >
-                        <BubbleContent className="rounded-2xl space-y-2">
+                        <BubbleContent className={`space-y-2 ${isClient ? "rounded-2xl rounded-tr-xs" : "rounded-2xl rounded-tl-xs"}`}>
                           {message.content && (
                             isClient ? (
                               <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -144,7 +181,7 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                           {message.attachments && message.attachments.length > 0 && (
                             <div className="space-y-2 pt-1">
                               {message.attachments.map((att, i) => {
-                                const fullUrl = att.url.startsWith("http") ? att.url : `${API_BASE}${att.url}`
+                                const fullUrl = safeAttachmentUrl(att.url)
 
                                 if (att.type === "image") {
                                   return (
@@ -195,22 +232,22 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
               <MessageScrollerItem messageId="typing-indicator">
                 <Message align="start">
                   <MessageAvatar>
-                    <div className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm animate-pulse">
+                    <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs animate-pulse">
                       <BotIcon className="size-4" />
                     </div>
                   </MessageAvatar>
                   <MessageContent>
                     <MessageHeader>
-                      <Badge variant="secondary" className="rounded-full bg-primary/15 text-primary text-[11px] font-medium">
+                      <Badge variant="secondary" className="rounded-md bg-primary/10 text-primary text-[11px] font-medium border border-primary/20">
                         🤖 Agent IA
                       </Badge>
                     </MessageHeader>
                     <Bubble align="start" variant="secondary">
-                      <BubbleContent className="rounded-2xl py-3 px-4 flex items-center gap-2">
+                      <BubbleContent className="rounded-xl rounded-tl-xs py-2.5 px-3.5 flex items-center gap-2">
                         <span className="flex items-center gap-1">
-                          <span className="size-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-                          <span className="size-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-                          <span className="size-2 rounded-full bg-primary animate-bounce" />
+                          <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                          <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                          <span className="size-1.5 rounded-full bg-primary animate-bounce" />
                         </span>
                         <span className="text-xs text-muted-foreground font-medium ml-1">
                           Agent IA réfléchit...

@@ -1,0 +1,87 @@
+\chapter{Tests et validation}
+
+Les tests décrits ici sont ceux \textbf{présents dans le dépôt} (\texttt{sinaps-backend/tests}). Aucun pourcentage de couverture, aucun temps de réponse mesuré en production et aucun recettage utilisateur formalisé n'est avancé : ces éléments n'ont pas été fournis comme résultats chiffrés du stage.
+
+\section{Stratégie de test}
+
+La stratégie retenue est essentiellement \textbf{automatisée côté backend} :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item tests d'\textbf{intégration} HTTP avec Supertest et une base \textbf{MongoDB en mémoire} ;
+  \item tests \textbf{unitaires} du middleware d'authentification (modèle Conversation mocké) ;
+  \item tests du \textbf{téléversement} (Multer) ;
+  \item tests du \textbf{retriever RAG} et du repli \texttt{getAIResponse} sans clé Gemini.
+\end{itemize}
+
+Le frontend Next.js ne contient pas de suite de tests unitaires dédiée dans le dépôt. La validation des écrans a été \textbf{manuelle} (usage réel de Google, Gemini et Atlas). Les résultats détaillés de cette validation manuelle : \acompleter{date, scénarios parcourus, anomalies éventuellement notées}.
+
+Commande :
+
+\begin{lstlisting}[caption={Exécution de la suite backend}]
+cd sinaps-backend
+npm test
+\end{lstlisting}
+
+Les sorties chiffrées de la dernière exécution (nombre de tests, succès, échecs) : \acompleter{coller ici le résumé Jest}.
+
+\section{Tests d'intégration API}
+
+Le fichier \texttt{api.test.js} enchaîne notamment :
+
+\begin{table}[H]
+\centering
+\caption{Exemples de cas --- \texttt{api.test.js}}
+\label{tab:t-api}
+\small
+\begin{tabularx}{\textwidth}{@{}Xll@{}}
+\toprule
+Cas & Attendu & \\
+\midrule
+Création d'utilisateur + jeton client & 200, présence de \texttt{token} & \\
+\texttt{find-or-create} conversation sans session & 401 & \\
+Création de conversation authentifiée & \texttt{handledBy = ia} & \\
+Lecture d'un fil sans session & 401 & \\
+Lecture par un autre client & 403 & \\
+Lecture par le propriétaire & 200 & \\
+Escalade & \texttt{humain}, \texttt{en\_attente} & \\
+Désescalade & \texttt{ia}, \texttt{en\_cours} & \\
+Clôture avec note 5 & \texttt{resolu}, rating 5 & \\
+Clôture avec \texttt{rating: 0} & statut résolu, pas de fausse note & \\
+\texttt{sender: humain} sans jeton & 401 & \\
+\texttt{sender: humain} avec jeton agent & 201 & \\
+\texttt{sender: client} sans jeton & 401 & \\
+Client sur une conversation étrangère & 403 & \\
+Injection \texttt{sender: ia} depuis l'extérieur & 403 & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Tests du middleware d'authentification}
+
+\texttt{auth-middleware.test.js} vérifie \texttt{requireClientAuth}, \texttt{requireConversationAccess} et \texttt{requireSenderAuth} : absence de header, jeton invalide, rôle inadapté, appartenance de conversation. Ces tests n'ont pas besoin d'une instance Mongo réelle (mock du modèle).
+
+\section{Tests d'upload}
+
+\texttt{upload.test.js} fixe une limite basse (1~Mo) pour rester rapide. Cas couverts : refus sans session (401), refus d'un type non autorisé (400), acceptation JPEG client et PDF agent (200), refus de fichier trop volumineux (413), conservation d'une extension courte alphanumérique pour un sous-type image atypique.
+
+\section{Tests du retriever RAG}
+
+\texttt{rag.test.js} contrôle que :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \og Comment suivre ma commande ? \fg{} ramène l'entrée de suivi ;
+  \item une demande de remboursement ramène l'entrée correspondante ;
+  \item une requête sans rapport (\texttt{xyz123...}) ne retourne aucun document ;
+  \item \texttt{getAIResponse} sans clé Gemini contient la consigne \og Mot de passe oublié \fg{} pour la question de réinitialisation.
+\end{itemize}
+
+Ces tests valident le \textbf{retriever local} et le \textbf{repli}. Ils ne mesurent pas la qualité linguistique de Gemini en production.
+
+\section{Limites}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item pas de tests E2E navigateur (Playwright, Cypress) dans le dépôt ;
+  \item pas de tests de charge Socket.io ;
+  \item pas de recette formelle signée par l'encadrant documentée ici : \acompleter{si une démonstration a été faite à M.~Kais, indiquer la date} ;
+  \item les indicateurs du dashboard dépendent des données présentes (seed ou usage réel) ; ils ne sont pas des KPI d'un service en production.
+\end{itemize}

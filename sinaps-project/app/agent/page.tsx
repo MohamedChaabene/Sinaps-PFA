@@ -21,10 +21,7 @@ import {
     mapBackendConversation,
 } from "@/lib/api"
 import { getSocket } from "@/lib/socket"
-
-function initials(name: string) {
-    return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()
-}
+import { getInitials } from "@/lib/utils"
 
 export default function AgentPage() {
     const [conversations, setConversations] = React.useState<Conversation[]>([])
@@ -128,7 +125,7 @@ export default function AgentPage() {
                         <HeadsetIcon className="size-5 text-primary" />
                         <span className="font-heading text-sm font-bold">File d'attente</span>
                         {conversations.length > 0 && (
-                            <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary text-xs font-semibold px-2">
+                            <Badge variant="secondary" className="rounded-md bg-primary/10 text-primary text-xs font-semibold px-2">
                                 {conversations.length}
                             </Badge>
                         )}
@@ -136,7 +133,7 @@ export default function AgentPage() {
                             variant="ghost"
                             size="icon-sm"
                             onClick={() => logout(router)}
-                            className="ml-auto rounded-full text-muted-foreground hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive"
+                            className="ml-auto rounded-lg text-muted-foreground hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive"
                             aria-label="Déconnexion"
                             title="Se déconnecter"
                         >
@@ -163,10 +160,10 @@ export default function AgentPage() {
                                             : "hover:bg-muted/50"
                                     }`}
                                 >
-                                    <Avatar className="size-8.5 shrink-0 ring-1 ring-primary/20">
-                                        <AvatarImage src={c.clientAvatar || "/placeholder.svg"} />
-                                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                                            {initials(c.clientName)}
+                                    <Avatar className="size-8.5 shrink-0 rounded-xl ring-1 ring-primary/20">
+                                        <AvatarImage src={c.clientAvatar || "/placeholder.svg"} className="rounded-xl" />
+                                        <AvatarFallback className="rounded-xl bg-primary/10 text-primary text-xs font-semibold">
+                                            {getInitials(c.clientName)}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="min-w-0 flex-1">
@@ -189,21 +186,21 @@ export default function AgentPage() {
                 >
                     {activeConversation ? (
                         <>
-                            <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-xs px-4 py-3 sm:px-6">
+                            <div className="flex items-center justify-between gap-3 border-b border-border bg-card/95 backdrop-blur-xs px-4 py-3 sm:px-6 shadow-2xs">
                                 <div className="flex items-center gap-3">
                                     <Button
                                         variant="ghost"
                                         size="icon-sm"
                                         onClick={() => setActiveId(null)}
-                                        className="md:hidden -ml-2 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                                        className="md:hidden -ml-2 rounded-lg text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
                                         aria-label="Retour à la file d'attente"
                                         title="Retour à la file d'attente"
                                     >
                                         <ChevronLeft className="size-5" />
                                     </Button>
-                                    <Avatar className="size-9 ring-2 ring-primary/20">
-                                        <AvatarImage src={activeConversation.clientAvatar || "/placeholder.svg"} />
-                                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials(activeConversation.clientName)}</AvatarFallback>
+                                    <Avatar className="size-9 rounded-xl ring-2 ring-primary/20">
+                                        <AvatarImage src={activeConversation.clientAvatar || "/placeholder.svg"} className="rounded-xl" />
+                                        <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-semibold">{getInitials(activeConversation.clientName)}</AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <p className="font-heading text-sm font-bold">{activeConversation.clientName}</p>
@@ -216,7 +213,7 @@ export default function AgentPage() {
                                     onClick={handleResolve}
                                     variant="secondary"
                                     size="sm"
-                                    className="rounded-full text-xs font-medium focus-visible:ring-2 focus-visible:ring-primary"
+                                    className="rounded-lg text-xs font-medium focus-visible:ring-2 focus-visible:ring-primary shadow-2xs"
                                 >
                                     <CheckIcon className="size-3.5 text-success" data-icon="inline-start" />
                                     Marquer résolu
@@ -231,7 +228,7 @@ export default function AgentPage() {
                                         <Zap className="size-3.5 text-amber-500" />
                                         <span>Réponses types :</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 shrink-0">
+                                    <div className="flex items-center gap-1.5 shrink-0 py-0.5">
                                         {[
                                             "Bonjour, je prends en charge votre demande !",
                                             "J'ai bien vérifié votre dossier, tout est en ordre.",
@@ -241,7 +238,7 @@ export default function AgentPage() {
                                                 key={idx}
                                                 type="button"
                                                 onClick={() => handleSend(template)}
-                                                className="inline-flex items-center rounded-full border border-border/80 bg-card px-3 py-1 text-xs font-medium text-foreground/90 transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                                className="inline-flex items-center rounded-lg border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shadow-2xs"
                                             >
                                                 {template}
                                             </button>
@@ -254,8 +251,8 @@ export default function AgentPage() {
                         </>
                     ) : (
                         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center p-6">
-                            <div className="rounded-full bg-muted/60 p-4">
-                                <HeadsetIcon className="size-10 text-muted-foreground/50" />
+                            <div className="rounded-2xl bg-muted/60 p-5 border border-border/60">
+                                <HeadsetIcon className="size-10 text-primary/70" />
                             </div>
                             <div className="space-y-1">
                                 <p className="text-base font-semibold text-foreground">Aucune conversation sélectionnée</p>

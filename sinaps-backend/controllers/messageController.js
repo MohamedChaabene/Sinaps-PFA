@@ -30,10 +30,8 @@ exports.sendMessage = async (req, res) => {
     let aiMessage = null;
 
     // Si c'est le client qui écrit, l'IA répond automatiquement
-    if (sender === 'client') {
-      const conversation = await Conversation.findById(conversationId);
-      if (conversation.handledBy === 'ia') {
-        const aiText = await getAIResponse(content || 'Document joint');
+    if (sender === 'client' && updatedConv?.handledBy === 'ia') {
+      const aiText = await getAIResponse(content || 'Document joint');
         aiMessage = await Message.create({
           conversation: conversationId,
           sender: 'ia',
@@ -54,7 +52,6 @@ exports.sendMessage = async (req, res) => {
         });
         emitGlobal('conversation_updated', reUpdatedConv);
       }
-    }
 
     res.status(201).json({ message, aiMessage });
   } catch (error) {

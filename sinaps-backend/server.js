@@ -1,8 +1,18 @@
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+if (process.env.DNS_OVERRIDE === 'true') {
+  const dns = require('dns');
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+}
 
 require('dotenv').config();
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'sinaps-super-secret-key-pfa-2026';
+
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ ERREUR FATALE : JWT_SECRET doit être impérativement défini en production.');
+    process.exit(1);
+  }
+  console.warn('⚠️ AVERTISSEMENT : JWT_SECRET non configuré dans .env, clé de test utilisée.');
+  process.env.JWT_SECRET = 'sinaps-super-secret-key-pfa-2026';
+}
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
@@ -26,10 +36,29 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  process.env.CLIENT_URL,
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('Origine non autorisée par la politique CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+};
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: process.env.NODE_ENV === 'production' ? allowedOrigins : '*',
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    credentials: true,
   },
 });
 
@@ -51,7 +80,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {});
 });
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

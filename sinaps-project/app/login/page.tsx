@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -45,7 +46,7 @@ export default function LoginPage() {
           </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="flex flex-col gap-5 px-6 sm:px-10">
+          <CardContent className="flex flex-col gap-5 px-6 pb-4 sm:px-10 sm:pb-6">
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Adresse e-mail</Label>
               <Input id="email" name="email" type="email" placeholder="vous@entreprise.com" required />
@@ -55,10 +56,16 @@ export default function LoginPage() {
               <Input id="password" name="password" type="password" required />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col gap-3 px-6 pb-7 pt-6 sm:px-10">
+          <CardFooter className="flex flex-col gap-3.5 px-6 pb-7 pt-6 sm:px-10">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Connexion..." : "Se connecter"}
             </Button>
+            <p className="text-center text-xs leading-5 text-muted-foreground">
+              Nouvel agent de support ?{" "}
+              <Link href="/agent/signup" className="font-semibold text-primary underline-offset-4 hover:underline">
+                Rejoindre l&apos;équipe
+              </Link>
+            </p>
           </CardFooter>
         </form>
       </Card>

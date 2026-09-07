@@ -93,55 +93,66 @@ export function MessageComposer({
         </div>
       )}
 
-      <InputGroup className="rounded-2xl">
-        <InputGroupTextarea
-          placeholder="Écrivez votre message..."
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          className="min-h-10 resize-none"
-          aria-label="Écrivez votre message..."
-        />
-        <InputGroupAddon align="block-end">
-          <Popover>
-            <PopoverTrigger render={<InputGroupButton aria-label="Insérer un emoji" />}>
-              <SmileIcon />
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="start">
-              <div className="grid grid-cols-6 gap-1">
-                {EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setValue((prev) => prev + emoji)}
-                    className="rounded-lg p-1.5 text-lg transition-colors hover:bg-muted"
-                    aria-label={`Ajouter l'emoji ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          <InputGroupButton
-            aria-label="Joindre un fichier"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <PaperclipIcon />
-          </InputGroupButton>
-          <InputGroupButton
-            aria-label="Envoyer le message"
-            variant="default"
-            className="ml-auto rounded-full"
-            disabled={(!value.trim() && attachments.length === 0) || uploading}
-            onClick={handleSend}
-          >
-            <SendHorizonalIcon />
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
+      <div className="relative rounded-xl border border-input/80 bg-background/90 shadow-2xs focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+        <InputGroup className="rounded-xl border-0 shadow-none focus-within:ring-0 focus-within:border-transparent bg-transparent">
+          <InputGroupTextarea
+            placeholder="Écrivez votre message..."
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            className="min-h-11 resize-none text-sm px-3.5 pt-2.5 placeholder:text-muted-foreground/60"
+            aria-label="Écrivez votre message..."
+          />
+          <InputGroupAddon align="block-end" className="px-2 pb-2 pt-0 gap-1.5">
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <InputGroupButton
+                    aria-label="Insérer un emoji"
+                    className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                  />
+                }
+              >
+                <SmileIcon className="size-4" />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto rounded-xl p-2.5 shadow-lg border border-border/80" align="start">
+                <div className="grid grid-cols-6 gap-1">
+                  {EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setValue((prev) => prev + emoji)}
+                      className="rounded-lg p-1.5 text-lg transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      aria-label={`Ajouter l'emoji ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <InputGroupButton
+              aria-label="Joindre un fichier"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+            >
+              <PaperclipIcon className="size-4" />
+            </InputGroupButton>
+            <InputGroupButton
+              aria-label="Envoyer le message"
+              variant="default"
+              className="ml-auto h-8 px-3 rounded-lg font-medium text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all active:scale-[0.98] disabled:opacity-40"
+              disabled={(!value.trim() && attachments.length === 0) || uploading}
+              onClick={handleSend}
+            >
+              <span className="hidden sm:inline">Envoyer</span>
+              <SendHorizonalIcon className="size-3.5" />
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
     </div>
   )
 }

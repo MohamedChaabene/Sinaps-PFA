@@ -17,7 +17,10 @@ exports.getStats = async (req, res) => {
     // Optimisé en 1 seule requête globale au lieu d'une boucle N+1 séquentielle
     const messages = await Message.find({
       sender: { $in: ['client', 'ia', 'humain'] },
-    }).sort({ createdAt: 1 });
+    })
+      .select('conversation sender createdAt')
+      .sort({ createdAt: 1 })
+      .lean();
 
     const conversationFirstMsgs = new Map();
     for (const msg of messages) {

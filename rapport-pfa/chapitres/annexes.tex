@@ -1,0 +1,79 @@
+\chapter{Annexes}
+
+\section{Glossaire des statuts de conversation}
+
+\begin{table}[H]
+\centering
+\caption{Statuts et modes de prise en charge}
+\label{tab:annexe-statuts}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Champ & Valeur & Signification opérationnelle \\
+\midrule
+status & \texttt{en\_cours} & Conversation active (IA ou humain déjà en charge) \\
+status & \texttt{en\_attente} & Escaladée, en file côté agents \\
+status & \texttt{resolu} & Clôturée \\
+handledBy & \texttt{ia} & Prochaine réponse automatique possible \\
+handledBy & \texttt{humain} & Réponses attendues d'un opérateur \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Exemple d'entrée de la base de connaissances}
+
+Les extraits suivants sont des \textbf{exemples} utilisés par le retriever, et non une documentation officielle de produits SINAPS.
+
+\begin{lstlisting}[caption={Extrait de \texttt{knowledgeBase.js}}]
+{
+  question: "Comment suivre ma commande ?",
+  answer: "Vous pouvez suivre votre commande depuis votre espace
+           client, section 'Mes commandes'. Un numéro de suivi
+           est envoyé par email dès l'expédition."
+}
+\end{lstlisting}
+
+\section{Comptes du script de seed (environnement de démo)}
+
+Ces identifiants figurent dans le README du projet à des fins de démonstration locale. Ils ne doivent pas être réutilisés en production.
+
+\begin{table}[H]
+\centering
+\caption{Comptes créés par \texttt{npm run seed}}
+\label{tab:seed}
+\begin{tabularx}{\textwidth}{@{}lllX@{}}
+\toprule
+Rôle & E-mail & Mot de passe (seed) & Accès \\
+\midrule
+Admin & admin@sinaps.com & password123 & \texttt{/admin} \\
+Agent & sarah.benali@sinaps.com & password123 & \texttt{/agent} \\
+Agent & karim.mansouri@sinaps.com & password123 & \texttt{/agent} \\
+Pending & youssef.mehdi@sinaps.com & password123 & login refusé tant que non validé \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Checklist de captures d'écran}
+
+À cocher après insertion dans le chapitre~4 :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item[$\square$] Identification client (Google)
+  \item[$\square$] Chat + réponse Gemini / RAG
+  \item[$\square$] Pièce jointe
+  \item[$\square$] Escalade et file agent
+  \item[$\square$] Message humain
+  \item[$\square$] Satisfaction
+  \item[$\square$] Login staff
+  \item[$\square$] Inscription agent
+  \item[$\square$] Dashboard admin (stats, validation, historique)
+\end{itemize}
+
+\section{Compilation de ce rapport}
+
+\begin{lstlisting}[caption={Compilation LaTeX}]
+cd rapport-pfa
+pdflatex main.tex
+pdflatex main.tex
+\end{lstlisting}
+
+Placer éventuellement un logo ISIMS officiel sous \texttt{images/logo-isims.jpg}. Le fichier \texttt{images/logo-organisme.jpg} correspond au visuel fourni pour l'organisme / l'identité du projet.

@@ -1,6 +1,7 @@
 import type { Agent, Stats, Conversation, ChatMessage, ClientSession } from "./types"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+export const API_BASE_URL = API_URL.replace(/\/api\/?$/, "")
 
 async function parseOrThrow<T = any>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}))
@@ -122,6 +123,21 @@ export async function escalateConversation(id: string) {
     headers: getClientAuthHeaders(),
   })
   return parseOrThrow(res)
+}
+
+export async function deescalateConversation(id: string) {
+  try {
+    const res = await fetch(`${API_URL}/conversations/${id}/de-escalate`, {
+      method: "PATCH",
+      headers: getClientAuthHeaders(),
+    })
+    if (res.ok) {
+      return await parseOrThrow(res)
+    }
+  } catch {
+    // Fallback gracefully if backend does not implement de-escalate
+  }
+  return null
 }
 
 export async function closeConversation(id: string, rating: number, comment: string) {

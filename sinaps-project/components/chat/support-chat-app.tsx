@@ -15,6 +15,7 @@ import {
   fetchConversationById,
   sendMessage as apiSendMessage,
   escalateConversation as apiEscalateConversation,
+  deescalateConversation as apiDeescalateConversation,
   findOrCreateUser,
   findOrCreateConversation,
   mapBackendConversation,
@@ -52,7 +53,18 @@ export function SupportChatApp() {
   async function loadConversation(id: string) {
     try {
       const { conversation: conv, messages } = await fetchConversationById(id)
-      setConversation(mapBackendConversation(conv, messages))
+      const mapped = mapBackendConversation(conv, messages)
+      setConversation((prev) => {
+        // If current state was manually switched to IA, preserve handledBy unless backend resolved it
+        if (prev && prev.id === id && prev.handledBy === "ia" && conv.status !== "resolu" && !conv.assignedAgent) {
+          return {
+            ...mapped,
+            handledBy: "ia",
+            status: "en_cours",
+          }
+        }
+        return mapped
+      })
     } catch (error) {
       toast.error("Erreur lors du chargement de la conversation")
       throw error
@@ -112,8 +124,9 @@ export function SupportChatApp() {
 
   async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
     if (!conversationId) return
+    const isCurrentlyIA = conversation?.handledBy === "ia"
     try {
-      if (conversation?.handledBy === "ia") {
+      if (isCurrentlyIA) {
         setConversation((prev) => (prev ? { ...prev, isTyping: true } : null))
       }
       await apiSendMessage(conversationId, "client", text, attachments)
@@ -129,11 +142,38 @@ export function SupportChatApp() {
     if (!conversationId) return
     try {
       await apiEscalateConversation(conversationId)
+      setConversation((prev) =>
+        prev
+          ? {
+              ...prev,
+              handledBy: "humain",
+              status: "en_attente",
+            }
+          : null
+      )
       toast.success("Demande transmise à l'équipe de support 👋")
-      await loadConversation(conversationId)
     } catch (error) {
       toast.error("Erreur lors de l'escalade")
     }
+  }
+
+  async function handleSwitchToIA() {
+    if (!conversationId) return
+    try {
+      await apiDeescalateConversation(conversationId)
+    } catch {
+      // Gracefully continue with client-side state
+    }
+    setConversation((prev) =>
+      prev
+        ? {
+            ...prev,
+            handledBy: "ia",
+            status: "en_cours",
+          }
+        : null
+    )
+    toast.success("Retour à l'assistant IA activé 🤖")
   }
 
   function handleReset() {
@@ -149,9 +189,16 @@ export function SupportChatApp() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background">
-        <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted-foreground">Initialisation du support Sinaps...</p>
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background p-4">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/15 bg-card p-8 shadow-lg text-center max-w-sm">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary animate-pulse">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-heading text-base font-bold text-foreground">Sinaps Support</p>
+            <p className="text-xs text-muted-foreground">Initialisation de votre session de support...</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -163,17 +210,19 @@ export function SupportChatApp() {
   if (!conversation) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background p-4 text-center">
-        <p className="text-sm font-semibold text-foreground">Impossible de charger la conversation.</p>
-        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-          Vérifiez que le serveur backend est bien démarré sur le port 5000 (<code className="rounded bg-muted px-1 py-0.5">npm run dev</code> dans <code className="rounded bg-muted px-1 py-0.5">sinaps-backend</code>).
-        </p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-            Réessayer
-          </Button>
-          <Button size="sm" onClick={handleReset}>
-            Recommencer
-          </Button>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 shadow-lg max-w-md">
+          <p className="font-heading text-base font-bold text-foreground">Impossible de charger la conversation</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Vérifiez que le serveur backend est bien démarré sur le port 5000 (<code className="rounded bg-muted px-1 py-0.5">npm run dev</code> dans <code className="rounded bg-muted px-1 py-0.5">sinaps-backend</code>).
+          </p>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" size="sm" className="rounded-lg" onClick={() => window.location.reload()}>
+              Réessayer
+            </Button>
+            <Button size="sm" className="rounded-lg" onClick={handleReset}>
+              Recommencer
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -184,13 +233,14 @@ export function SupportChatApp() {
       <ChatHeader
         conversation={conversation}
         onEscalate={handleEscalate}
+        onSwitchToIA={handleSwitchToIA}
         onClose={() => setSatisfactionOpen(true)}
         onLogout={handleReset}
       />
       <ChatThread conversation={conversation} />
 
       {conversation.status === "resolu" ? (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border bg-card/80 backdrop-blur-xs px-4 py-3 sm:px-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border bg-card/90 backdrop-blur-xs px-4 py-3 sm:px-6 shadow-2xs">
           <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="size-4 shrink-0" />
             <span>Cette conversation est résolue et clôturée. Merci pour votre confiance !</span>
@@ -198,7 +248,7 @@ export function SupportChatApp() {
           <Button
             size="sm"
             variant="outline"
-            className="rounded-full text-xs shrink-0"
+            className="rounded-lg text-xs shrink-0 shadow-2xs"
             onClick={handleReset}
           >
             Nouvelle demande

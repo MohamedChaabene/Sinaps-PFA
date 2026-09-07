@@ -1,0 +1,140 @@
+\chapter{Étude de l'existant et analyse des besoins}
+
+\section{Problématique du support client}
+
+Une demande de support typique (suivi de commande, retard, remboursement, mot de passe, code promotionnel) traverse plusieurs étapes : qualification, recherche d'information, réponse, éventuellement transfert vers un humain, puis clôture et recueil d'avis. Sans outil dédié, ces étapes se perdent dans la messagerie personnelle ou un standard téléphonique. Les conséquences habituelles sont :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item une charge répétitive pour les opérateurs sur des questions déjà documentées ;
+  \item l'absence de \textbf{traçabilité} (statut, interlocuteur, pièces jointes, historique) ;
+  \item l'impossibilité de distinguer ce qui a été résolu par une FAQ de ce qui a nécessité un humain ;
+  \item un faible pilotage (délai de première réponse, satisfaction).
+\end{itemize}
+
+Le sujet du stage pose donc une question d'ingénierie logicielle claire : \textbf{comment automatiser une partie du support tout en conservant une bascule humaine fluide et une supervision administrative ?}
+
+\section{Étude de l'existant}
+
+\subsection{Pratique visée par le sujet}
+
+Le cahier des charges ne décrit pas un logiciel interne déjà en production chez SINAPS. Il décrit un \textbf{produit à construire} : canal de chat, agent IA, workflow, multi-agents, contenus riches, clôture et satisfaction, tableau de bord. L'existant fonctionnel, au début du stage, était donc \textbf{nul} : aucune base de code héritée n'a été fournie ; l'application a été écrite intégralement pendant le PFA.
+
+\subsection{Limites d'une FAQ seule}
+
+Une page de questions/réponses suffit pour les cas les plus fréquents mais :
+\begin{itemize}[leftmargin=1.4em]
+  \item elle n'entretient pas un fil de discussion ;
+  \item elle ne déclenche pas d'escalade ni d'assignation ;
+  \item elle n'enregistre ni SLA ni note de satisfaction.
+\end{itemize}
+
+\subsection{Limites d'un support 100~\% humain}
+
+Un chat 100~\% humain (ou un e-mail) offre la souplesse d'un opérateur, mais chaque message consomme du temps humain, y compris pour les demandes déjà couvertes par la connaissance métier. Le sujet cherche un \textbf{compromis} : l'IA en première ligne, l'humain sur demande ou lorsque la base ne suffit pas.
+
+\subsection{Éléments du marché (repères, non copiés)}
+
+Des outils du marché (chats de type Slack, widgets de support, assistants RAG) illustrent l'attente utilisateur : messages, pièces jointes, indicateurs de statut, parfois un bot. Ils ne constituent pas le système existant de SINAPS ; ils servent uniquement de \textbf{repère d'expérience utilisateur} pour un chat \og Slack light \fg{} demandé dans le sujet.
+
+\section{Solution proposée}
+
+La solution retenue est une \textbf{application web unique} exposant trois espaces :
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Client} (\texttt{/}) : identification, conversation unique active, réponses IA, pièces jointes, escalade / retour IA, clôture et satisfaction ;
+  \item \textbf{Agent} (\texttt{/agent}) : connexion e-mail / mot de passe, file des conversations, réponses humaines, clôture ;
+  \item \textbf{Administrateur} (\texttt{/admin}) : validation des inscriptions agents, statistiques, historique filtrable.
+\end{enumerate}
+
+Côté serveur, une API REST Express persiste les entités dans MongoDB, appelle un service RAG + Gemini, et notifie les clients via Socket.io. Cette architecture est détaillée au chapitre~3 ; le présent chapitre se limite aux \textbf{besoins}.
+
+\section{Identification des acteurs}
+
+Trois acteurs interagissent avec le système (tableau~\ref{tab:acteurs}). Le diagramme de cas d'utilisation du chapitre~3 reprend ces acteurs.
+
+\begin{table}[H]
+\centering
+\caption{Acteurs du système}
+\label{tab:acteurs}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Acteur} & \textbf{Rôle} \\
+\midrule
+Client & Utilisateur final du support. S'identifie par Google ou par nom et e-mail. Consulte et alimente \textbf{sa} conversation. \\
+Agent de support & Compte créé par inscription, \textbf{validé} par l'admin. Traite les fils escaladés. \\
+Administrateur & Même modèle de compte qu'un agent, avec le rôle \texttt{admin}. Valide ou refuse les agents, consulte stats et historique. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+L'agent IA n'est \textbf{pas} un acteur UML au sens d'un utilisateur humain : c'est un \textbf{composant interne} qui produit des messages de type \texttt{sender = ia}.
+
+\section{Besoins fonctionnels}
+
+Les exigences ci-dessous sont dérivées du document de sujet \textit{Projet Stage -- Op Support IA} et de ce qui a été effectivement spécifié pour le MVP. Le tableau~\ref{tab:exigences} indique le statut \textbf{dans le dépôt actuel}, afin de ne pas confondre le souhait initial et le réalisé.
+
+\begin{table}[H]
+\centering
+\caption{Exigences fonctionnelles et statut dans le dépôt}
+\label{tab:exigences}
+\small
+\begin{tabularx}{\textwidth}{@{}p{1.4cm}X p{2.4cm}@{}}
+\toprule
+\textbf{Id} & \textbf{Exigence} & \textbf{Statut} \\
+\midrule
+RF01 & Le client identifie une demande dans une interface de chat. & Réalisé \\
+RF02 & Authentification client par compte Google (OAuth). & Réalisé (jeton Google vérifié côté serveur). Une saisie nom/e-mail existe en parallèle. \\
+RF03 & L'agent IA répond à partir d'une base de connaissances (RAG). & Réalisé (retriever TF-IDF + Gemini, repli local). \\
+RF04 & Workflow de statuts (en cours, en attente, résolu) et mode IA / humain. & Réalisé \\
+RF05 & Bascule vers un opérateur humain à l'initiative du client. & Réalisé \\
+RF06 & Retour vers l'IA (désescalade). & Réalisé \\
+RF07 & Plusieurs agents (comptes distincts, compétences saisies à l'inscription). & Comptes : réalisé. Routage automatique par compétence : \textbf{non réalisé}. \\
+RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web). \\
+RF09 & Échange de documents, images, vidéos. & Réalisé (upload Multer, types filtrés). Aperçu \og unfurl \fg{} de liens arbitraires : non spécifié comme module séparé. \\
+RF10 & Clôture et enquête de satisfaction (note 1--5, commentaire). & Réalisé \\
+RF11 & Inscription agent, validation ou rejet par l'admin. & Réalisé \\
+RF12 & Historique des conversations, recherche et filtre par statut. & Réalisé (espace admin). \\
+RF13 & Statistiques : volume, résolution IA vs humain, satisfaction moyenne, temps de réponse. & Réalisé (agrégations MongoDB, pas de chiffres marketing fictifs). \\
+RF14 & Application mobile native (React Native / Flutter). & \textbf{Non réalisé} (web responsive uniquement). \\
+RF15 & File d'attente / messagerie temps réel. & Réalisé (Socket.io). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Besoins non fonctionnels}
+
+\begin{description}[style=nextline,leftmargin=1.2em,font=\bfseries]
+  \item[RNF01 --- Utilisabilité] Interface en français, simple, adaptée à un usage type Slack light (exigence de design du sujet).
+  \item[RNF02 --- Adaptabilité d'écran] Fonctionnement sur desktop, tablette et smartphone via une UI responsive (Next.js), sans application native.
+  \item[RNF03 --- Sécurité] Mots de passe agents hachés (bcrypt) ; JWT ; vérification du jeton Google ; restriction d'accès aux conversations (propriétaire client ou agent/admin) ; messages \texttt{ia} non injectables depuis l'extérieur ; upload authentifié et filtré.
+  \item[RNF04 --- Disponibilité du bot] Si \texttt{GEMINI\_API\_KEY} est absente ou l'appel échoue, un repli sur le meilleur extrait RAG (ou un message d'invitation à l'escalade) évite un silence total.
+  \item[RNF05 --- Temps réel] Diffusion des messages et des mises à jour de conversation par Socket.io (salles par conversation et événements globaux).
+  \item[RNF06 --- Testabilité] Suite Jest / Supertest / MongoMemoryServer sur le backend.
+  \item[RNF07 --- Portabilité de configuration] Secrets et URI via variables d'environnement ; exemples \texttt{.env.example}.
+\end{description}
+
+Les chiffres illustratifs du document de sujet (satisfaction 94~\%, 2,4~min, 68~\% de résolutions IA, note 4,7/5) sont des \textbf{exemples de communication produit}. Ils \textbf{ne sont pas} des résultats mesurés pendant le stage et ne seront pas présentés comme tels.
+
+\section{Contraintes et périmètre}
+
+\subsection{Contraintes}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item Durée limitée (environ deux mois et demi) et travail \textbf{individuel}.
+  \item Stack imposée / validée : web React (réalisé avec Next.js), backend Node/Express, MongoDB, Gemini, JWT --- et non Vue, Angular, OpenAI par défaut, ni Kafka / Docker / Kubernetes (cités comme pistes dans le sujet, non utilisées).
+  \item Hébergement applicatif : \textbf{local} au moment de la rédaction ; données sur \textbf{MongoDB Atlas}.
+  \item Base de connaissances : jeu d'\textbf{exemples} (commandes, remboursements, mot de passe, codes promo), pas un corpus métier SINAPS fourni par ailleurs.
+\end{itemize}
+
+\subsection{Hors périmètre (à ce stade)}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item application iOS / Android native ;
+  \item file de messages (Kafka, RabbitMQ) ;
+  \item conteneurisation et orchestration (Docker, Kubernetes) ;
+  \item RAG vectoriel (embeddings, base vectorielle, LangChain) ;
+  \item affectation automatique d'un agent selon ses compétences ;
+  \item déploiement public en production.
+\end{itemize}
+
+Ces éléments peuvent figurer parmi les perspectives (conclusion), sans être présentés comme livrés.
