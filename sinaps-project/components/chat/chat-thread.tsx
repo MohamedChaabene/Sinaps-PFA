@@ -70,12 +70,12 @@ function CopyMessageButton({ text }: { text: string }) {
 function EmptyConversationState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center px-4 py-12 my-auto">
-      <div className="relative mb-5 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent text-primary shadow-xs border border-primary/20 ring-4 ring-primary/5">
-        <Sparkles className="size-7 text-primary" />
-        <span className="absolute -top-1 -right-1 flex size-3">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex size-3 rounded-full bg-emerald-500" />
-        </span>
+      <div className="relative mb-5 flex items-center justify-center">
+        <img
+          src="/sinaps-logo-soft.png"
+          alt="SINAPS"
+          className="h-14 sm:h-16 w-auto object-contain drop-shadow-xs transition-transform hover:scale-105"
+        />
       </div>
       <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-1.5 tracking-tight">
         Bienvenue sur l&apos;assistance SINAPS
@@ -182,19 +182,15 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                       <Bubble
                         align={isClient ? "end" : "start"}
                         variant={isClient ? "default" : "secondary"}
-                        className={`group relative shadow-xs transition-shadow ${
-                          isClient
-                            ? "bg-primary text-primary-foreground border-transparent"
-                            : message.sender === "humain"
-                            ? "border-blue-200/80 bg-blue-50/60 dark:border-blue-900/60 dark:bg-blue-950/20"
-                            : "border-border/80 bg-card"
-                        }`}
+                        className="group relative"
                       >
                         <BubbleContent
-                          className={`space-y-2.5 p-3.5 sm:p-4 text-sm leading-relaxed ${
+                          className={`space-y-2.5 px-4 py-3 sm:px-4.5 sm:py-3.5 text-sm leading-relaxed shadow-xs transition-shadow ${
                             isClient
-                              ? "rounded-2xl rounded-tr-xs text-primary-foreground font-normal"
-                              : "rounded-2xl rounded-tl-xs text-foreground"
+                              ? "rounded-2xl sm:rounded-[20px] rounded-br-xs sm:rounded-br-[5px] bg-primary text-primary-foreground border-transparent font-normal selection:bg-primary-foreground/20"
+                              : message.sender === "humain"
+                              ? "rounded-2xl sm:rounded-[20px] rounded-bl-xs sm:rounded-bl-[5px] border border-blue-200/80 bg-blue-50/70 text-foreground dark:border-blue-900/60 dark:bg-blue-950/25"
+                              : "rounded-2xl sm:rounded-[20px] rounded-bl-xs sm:rounded-bl-[5px] border border-border/80 bg-card text-foreground"
                           }`}
                         >
                           {message.content && (
@@ -284,8 +280,8 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                     </div>
                   </MessageAvatar>
                   <MessageContent>
-                    <Bubble align="start" variant="secondary" className="border-border/80 bg-card shadow-2xs">
-                      <BubbleContent className="rounded-xl rounded-tl-xs py-2.5 px-3.5 flex items-center gap-2.5">
+                    <Bubble align="start" variant="secondary" className="relative">
+                      <BubbleContent className="rounded-2xl sm:rounded-[20px] rounded-bl-xs sm:rounded-bl-[5px] border border-border/80 bg-card py-2.5 px-4 flex items-center gap-2.5 shadow-2xs">
                         <span className="flex items-center gap-1">
                           <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
                           <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />

@@ -48,9 +48,16 @@ export function ChatHeader({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
-              <span className="font-heading font-extrabold text-sm sm:text-base text-foreground tracking-tight">
-                SINAPS
-              </span>
+              <img
+                src="/sinaps-logo-light.png"
+                alt="SINAPS"
+                className="h-6 sm:h-7 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/sinaps-logo-dark.png"
+                alt="SINAPS"
+                className="h-6 sm:h-7 w-auto object-contain hidden dark:block"
+              />
               <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary tracking-wide uppercase hidden sm:inline-block">
                 Copilot
               </span>

@@ -106,8 +106,17 @@ export function ClientEntryForm({
 
         <Card className="w-full border-border/80 bg-card/95 shadow-xl shadow-primary/5 backdrop-blur-md">
           <CardHeader className="gap-3 px-6 pb-4 pt-7 sm:px-8 sm:pt-8 text-center">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-xl font-black text-primary-foreground shadow-md shadow-primary/20 ring-4 ring-primary/15">
-              S
+            <div className="mx-auto flex items-center justify-center mb-1">
+              <img
+                src="/sinaps-logo-light.png"
+                alt="SINAPS"
+                className="h-10 sm:h-12 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/sinaps-logo-dark.png"
+                alt="SINAPS"
+                className="h-10 sm:h-12 w-auto object-contain hidden dark:block"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <CardTitle className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">

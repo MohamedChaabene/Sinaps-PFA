@@ -68,7 +68,10 @@ export function AgentSignupForm() {
     return (
         <Card className="w-full max-w-lg border-primary/15 shadow-xl shadow-primary/5">
             <CardHeader className="gap-3 px-6 pb-5 pt-7 sm:px-10 sm:pt-9">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-primary text-lg font-extrabold text-primary-foreground">S</div>
+                <div className="flex items-center">
+                    <img src="/sinaps-logo-light.png" alt="SINAPS" className="h-8 w-auto object-contain dark:hidden" />
+                    <img src="/sinaps-logo-dark.png" alt="SINAPS" className="h-8 w-auto object-contain hidden dark:block" />
+                </div>
                 <div className="flex flex-col gap-1">
                     <CardTitle className="font-heading text-2xl font-bold">Rejoindre l&apos;équipe support</CardTitle>
                     <CardDescription>Créez votre profil d&apos;agent pour aider nos clients.</CardDescription>

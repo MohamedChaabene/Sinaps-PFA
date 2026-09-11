@@ -64,7 +64,7 @@ export function MessageComposer({
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !uploading
 
   return (
-    <div className="border-t border-border/80 bg-card px-4 py-3 sm:rounded-b-2xl sm:px-6">
+    <div className="border-t border-border/80 bg-card px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-3 sm:rounded-b-2xl shrink-0 transition-[padding] duration-150">
       <input
         type="file"
         ref={fileInputRef}
@@ -105,7 +105,7 @@ export function MessageComposer({
             onChange={(event) => setValue(event.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="min-h-11 resize-none text-sm px-3.5 pt-3 placeholder:text-muted-foreground/50 leading-relaxed font-normal"
+            className="min-h-11 resize-none text-base sm:text-sm px-3.5 pt-2.5 sm:pt-3 placeholder:text-muted-foreground/50 leading-relaxed font-normal"
             aria-label="Écrivez votre message..."
           />
           <InputGroupAddon align="block-end" className="px-2.5 pb-2 pt-0 gap-1">

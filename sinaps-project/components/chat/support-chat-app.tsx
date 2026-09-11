@@ -237,7 +237,7 @@ export function SupportChatApp() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-background sm:p-3 lg:p-5">
+    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:p-3 lg:p-5">
       <ChatHeader
         conversation={conversation}
         onEscalate={handleEscalate}

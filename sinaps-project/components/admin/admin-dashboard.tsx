@@ -80,6 +80,18 @@ function AdminSidebar({
   onClose?: () => void
 }) {
   const router = useRouter()
+  const [adminUser, setAdminUser] = useState<{ name?: string; email?: string } | null>(null)
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("sinaps_agent")
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed) setAdminUser(parsed)
+      }
+    } catch {}
+  }, [])
+
   const items = [
     ["stats", "Statistiques", BarChart3],
     ["agents", "En attente", ClipboardList],
@@ -106,10 +118,10 @@ function AdminSidebar({
         <div className="flex flex-col items-center gap-3 pb-4">
           <Link
             href="/"
-            className="flex size-10 items-center justify-center rounded-xl bg-primary font-heading text-lg font-extrabold text-primary-foreground shadow-xs transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex size-10 items-center justify-center rounded-xl bg-card border border-border/80 shadow-xs transition-transform hover:scale-105 p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             title="Sinaps Support"
           >
-            S
+            <img src="/sinaps-logo-primary.png" alt="Sinaps" className="size-8 object-contain" />
           </Link>
           {onToggleCollapse && !onClose && (
             <Button
@@ -128,20 +140,19 @@ function AdminSidebar({
         <div className="flex items-center justify-between gap-2 pb-2">
           <Link
             href="/"
-            className="flex items-center gap-3 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex items-center gap-2.5 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             title="Sinaps Support"
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-lg font-extrabold text-primary-foreground shadow-xs">
-              S
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="truncate font-heading text-base font-bold tracking-tight text-foreground">
-                Sinaps Support
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Administration
-              </span>
-            </div>
+            <img
+              src="/sinaps-logo-light.png"
+              alt="Sinaps Support"
+              className="h-8 w-auto object-contain dark:hidden"
+            />
+            <img
+              src="/sinaps-logo-dark.png"
+              alt="Sinaps Support"
+              className="h-8 w-auto object-contain hidden dark:block"
+            />
           </Link>
 
           {onClose ? (
@@ -205,33 +216,53 @@ function AdminSidebar({
       {/* Footer: security badge & logout */}
       <div className="mt-auto flex flex-col gap-3 pt-4">
         {!isCollapsed ? (
-          <div className="rounded-xl border border-border/70 bg-secondary/30 p-3.5 shadow-2xs">
-            <div className="flex items-center gap-2 text-primary">
-              <ShieldCheck className="size-4" />
-              <p className="text-[11px] font-bold uppercase tracking-wider">Espace sécurisé</p>
+          <div className="rounded-xl border border-border/70 bg-secondary/30 p-3 shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="size-4.5" />
+                <span className="absolute -top-0.5 -right-0.5 flex size-2">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-foreground">
+                  {adminUser?.name || "Administrateur"}
+                </p>
+                <p className="truncate text-[10px] font-medium text-muted-foreground">
+                  Session sécurisée
+                </p>
+              </div>
             </div>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Accès restreint aux administrateurs Sinaps.
-            </p>
+
+            <Separator className="my-2.5 opacity-60" />
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => logout(router)}
-              className="mt-3 w-full justify-start gap-2 text-xs font-semibold rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
+              className="w-full justify-center gap-2 text-xs font-semibold rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 border-border/80 focus-visible:ring-2 focus-visible:ring-destructive transition-colors shadow-2xs"
             >
               <LogOut className="size-3.5" />
-              Déconnexion
+              <span>Déconnexion</span>
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-2">
+            <div
+              className="relative flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shadow-2xs"
+              title="Session sécurisée active"
+            >
+              <ShieldCheck className="size-4.5" />
+              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-emerald-500" />
+            </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => logout(router)}
               title="Déconnexion"
               aria-label="Déconnexion"
-              className="size-9 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
+              className="size-9 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive transition-colors"
             >
               <LogOut className="size-4" />
             </Button>
@@ -417,9 +448,7 @@ export function AdminDashboard() {
             <Menu className="size-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary font-heading text-xs font-bold text-primary-foreground">
-              S
-            </div>
+            <img src="/sinaps-logo-primary.png" alt="Sinaps Admin" className="size-7 object-contain" />
             <span className="font-heading text-base font-bold">Sinaps Admin</span>
           </div>
           <div className="size-9" />
