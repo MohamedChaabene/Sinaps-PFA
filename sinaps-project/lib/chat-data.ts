@@ -14,4 +14,4 @@ export const statusLabels: Record<ConversationStatus, string> = {
   en_attente: "En attente",
 }
 
-export const conversations: Conversation[] = []
+

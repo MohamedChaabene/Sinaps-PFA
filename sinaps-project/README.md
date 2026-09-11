@@ -1,120 +1,78 @@
-# Documentation Technique et Utilisateur - Projet Op Support IA (Sinaps)
+# sinaps-project — Frontend
 
-Bienvenue dans la documentation complète de l'application **Op Support IA** développée pour Sinaps.
-Cette application est une solution complète de support client assistée par Agent IA (RAG & Gemini) avec escalade vers des agents humains en temps réel (WebSockets) et tableau de bord d'administration.
+Next.js frontend for the SINAPS support platform.
 
----
-
-## 📐 Architecture du Projet
-
-Le projet est divisé en deux parties principales :
-
-1. **`sinaps-backend`** (Backend REST API & WebSockets) :
-   - **Framework** : Node.js / Express
-   - **Base de données** : MongoDB (via Mongoose)
-   - **Temps réel** : Socket.io
-   - **Moteur IA / RAG** : Google Generative AI (Gemini) + Retriever Vectoriel TF-IDF/Cosine Similarity local (`ragService.js`)
-   - **Authentification** : JWT, bcryptjs, google-auth-library
-   - **Téléversement de fichiers** : Multer
-
-2. **`sinaps-project`** (Frontend Web & Dashboard) :
-   - **Framework** : Next.js (App Router, React, TypeScript)
-   - **UI & Styling** : Tailwind CSS, Shadcn UI / Radix UI, Lucide Icons
-   - **Temps réel** : socket.io-client
-   - **OAuth Client** : `@react-oauth/google`
-
-3. **`sinaps-mobile`** (Application Mobile Native) :
-   - **Framework** : React Native, Expo, TypeScript
-   - **Temps réel** : socket.io-client
-   - **Stockage sécurisé & Persistance** : `@react-native-async-storage/async-storage`
-   - **Médias & Pièces jointes** : `expo-image-picker`, `expo-document-picker`
-   - **Support multi-plateforme** : Android (Émulateur & Physique), iOS (Simulateur & Expo Go)
+See the [root README](../README.md) for the full project overview.
 
 ---
 
-## ⚙️ Configuration des Variables d'Environnement
+## Structure
 
-### 1. Backend (`sinaps-backend/.env`)
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/sinaps
-JWT_SECRET=votre_cle_secrete_jwt
-GEMINI_API_KEY=votre_cle_api_gemini
-GOOGLE_CLIENT_ID=votre_google_client_id.apps.googleusercontent.com
+```
+app/
+  page.tsx             → Root route "/" — renders the client chat widget
+  layout.tsx           → HTML shell, font, global providers (Toaster, TooltipProvider)
+  globals.css          → Tailwind base styles + CSS variables
+  login/page.tsx       → Agent / admin login form
+  agent/
+    page.tsx           → Agent inbox (support console)
+    signup/page.tsx    → Agent registration request page
+  admin/page.tsx       → Admin dashboard (protected by AuthGuard)
+
+components/
+  auth-guard.tsx       → Client-side auth check + logout helper
+  admin/
+    admin-dashboard.tsx      → Dashboard layout + data orchestrator
+    stats-panel.tsx          → KPI cards and AI/human breakdown chart
+    agent-table.tsx          → Pending agents + validated agents tables
+    conversation-history.tsx → Filterable conversation history table
+  agent/
+    agent-signup-form.tsx    → New agent registration form
+  chat/
+    support-chat-app.tsx     → Client chat orchestrator component
+    chat-header.tsx          → Header with escalation button
+    chat-thread.tsx          → Message list renderer
+    client-entry-form.tsx    → Google OAuth / email entry form
+    conversation-sidebar.tsx → Conversation list sidebar (agent view)
+    markdown-content.tsx     → Markdown renderer for AI messages
+    message-composer.tsx     → Text input + file attachment sender
+    quick-prompts.tsx        → Quick-reply suggestion chips
+    satisfaction-dialog.tsx  → Post-conversation rating dialog
+    status-badge.tsx         → Colored status label (en_cours, en_attente, resolu)
+  ui/                  → 24 reusable shadcn-style primitives
+
+lib/
+  api.ts       → All fetch-based API call functions
+  session.ts   → Token storage helpers (sinaps_token, sinaps_client)
+  mappers.ts   → Backend JSON → frontend typed object transformations
+  socket.ts    → socket.io-client singleton + room helpers
+  types.ts     → Shared TypeScript interfaces (Conversation, ChatMessage, Agent…)
+  utils.ts     → cn() (Tailwind class merger), getInitials()
+  chat-data.ts → statusLabels map + type re-exports
 ```
 
-### 2. Frontend (`sinaps-project/.env.local`)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=votre_google_client_id.apps.googleusercontent.com
-```
-
-*Remarque : Si `GEMINI_API_KEY` ou `GOOGLE_CLIENT_ID` ne sont pas configurés, l'application bascule automatiquement en mode démonstration avec RAG local et connexion directe sans bloquer l'utilisateur.*
-
 ---
 
-## 🚀 Démarrage et Installation
+## Local setup
 
-### Étape 1 : Démarrer MongoDB
-S'assurer qu'un serveur MongoDB est en cours d'exécution sur le port `27017` ou indiquer une URI MongoDB Atlas dans `.env`.
-
-### Étape 2 : Lancer le Backend
 ```bash
-cd sinaps-backend
+cp .env.example .env.local
 npm install
-npm run seed  # Remplit la base avec des données de démo et des comptes d'exemple
-npm run dev   # Lance le serveur sur http://localhost:5000
+npm run dev     # http://localhost:3000
 ```
 
-### Étape 3 : Lancer le Frontend
+## Build
+
 ```bash
-cd sinaps-project
-npm install
-npm run dev   # Lance l'interface Next.js sur http://localhost:3000
+npm run build
+npm run start
 ```
 
 ---
 
-## 🧪 Tests Unitaires et d'Intégration
+## Key environment variables
 
-Les tests automatisés du backend sont développés avec **Jest**, **Supertest** et **MongoMemoryServer** (in-memory DB).
-
-Pour exécuter la suite de tests :
-```bash
-cd sinaps-backend
-npm test
-```
-
----
-
-## 👥 Comptes de Démonstration (Seed Data)
-
-Après l'exécution de `npm run seed`, les comptes suivants sont prêts à l'emploi :
-
-| Rôle | Adresse E-mail | Mot de passe | Description |
-| :--- | :--- | :--- | :--- |
-| **Administrateur** | `admin@sinaps.com` | `password123` | Accès au Dashboard Admin (`/admin`) |
-| **Agent Validé 1** | `sarah.benali@sinaps.com` | `password123` | Espace Agent (`/agent`) - Compétences : Commandes, Retours |
-| **Agent Validé 2** | `karim.mansouri@sinaps.com` | `password123` | Espace Agent (`/agent`) - Compétences : Technique, Mots de passe |
-| **Agent en Attente**| `youssef.mehdi@sinaps.com` | `password123` | Compte nécessitant la validation de l'admin |
-
----
-
-## 🔄 Flux Fonctionnel et Scénario de Démo
-
-1. **Client Chat (`/`)** :
-   - L'utilisateur se connecte via Google Sign-In ou en mode direct.
-   - Il pose une question (ex: *"Comment suivre ma commande ?"*).
-   - Le moteur **RAG** extrait les extraits pertinents de la base de connaissances et l'IA (ou le fallback local) répond immédiatement.
-   - L'utilisateur peut joindre un document/image ou cliquer sur *"Basculer vers un agent humain"*.
-
-2. **File d'Attente Agent (`/agent`)** :
-   - L'agent se connecte avec son compte (`sarah.benali@sinaps.com`).
-   - Il voit les conversations réclamant une intervention humaine en temps réel (Socket.io).
-   - Il peut répondre, consulter les pièces jointes et marquer la demande comme **Résolue**.
-
-3. **Tableau de Bord Administration (`/admin`)** :
-   - L'admin se connecte avec `admin@sinaps.com`.
-   - Visualisation des **Statistiques SLA** : Temps moyen de réponse, Taux de résolution IA vs Humain, Note de satisfaction globale.
-   - Validation / Rejet des nouveaux comptes d'agents.
-   - Recherche et filtrage complet dans l'**Historique des conversations**.
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend API URL, e.g. `http://localhost:5000/api` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth web client ID for the One Tap sign-in button |
