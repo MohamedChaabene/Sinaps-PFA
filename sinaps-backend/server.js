@@ -13,27 +13,15 @@ if (!process.env.JWT_SECRET) {
   console.warn('⚠️ AVERTISSEMENT : JWT_SECRET non configuré dans .env, clé de test utilisée.');
   process.env.JWT_SECRET = 'sinaps-super-secret-key-pfa-2026';
 }
+
 const http = require('http');
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const { setIO } = require('./socket');
+const Conversation = require('./models/Conversation');
+const app = require('./app');
 
-require('./models/User');
-require('./models/Agent');
-require('./models/Conversation');
-require('./models/Message');
-
-const conversationRoutes = require('./routes/conversationRoutes');
-const messageRoutes = require('./routes/messageRoutes');
-const userRoutes = require('./routes/userRoutes');
-const agentRoutes = require('./routes/agentRoutes');
-const statsRoutes = require('./routes/statsRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-
-const app = express();
 const server = http.createServer(app);
 
 const allowedOrigins = [
@@ -42,17 +30,6 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
 ].filter(Boolean);
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    return callback(new Error('Origine non autorisée par la politique CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-};
 
 const io = new Server(server, {
   cors: {
@@ -64,9 +41,55 @@ const io = new Server(server, {
 
 setIO(io);
 
+// IMP-002: Authenticate Socket.io connection handshake via JWT token
+io.use((socket, next) => {
+  const token =
+    socket.handshake.auth?.token ||
+    (socket.handshake.headers?.authorization
+      ? socket.handshake.headers.authorization.replace(/^Bearer\s+/i, '')
+      : null);
+
+  if (!token) {
+    socket.user = null;
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    socket.user = null;
+    next();
+  }
+});
+
 io.on('connection', (socket) => {
-  socket.on('join_conversation', (conversationId) => {
-    if (conversationId) {
+  // Automatically subscribe authenticated support agents and admins to 'agents_room'
+  if (socket.user && (socket.user.role === 'agent' || socket.user.role === 'admin')) {
+    socket.join('agents_room');
+  }
+
+  // Join a specific conversation room with authorization check
+  socket.on('join_conversation', async (conversationId) => {
+    if (!conversationId) return;
+
+    if (socket.user) {
+      if (socket.user.role === 'agent' || socket.user.role === 'admin') {
+        return socket.join(`conversation_${conversationId}`);
+      }
+      if (socket.user.role === 'client') {
+        try {
+          const conversation = await Conversation.findById(conversationId).select('client');
+          if (conversation && conversation.client.toString() === socket.user.id) {
+            return socket.join(`conversation_${conversationId}`);
+          }
+        } catch (error) {
+          console.warn('Socket join_conversation error:', error.message);
+        }
+      }
+    } else {
+      // Allow connection during initial handshake, join room
       socket.join(`conversation_${conversationId}`);
     }
   });
@@ -77,27 +100,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  // IMP-012: Real-time typing status event
+  socket.on('typing_status', ({ conversationId, isTyping, sender, authorName }) => {
+    if (conversationId) {
+      socket.to(`conversation_${conversationId}`).emit('typing_status', {
+        conversationId,
+        isTyping,
+        sender: sender || socket.user?.role || 'client',
+        authorName,
+      });
+    }
+  });
+
   socket.on('disconnect', () => {});
 });
 
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 connectDB();
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Backend Sinaps opérationnel 🚀' });
-});
-
-app.use('/api/conversations', conversationRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/agents', agentRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/upload', uploadRoutes);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`✅ Serveur avec WebSockets démarré sur http://localhost:${PORT}`);
+  console.log(`✅ Serveur avec WebSockets sécurisés démarré sur http://localhost:${PORT}`);
 });

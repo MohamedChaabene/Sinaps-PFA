@@ -1,0 +1,24 @@
+{
+  "name": "sinaps-pfa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sinaps Support - Plateforme intelligente de support client (ISIMS PFA)",
+  "scripts": {
+    "dev:backend": "npm --prefix sinaps-backend run dev",
+    "dev:web": "npm --prefix sinaps-project run dev",
+    "dev:mobile": "npm --prefix sinaps-mobile run start",
+    "test:backend": "npm --prefix sinaps-backend test",
+    "seed": "npm --prefix sinaps-backend run seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "keywords": [
+    "customer-support",
+    "ai",
+    "gemini",
+    "rag",
+    "nextjs",
+    "react-native"
+  ],
+  "author": "Mohamed Chaabene"
+}

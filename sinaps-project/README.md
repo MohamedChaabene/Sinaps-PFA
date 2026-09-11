@@ -17,11 +17,18 @@ Le projet est divisé en deux parties principales :
    - **Authentification** : JWT, bcryptjs, google-auth-library
    - **Téléversement de fichiers** : Multer
 
-2. **`sinaps-project`** (Frontend Web & Mobile Responsive) :
+2. **`sinaps-project`** (Frontend Web & Dashboard) :
    - **Framework** : Next.js (App Router, React, TypeScript)
    - **UI & Styling** : Tailwind CSS, Shadcn UI / Radix UI, Lucide Icons
    - **Temps réel** : socket.io-client
    - **OAuth Client** : `@react-oauth/google`
+
+3. **`sinaps-mobile`** (Application Mobile Native) :
+   - **Framework** : React Native, Expo, TypeScript
+   - **Temps réel** : socket.io-client
+   - **Stockage sécurisé & Persistance** : `@react-native-async-storage/async-storage`
+   - **Médias & Pièces jointes** : `expo-image-picker`, `expo-document-picker`
+   - **Support multi-plateforme** : Android (Émulateur & Physique), iOS (Simulateur & Expo Go)
 
 ---
 

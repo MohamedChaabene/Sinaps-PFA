@@ -31,7 +31,16 @@ exports.sendMessage = async (req, res) => {
 
     // Si c'est le client qui écrit, l'IA répond automatiquement
     if (sender === 'client' && updatedConv?.handledBy === 'ia') {
-      const aiText = await getAIResponse(content || 'Document joint');
+      // IMP-012: Emit typing indicator to conversation room
+      emitToConversation(conversationId, 'typing_status', {
+        conversationId,
+        isTyping: true,
+        sender: 'ia',
+        authorName: 'Assistant IA Sinaps',
+      });
+
+      try {
+        const aiText = await getAIResponse(content || 'Document joint');
         aiMessage = await Message.create({
           conversation: conversationId,
           sender: 'ia',
@@ -51,7 +60,14 @@ exports.sendMessage = async (req, res) => {
           conversation: reUpdatedConv,
         });
         emitGlobal('conversation_updated', reUpdatedConv);
+      } finally {
+        emitToConversation(conversationId, 'typing_status', {
+          conversationId,
+          isTyping: false,
+          sender: 'ia',
+        });
       }
+    }
 
     res.status(201).json({ message, aiMessage });
   } catch (error) {

@@ -16,27 +16,14 @@ require('../models/Message');
 
 const Agent = require('../models/Agent');
 
-const userRoutes = require('../routes/userRoutes');
-const conversationRoutes = require('../routes/conversationRoutes');
-const messageRoutes = require('../routes/messageRoutes');
-const agentRoutes = require('../routes/agentRoutes');
-const statsRoutes = require('../routes/statsRoutes');
+const app = require('../app');
 
 let mongoServer;
-let app;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
-
-  app = express();
-  app.use(express.json());
-  app.use('/api/users', userRoutes);
-  app.use('/api/conversations', conversationRoutes);
-  app.use('/api/messages', messageRoutes);
-  app.use('/api/agents', agentRoutes);
-  app.use('/api/stats', statsRoutes);
 });
 
 afterAll(async () => {

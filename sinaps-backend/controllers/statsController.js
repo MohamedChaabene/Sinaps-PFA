@@ -3,7 +3,7 @@ const Message = require('../models/Message');
 
 exports.getStats = async (req, res) => {
   try {
-    const [total, resolvedByIA, resolvedByHuman, satisfactionAgg] = await Promise.all([
+    const [total, resolvedByIA, resolvedByHuman, satisfactionAgg, responseTimesAgg] = await Promise.all([
       Conversation.countDocuments(),
       Conversation.countDocuments({ status: 'resolu', handledBy: 'ia' }),
       Conversation.countDocuments({ status: 'resolu', handledBy: 'humain' }),
@@ -11,47 +11,56 @@ exports.getStats = async (req, res) => {
         { $match: { 'satisfaction.rating': { $exists: true, $ne: null } } },
         { $group: { _id: null, avg: { $avg: '$satisfaction.rating' } } },
       ]),
+      // Performance optimization: Calculate average response time directly via MongoDB aggregation pipeline
+      // Prevents Out-Of-Memory (OOM) crashes by avoiding loading all database messages into Node.js heap.
+      Message.aggregate([
+        { $match: { sender: { $in: ['client', 'ia', 'humain'] } } },
+        {
+          $group: {
+            _id: '$conversation',
+            firstClient: {
+              $min: {
+                $cond: [{ $eq: ['$sender', 'client'] }, '$createdAt', null],
+              },
+            },
+            firstResponse: {
+              $min: {
+                $cond: [{ $in: ['$sender', ['ia', 'humain']] }, '$createdAt', null],
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            firstClient: { $ne: null },
+            firstResponse: { $ne: null },
+          },
+        },
+        {
+          $project: {
+            diffSeconds: {
+              $divide: [{ $subtract: ['$firstResponse', '$firstClient'] }, 1000],
+            },
+          },
+        },
+        {
+          $match: {
+            diffSeconds: { $gt: 0 },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            avgResponseTime: { $avg: '$diffSeconds' },
+          },
+        },
+      ]),
     ]);
 
-    // Temps de réponse moyen : délai entre le 1er message client et la 1ère réponse (IA ou humain)
-    // Optimisé en 1 seule requête globale au lieu d'une boucle N+1 séquentielle
-    const messages = await Message.find({
-      sender: { $in: ['client', 'ia', 'humain'] },
-    })
-      .select('conversation sender createdAt')
-      .sort({ createdAt: 1 })
-      .lean();
-
-    const conversationFirstMsgs = new Map();
-    for (const msg of messages) {
-      const convId = msg.conversation.toString();
-      if (!conversationFirstMsgs.has(convId)) {
-        conversationFirstMsgs.set(convId, { firstClient: null, firstResponse: null });
-      }
-      const state = conversationFirstMsgs.get(convId);
-      if (!state.firstClient && msg.sender === 'client') {
-        state.firstClient = msg;
-      } else if (!state.firstResponse && (msg.sender === 'ia' || msg.sender === 'humain')) {
-        state.firstResponse = msg;
-      }
-    }
-
-    let totalResponseTime = 0;
-    let countedConversations = 0;
-
-    for (const [, state] of conversationFirstMsgs) {
-      if (
-        state.firstClient &&
-        state.firstResponse &&
-        state.firstResponse.createdAt > state.firstClient.createdAt
-      ) {
-        totalResponseTime += (state.firstResponse.createdAt - state.firstClient.createdAt) / 1000;
-        countedConversations++;
-      }
-    }
-
     const avgResponseTimeSeconds =
-      countedConversations > 0 ? Math.round(totalResponseTime / countedConversations) : 0;
+      responseTimesAgg.length > 0 && responseTimesAgg[0].avgResponseTime
+        ? Math.round(responseTimesAgg[0].avgResponseTime)
+        : 0;
 
     res.json({
       total,

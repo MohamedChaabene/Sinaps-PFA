@@ -1,26 +1,20 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Baloo_2, Nunito } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
-const _baloo = Baloo_2({
+const fontSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-baloo',
-  weight: ['500', '600', '700', '800'],
-})
-const _nunito = Nunito({
-  subsets: ['latin'],
-  variable: '--font-nunito',
-  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700', '800'],
 })
 
 export const metadata: Metadata = {
-  title: 'Support Chat — Assistance client IA',
+  title: 'SINAPS Support — Assistance Client IA & Support Humain',
   description:
-    "Interface de chat de support client assistée par IA, façon Slack, avec bascule vers un agent humain et évaluation de satisfaction.",
-  generator: 'v0.app',
+    'Plateforme de support client intelligente alimentée par l’IA générative et le relais humain instantané.',
   icons: {
     icon: [
       {
@@ -44,8 +38,8 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
   userScalable: true,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f4ff' },
-    { media: '(prefers-color-scheme: dark)', color: '#1b1730' },
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#090d16' },
   ],
 }
 
@@ -55,8 +49,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" className={`${_baloo.variable} ${_nunito.variable} bg-background`}>
-      <body className="antialiased font-sans">
+    <html lang="fr" className={`${fontSans.variable} font-sans bg-background`}>
+      <body className="antialiased font-sans min-h-screen">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster />
         {process.env.NODE_ENV === 'production' && <Analytics />}

@@ -17,14 +17,21 @@ exports.createConversation = async (req, res) => {
   }
 };
 
-// Récupérer toutes les conversations (pour la sidebar)
+// Récupérer toutes les conversations (avec recherche et pagination optionnelle)
 exports.getConversations = async (req, res) => {
   try {
-    const { status, search } = req.query;
+    const { status, search, limit: rawLimit, page: rawPage } = req.query;
     const filter = {};
     if (status) filter.status = status;
 
     let query = populateConversation(Conversation.find(filter)).sort({ updatedAt: -1 });
+
+    if (rawLimit) {
+      const limit = Math.min(parseInt(rawLimit, 10) || 50, 100);
+      const page = Math.max(parseInt(rawPage, 10) || 1, 1);
+      const skip = (page - 1) * limit;
+      query = query.skip(skip).limit(limit);
+    }
 
     let conversations = await query;
 
@@ -47,7 +54,17 @@ exports.getConversations = async (req, res) => {
 exports.getConversationById = async (req, res) => {
   try {
     const conversation = await populateConversation(Conversation.findById(req.params.id));
-    const messages = await Message.find({ conversation: req.params.id }).sort({ createdAt: 1 });
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation introuvable' });
+    }
+
+    let messageQuery = Message.find({ conversation: req.params.id }).sort({ createdAt: 1 });
+    if (req.query.limit) {
+      const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
+      messageQuery = messageQuery.limit(limit);
+    }
+
+    const messages = await messageQuery;
     res.json({ conversation, messages });
   } catch (error) {
     res.status(500).json({ error: error.message });

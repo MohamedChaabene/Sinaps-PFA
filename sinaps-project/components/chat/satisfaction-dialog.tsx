@@ -89,8 +89,10 @@ export function SatisfactionDialog({
                   >
                     <StarIcon
                       className={cn(
-                        "size-7 transition-colors",
-                        filled ? "fill-accent text-accent" : "fill-transparent text-muted-foreground"
+                        "size-8 transition-all duration-150",
+                        filled
+                          ? "fill-amber-400 text-amber-400 drop-shadow-sm scale-110"
+                          : "fill-transparent text-muted-foreground/30 hover:text-amber-300"
                       )}
                     />
                   </button>

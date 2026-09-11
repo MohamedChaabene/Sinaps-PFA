@@ -1,0 +1,60 @@
+name: Sinaps CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-tests:
+    name: Backend Lint & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: sinaps-backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./sinaps-backend
+        run: npm ci
+
+      - name: Run Jest test suite
+        working-directory: ./sinaps-backend
+        run: npm test
+        env:
+          JWT_SECRET: ci-test-secret-key-12345
+          NODE_ENV: test
+
+  web-build:
+    name: Web Frontend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: sinaps-project/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./sinaps-project
+        run: npm ci
+
+      - name: Run Next.js Build
+        working-directory: ./sinaps-project
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000/api
+          NEXT_TELEMETRY_DISABLED: 1

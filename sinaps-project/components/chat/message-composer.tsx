@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { PaperclipIcon, SendHorizonalIcon, SmileIcon, XIcon, FileIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { PaperclipIcon, SendHorizonalIcon, SmileIcon, XIcon, FileIcon, Loader2, CornerDownLeft } from "lucide-react"
 import {
   InputGroup,
   InputGroupAddon,
@@ -13,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner"
 import { uploadFile } from "@/lib/api"
 
-const EMOJIS = ["😀", "😂", "🙏", "👍", "🎉", "😍", "😕", "🤔", "❤️", "🔥", "✨", "🙌"]
+const EMOJIS = ["😀", "😂", "🙏", "👍", "🎉", "😍", "😕", "🤔", "❤️", "🔥", "✨", "🙌", "👋", "🚀", "💡", "📦", "💳", "✅"]
 
 export function MessageComposer({
   onSend,
@@ -62,8 +61,10 @@ export function MessageComposer({
     }
   }
 
+  const canSend = (value.trim().length > 0 || attachments.length > 0) && !uploading
+
   return (
-    <div className="border-t border-border bg-card px-4 py-3 sm:px-6">
+    <div className="border-t border-border/80 bg-card/95 backdrop-blur-sm px-4 py-3 sm:px-6 shadow-sm">
       <input
         type="file"
         ref={fileInputRef}
@@ -72,58 +73,62 @@ export function MessageComposer({
         accept="image/*,video/*,application/pdf,.doc,.docx"
       />
 
+      {/* Attachments preview list */}
       {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div className="mb-2.5 flex flex-wrap gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {attachments.map((att, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-1.5 rounded-lg border bg-muted/60 px-2.5 py-1 text-xs text-foreground"
+              className="flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs text-foreground shadow-2xs"
             >
               <FileIcon className="size-3.5 text-primary" />
-              <span className="max-w-[150px] truncate">{att.name || "Pièce jointe"}</span>
+              <span className="max-w-[160px] truncate font-medium">{att.name || "Pièce jointe"}</span>
               <button
                 type="button"
                 onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
-                className="ml-1 text-muted-foreground hover:text-destructive"
+                className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                title="Supprimer"
               >
-                <XIcon className="size-3" />
+                <XIcon className="size-3.5" />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      <div className="relative rounded-xl border border-input/80 bg-background/90 shadow-2xs focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+      {/* Composer Input Group */}
+      <div className="relative rounded-xl border border-border/80 bg-background/95 shadow-xs focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 transition-all duration-150">
         <InputGroup className="rounded-xl border-0 shadow-none focus-within:ring-0 focus-within:border-transparent bg-transparent">
           <InputGroupTextarea
-            placeholder="Écrivez votre message..."
+            placeholder="Écrivez votre message à l'assistance..."
             value={value}
             onChange={(event) => setValue(event.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="min-h-11 resize-none text-sm px-3.5 pt-2.5 placeholder:text-muted-foreground/60"
+            className="min-h-11 resize-none text-sm px-3.5 pt-3 placeholder:text-muted-foreground/50 leading-relaxed font-normal"
             aria-label="Écrivez votre message..."
           />
-          <InputGroupAddon align="block-end" className="px-2 pb-2 pt-0 gap-1.5">
+          <InputGroupAddon align="block-end" className="px-2.5 pb-2 pt-0 gap-1">
+            {/* Emoji Picker Popover */}
             <Popover>
               <PopoverTrigger
                 render={
                   <InputGroupButton
                     aria-label="Insérer un emoji"
-                    className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+                    className="size-7.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   />
                 }
               >
                 <SmileIcon className="size-4" />
               </PopoverTrigger>
-              <PopoverContent className="w-auto rounded-xl p-2.5 shadow-lg border border-border/80" align="start">
+              <PopoverContent className="w-auto rounded-xl p-2.5 shadow-xl border border-border/80 bg-card/95 backdrop-blur-md" align="start">
                 <div className="grid grid-cols-6 gap-1">
                   {EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
                       onClick={() => setValue((prev) => prev + emoji)}
-                      className="rounded-lg p-1.5 text-lg transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                      className="flex size-7.5 items-center justify-center rounded-lg text-base transition-transform hover:scale-125 hover:bg-muted active:scale-95"
                       aria-label={`Ajouter l'emoji ${emoji}`}
                     >
                       {emoji}
@@ -132,19 +137,28 @@ export function MessageComposer({
                 </div>
               </PopoverContent>
             </Popover>
+
+            {/* File Attachment Button */}
             <InputGroupButton
               aria-label="Joindre un fichier"
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
-              className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+              className="size-7.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              title="Joindre une image, document ou vidéo (max 15 Mo)"
             >
-              <PaperclipIcon className="size-4" />
+              {uploading ? (
+                <Loader2 className="size-4 animate-spin text-primary" />
+              ) : (
+                <PaperclipIcon className="size-4" />
+              )}
             </InputGroupButton>
+
+            {/* Send Button */}
             <InputGroupButton
               aria-label="Envoyer le message"
               variant="default"
-              className="ml-auto h-8 px-3 rounded-lg font-medium text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all active:scale-[0.98] disabled:opacity-40"
-              disabled={(!value.trim() && attachments.length === 0) || uploading}
+              className="ml-auto h-7.5 px-3 rounded-lg font-semibold text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs shadow-primary/25 transition-all duration-150 active:scale-95 disabled:opacity-30"
+              disabled={!canSend}
               onClick={handleSend}
             >
               <span className="hidden sm:inline">Envoyer</span>
@@ -152,6 +166,16 @@ export function MessageComposer({
             </InputGroupButton>
           </InputGroupAddon>
         </InputGroup>
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between px-1 text-[11px] text-muted-foreground/60 select-none">
+        <span className="hidden sm:flex items-center gap-1 font-medium">
+          <CornerDownLeft className="size-3 text-muted-foreground/50" />
+          <span>Entrée pour envoyer • Maj+Entrée pour nouvelle ligne</span>
+        </span>
+        <span className="ml-auto text-muted-foreground/50 font-medium font-mono text-[10px]">
+          SINAPS Copilot IA
+        </span>
       </div>
     </div>
   )

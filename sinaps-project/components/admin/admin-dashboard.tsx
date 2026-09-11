@@ -20,6 +20,7 @@ import {
   PanelLeftClose,
   SearchIcon,
   ShieldCheck,
+  Sparkles,
   Star,
   UserCheck,
   Users,
@@ -749,6 +750,48 @@ function AdminContent({
             color="emerald"
           />
         </section>
+
+        {/* AI Autonomy & Escalation Breakdown Card */}
+        <Card className="rounded-xl border border-border/80 bg-card/85 p-5 shadow-xs backdrop-blur-xs">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Sparkles className="size-3.5" />
+                </div>
+                <h3 className="font-heading text-sm font-bold text-foreground">
+                  Performance du Copilot IA &amp; Relais Humain
+                </h3>
+              </div>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <span className="size-2 rounded-full bg-primary" />
+                  Résolution autonome : <strong className="text-primary">{resolvedPct.ia}%</strong>
+                </span>
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <span className="size-2 rounded-full bg-blue-500" />
+                  Escalade conseiller : <strong className="text-blue-500">{resolvedPct.human}%</strong>
+                </span>
+              </div>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/70 flex p-0.5 border border-border/40">
+              <div
+                className="h-full rounded-l-full bg-primary transition-all duration-500"
+                style={{ width: `${resolvedPct.ia || (stats?.total === 0 ? 50 : 0)}%` }}
+                title={`IA: ${resolvedPct.ia}%`}
+              />
+              <div
+                className="h-full rounded-r-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${resolvedPct.human || (stats?.total === 0 ? 50 : 0)}%` }}
+                title={`Conseiller: ${resolvedPct.human}%`}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+              <span>{stats?.resolvedByIA ?? 0} conversations traitées directement par Gemini &amp; la base vectorielle</span>
+              <span>{stats?.resolvedByHuman ?? 0} conversations escaladées vers un agent de support</span>
+            </div>
+          </div>
+        </Card>
 
         {/* Pending Agents Section */}
         <section id="agents" className="flex flex-col gap-4 scroll-mt-6">

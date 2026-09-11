@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Sinaps Support",
+    "slug": "sinaps-mobile",
+    "scheme": ["sinaps-mobile", "com.sinaps.support"],
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "primaryColor": "#7c3aed",
+    "splash": {
+      "backgroundColor": "#7c3aed"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sinaps.support"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#7c3aed",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.sinaps.support",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
+  }
+}

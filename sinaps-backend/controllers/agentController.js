@@ -69,3 +69,15 @@ exports.rejectAgent = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getMe = async (req, res) => {
+  try {
+    const agent = await Agent.findById(req.agent.id).select('-password');
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent introuvable' });
+    }
+    res.json({ agent });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

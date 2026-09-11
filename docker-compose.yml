@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7-jammy
+    container_name: sinaps-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - sinaps-net
+
+  backend:
+    build:
+      context: ./sinaps-backend
+      dockerfile: Dockerfile
+    container_name: sinaps-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/sinaps
+      - JWT_SECRET=sinaps-super-secret-key-pfa-2026
+      - CLIENT_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+    networks:
+      - sinaps-net
+
+  web:
+    build:
+      context: ./sinaps-project
+      dockerfile: Dockerfile
+    container_name: sinaps-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    networks:
+      - sinaps-net
+
+volumes:
+  mongo_data:
+
+networks:
+  sinaps-net:
+    driver: bridge

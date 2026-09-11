@@ -112,13 +112,21 @@ export function SupportChatApp() {
       }
     }
 
+    const handleTypingStatus = (data: any) => {
+      if (data?.conversationId === conversationId) {
+        setConversation((prev) => (prev ? { ...prev, isTyping: !!data.isTyping } : null))
+      }
+    }
+
     socket.on("message_received", handleMessageReceived)
     socket.on("conversation_updated", handleConversationUpdated)
+    socket.on("typing_status", handleTypingStatus)
 
     return () => {
       leaveConversationRoom(conversationId)
       socket.off("message_received", handleMessageReceived)
       socket.off("conversation_updated", handleConversationUpdated)
+      socket.off("typing_status", handleTypingStatus)
     }
   }, [conversationId])
 

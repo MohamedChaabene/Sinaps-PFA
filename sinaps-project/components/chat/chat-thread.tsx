@@ -1,5 +1,5 @@
 import * as React from "react"
-import { BotIcon, FileTextIcon, ExternalLinkIcon, CopyIcon, CheckIcon } from "lucide-react"
+import { BotIcon, FileTextIcon, ExternalLinkIcon, CopyIcon, CheckIcon, Sparkles, User, ShieldCheck } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -49,13 +49,13 @@ function CopyMessageButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      title="Copier le message"
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground/80 transition-all hover:bg-background/50 hover:text-foreground active:scale-95"
+      title="Copier la réponse"
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground/70 transition-all duration-150 hover:bg-muted hover:text-foreground active:scale-95"
     >
       {copied ? (
         <>
-          <CheckIcon className="size-3 text-success" />
-          <span className="text-success">Copié</span>
+          <CheckIcon className="size-3 text-emerald-500" />
+          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copié</span>
         </>
       ) : (
         <>
@@ -70,29 +70,30 @@ function CopyMessageButton({ text }: { text: string }) {
 function EmptyConversationState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center px-4 py-12 my-auto">
-      <div className="relative mb-5 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 text-primary shadow-xs border border-primary/20">
-        <BotIcon className="size-8" />
+      <div className="relative mb-5 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent text-primary shadow-xs border border-primary/20 ring-4 ring-primary/5">
+        <Sparkles className="size-7 text-primary" />
         <span className="absolute -top-1 -right-1 flex size-3">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex size-3 rounded-full bg-emerald-500" />
         </span>
       </div>
-      <h3 className="font-heading text-xl font-bold text-foreground mb-1.5">
-        Bienvenue sur Sinaps Support
+      <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground mb-1.5 tracking-tight">
+        Bienvenue sur l&apos;assistance SINAPS
       </h3>
       <p className="max-w-md text-xs sm:text-sm text-muted-foreground mb-6 leading-relaxed">
         Comment pouvons-nous vous aider aujourd&apos;hui ? Posez votre question ou utilisez les suggestions rapides ci-dessous.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[11px] font-medium">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1 text-[11px] font-semibold shadow-2xs">
           <BotIcon className="size-3 text-primary" />
-          IA Gemini 3.5 &amp; RAG
+          Gemini 1.5 &amp; RAG
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[11px] font-medium">
-          ⚡ Réponses instantanées
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1 text-[11px] font-semibold shadow-2xs">
+          ⚡ Réponses temps réel
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[11px] font-medium">
-          👤 Escalade humaine possible
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card px-3 py-1 text-[11px] font-semibold shadow-2xs">
+          <ShieldCheck className="size-3 text-emerald-500" />
+          Relais humain disponible
         </span>
       </div>
     </div>
@@ -102,11 +103,13 @@ function EmptyConversationState() {
 export function ChatThread({ conversation }: { conversation: Conversation }) {
   return (
     <MessageScrollerProvider autoScroll>
-      <MessageScroller className="flex-1">
+      <MessageScroller className="flex-1 bg-background/50">
         <MessageScrollerViewport>
-          <MessageScrollerContent className="px-4 py-5 sm:px-6">
+          <MessageScrollerContent className="px-4 py-6 sm:px-6 max-w-4xl mx-auto w-full space-y-4">
             <Marker variant="separator">
-              <MarkerContent>Aujourd&apos;hui</MarkerContent>
+              <MarkerContent className="text-[11px] font-medium tracking-wide uppercase text-muted-foreground/70">
+                Session de support active
+              </MarkerContent>
             </Marker>
 
             {conversation.messages.length === 0 && <EmptyConversationState />}
@@ -119,79 +122,117 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                   messageId={message.id}
                   scrollAnchor={isClient}
                 >
-                  <Message align={isClient ? "end" : "start"}>
+                  <Message align={isClient ? "end" : "start"} className="gap-2.5">
                     <MessageAvatar>
                       {message.sender === "ia" ? (
-                        <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
-                          <BotIcon className="size-4" />
+                        <div className="flex size-8.5 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20">
+                          <BotIcon className="size-4.5" />
                         </div>
                       ) : message.sender === "humain" ? (
-                        <Avatar className="size-8 rounded-xl ring-2 ring-primary/20">
+                        <Avatar className="size-8.5 rounded-xl ring-2 ring-blue-500/20 shadow-xs">
                           <AvatarImage
                             src={message.authorAvatar || "/placeholder.svg"}
-                            alt={message.authorName ?? "Agent"}
-                            className="rounded-xl"
+                            alt={message.authorName ?? "Conseiller"}
+                            className="rounded-xl object-cover"
                           />
-                          <AvatarFallback className="rounded-xl">SA</AvatarFallback>
+                          <AvatarFallback className="rounded-xl bg-blue-500/10 text-blue-600 font-bold text-xs">
+                            {getInitials(message.authorName || "Conseiller")}
+                          </AvatarFallback>
                         </Avatar>
                       ) : (
-                        <Avatar className="size-8 rounded-xl ring-2 ring-primary/20">
+                        <Avatar className="size-8.5 rounded-xl ring-2 ring-primary/20 shadow-xs">
                           <AvatarImage
                             src={conversation.clientAvatar || "/placeholder.svg"}
                             alt={conversation.clientName}
-                            className="rounded-xl"
+                            className="rounded-xl object-cover"
                           />
-                          <AvatarFallback className="rounded-xl">{getInitials(conversation.clientName)}</AvatarFallback>
+                          <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-bold text-xs">
+                            {getInitials(conversation.clientName)}
+                          </AvatarFallback>
                         </Avatar>
                       )}
                     </MessageAvatar>
-                    <MessageContent>
+
+                    <MessageContent className="max-w-[85%] sm:max-w-[75%] space-y-1">
                       {message.sender !== "client" && (
-                        <MessageHeader>
+                        <MessageHeader className="mb-1">
                           {message.sender === "ia" ? (
                             <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="rounded-md bg-primary/10 text-primary text-[11px] font-medium border border-primary/20">
-                                🤖 Agent IA
-                              </Badge>
+                              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary border border-primary/20">
+                                <Sparkles className="size-3 text-primary" />
+                                <span>SINAPS Copilot</span>
+                              </span>
                               <span className="text-[10px] text-muted-foreground font-mono">
-                                Gemini 3.5 + RAG
+                                Gemini + RAG
                               </span>
                             </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                              {message.authorName}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-bold text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                                <span>Conseiller Support</span>
+                              </span>
+                              <span className="text-xs font-semibold text-foreground">
+                                {message.authorName || "Agent SINAPS"}
+                              </span>
+                            </div>
                           )}
                         </MessageHeader>
                       )}
+
                       <Bubble
                         align={isClient ? "end" : "start"}
                         variant={isClient ? "default" : "secondary"}
-                        className="group relative shadow-xs"
+                        className={`group relative shadow-xs transition-shadow ${
+                          isClient
+                            ? "bg-primary text-primary-foreground border-transparent"
+                            : message.sender === "humain"
+                            ? "border-blue-200/80 bg-blue-50/60 dark:border-blue-900/60 dark:bg-blue-950/20"
+                            : "border-border/80 bg-card"
+                        }`}
                       >
-                        <BubbleContent className={`space-y-2 ${isClient ? "rounded-2xl rounded-tr-xs" : "rounded-2xl rounded-tl-xs"}`}>
+                        <BubbleContent
+                          className={`space-y-2.5 p-3.5 sm:p-4 text-sm leading-relaxed ${
+                            isClient
+                              ? "rounded-2xl rounded-tr-xs text-primary-foreground font-normal"
+                              : "rounded-2xl rounded-tl-xs text-foreground"
+                          }`}
+                        >
                           {message.content && (
                             isClient ? (
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                              <p className="whitespace-pre-wrap">{message.content}</p>
                             ) : (
                               <MarkdownContent content={message.content} />
                             )
                           )}
 
                           {message.attachments && message.attachments.length > 0 && (
-                            <div className="space-y-2 pt-1">
+                            <div className="space-y-2 pt-1.5 border-t border-border/40">
                               {message.attachments.map((att, i) => {
                                 const fullUrl = safeAttachmentUrl(att.url)
 
                                 if (att.type === "image") {
                                   return (
-                                    <a key={i} href={fullUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg">
-                                      <img src={fullUrl} alt={att.name || "Image"} className="max-h-60 max-w-xs object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                                    <a
+                                      key={i}
+                                      href={fullUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="block overflow-hidden rounded-xl border border-border/80 shadow-xs hover:border-primary/50 transition-colors"
+                                    >
+                                      <img
+                                        src={fullUrl}
+                                        alt={att.name || "Image jointe"}
+                                        className="max-h-64 max-w-sm w-full object-cover hover:scale-[1.01] transition-transform duration-200"
+                                      />
                                     </a>
                                   )
                                 } else if (att.type === "video") {
                                   return (
-                                    <video key={i} controls className="max-h-60 max-w-xs rounded-lg">
+                                    <video
+                                      key={i}
+                                      controls
+                                      className="max-h-64 max-w-sm rounded-xl border border-border/80"
+                                    >
                                       <source src={fullUrl} />
                                       Votre navigateur ne supporte pas la vidéo.
                                     </video>
@@ -203,11 +244,13 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                                       href={fullUrl}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="flex items-center gap-2 rounded-lg bg-background/20 p-2 text-xs font-medium underline hover:bg-background/30"
+                                      className="flex items-center gap-2.5 rounded-xl border border-border/80 bg-background/50 p-2.5 text-xs font-medium text-foreground hover:bg-muted/70 hover:border-primary/40 transition-colors shadow-2xs"
                                     >
-                                      <FileTextIcon className="size-4 shrink-0" />
-                                      <span className="truncate">{att.name || "Télécharger la pièce jointe"}</span>
-                                      <ExternalLinkIcon className="size-3 shrink-0 ml-auto" />
+                                      <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                                        <FileTextIcon className="size-4" />
+                                      </div>
+                                      <span className="truncate flex-1 font-semibold">{att.name || "Document joint"}</span>
+                                      <ExternalLinkIcon className="size-3.5 shrink-0 text-muted-foreground" />
                                     </a>
                                   )
                                 }
@@ -216,10 +259,14 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                           )}
                         </BubbleContent>
                       </Bubble>
-                      <MessageFooter className="flex items-center gap-2 text-xs">
+
+                      <MessageFooter className="flex items-center gap-2 text-[11px] text-muted-foreground/80 px-1 pt-0.5">
                         <span>{message.time}</span>
                         {!isClient && message.content && (
-                          <CopyMessageButton text={message.content} />
+                          <>
+                            <span>•</span>
+                            <CopyMessageButton text={message.content} />
+                          </>
                         )}
                       </MessageFooter>
                     </MessageContent>
@@ -230,27 +277,22 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
 
             {conversation.isTyping && (
               <MessageScrollerItem messageId="typing-indicator">
-                <Message align="start">
+                <Message align="start" className="gap-2.5">
                   <MessageAvatar>
-                    <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs animate-pulse">
-                      <BotIcon className="size-4" />
+                    <div className="flex size-8.5 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs animate-pulse ring-2 ring-primary/20">
+                      <BotIcon className="size-4.5" />
                     </div>
                   </MessageAvatar>
                   <MessageContent>
-                    <MessageHeader>
-                      <Badge variant="secondary" className="rounded-md bg-primary/10 text-primary text-[11px] font-medium border border-primary/20">
-                        🤖 Agent IA
-                      </Badge>
-                    </MessageHeader>
-                    <Bubble align="start" variant="secondary">
-                      <BubbleContent className="rounded-xl rounded-tl-xs py-2.5 px-3.5 flex items-center gap-2">
+                    <Bubble align="start" variant="secondary" className="border-border/80 bg-card shadow-2xs">
+                      <BubbleContent className="rounded-xl rounded-tl-xs py-2.5 px-3.5 flex items-center gap-2.5">
                         <span className="flex items-center gap-1">
                           <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
                           <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
                           <span className="size-1.5 rounded-full bg-primary animate-bounce" />
                         </span>
-                        <span className="text-xs text-muted-foreground font-medium ml-1">
-                          Agent IA réfléchit...
+                        <span className="text-xs text-muted-foreground font-medium">
+                          SINAPS Copilot compose une réponse...
                         </span>
                       </BubbleContent>
                     </Bubble>
