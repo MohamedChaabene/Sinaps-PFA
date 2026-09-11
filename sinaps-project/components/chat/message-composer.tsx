@@ -64,7 +64,7 @@ export function MessageComposer({
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !uploading
 
   return (
-    <div className="border-t border-border/80 bg-card/95 backdrop-blur-sm px-4 py-3 sm:px-6 shadow-sm">
+    <div className="border-t border-border/80 bg-card px-4 py-3 sm:rounded-b-2xl sm:px-6">
       <input
         type="file"
         ref={fileInputRef}

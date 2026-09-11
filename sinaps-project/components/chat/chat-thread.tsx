@@ -103,7 +103,7 @@ function EmptyConversationState() {
 export function ChatThread({ conversation }: { conversation: Conversation }) {
   return (
     <MessageScrollerProvider autoScroll>
-      <MessageScroller className="flex-1 bg-background/50">
+      <MessageScroller className="flex-1 bg-background">
         <MessageScrollerViewport>
           <MessageScrollerContent className="px-4 py-6 sm:px-6 max-w-4xl mx-auto w-full space-y-4">
             <Marker variant="separator">
