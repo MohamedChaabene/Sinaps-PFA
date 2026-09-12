@@ -146,6 +146,15 @@ export async function closeConversation(id: string, rating: number, comment: str
   return parseOrThrow(res)
 }
 
+export async function assignConversation(id: string, agentId: string) {
+  const res = await fetch(`${API_URL}/conversations/${id}/assign`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ agentId }),
+  })
+  return parseOrThrow(res)
+}
+
 export async function sendQuickReply(
   conversationId: string,
   action: string,

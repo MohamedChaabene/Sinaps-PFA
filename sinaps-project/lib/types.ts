@@ -43,6 +43,11 @@ export interface Conversation {
   unreadCount: number
   status: ConversationStatus
   handledBy?: "ia" | "humain"
+  assignedAgent?: {
+    id: string
+    name: string
+    email: string
+  }
   isTyping?: boolean
   messages: ChatMessage[]
 }

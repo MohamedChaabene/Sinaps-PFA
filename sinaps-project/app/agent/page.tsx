@@ -33,6 +33,7 @@ import {
   fetchConversationById,
   sendMessage as apiSendMessage,
   closeConversation as apiCloseConversation,
+  assignConversation,
   mapBackendConversation,
 } from "@/lib/api"
 import { getSocket } from "@/lib/socket"
@@ -44,14 +45,35 @@ export default function AgentPage() {
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
   const router = useRouter()
+  const [currentAgentId, setCurrentAgentId] = React.useState<string | null>(null)
 
   const activeConversation = conversations.find((c) => c.id === activeId) ?? null
+
+  // Get current agent ID from localStorage
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem("sinaps_agent")
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed?.agent?.id) {
+          setCurrentAgentId(parsed.agent.id)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to parse agent from localStorage:", error)
+    }
+  }, [])
 
   async function loadList() {
     try {
       const data = await fetchConversations()
-      const pending = data.filter((c: any) => c.status === "en_attente")
-      const mapped = pending.map((c: any) => mapBackendConversation(c, []))
+      // Show both waiting conversations AND conversations assigned to current agent
+      const relevant = data.filter((c: any) => {
+        const isWaiting = c.status === "en_attente"
+        const isAssignedToMe = c.assignedAgent?._id === currentAgentId && c.status === "en_cours"
+        return isWaiting || isAssignedToMe
+      })
+      const mapped = relevant.map((c: any) => mapBackendConversation(c, []))
       setConversations(mapped)
     } catch (error) {
       toast("Erreur de connexion au serveur")
@@ -83,7 +105,7 @@ export default function AgentPage() {
       socket.off("conversation_updated", handleCreatedOrUpdated)
       socket.off("message_received", handleCreatedOrUpdated)
     }
-  }, [activeId])
+  }, [activeId, currentAgentId])
 
   async function handleSelect(id: string) {
     setActiveId(id)
@@ -117,6 +139,20 @@ export default function AgentPage() {
       loadList()
     } catch (error) {
       toast.error("Erreur lors de la clôture")
+    }
+  }
+
+  async function handleTakeConversation(conversationId: string) {
+    if (!currentAgentId) {
+      toast.error("Impossible de récupérer votre identifiant d'agent")
+      return
+    }
+    try {
+      await assignConversation(conversationId, currentAgentId)
+      toast.success("Conversation assignée ✅")
+      loadList()
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'assignation")
     }
   }
 
@@ -222,6 +258,8 @@ export default function AgentPage() {
             ) : (
               filteredConversations.map((c) => {
                 const isSelected = c.id === activeId
+                const isWaiting = c.status === "en_attente"
+                const isAssignedToMe = c.assignedAgent?.id === currentAgentId
                 return (
                   <button
                     key={c.id}
@@ -246,7 +284,25 @@ export default function AgentPage() {
                       <p className="truncate text-xs text-muted-foreground mt-0.5 font-normal">
                         {c.lastMessage || "Nouvelle demande reçue..."}
                       </p>
+                      {c.assignedAgent && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Assigné à: {c.assignedAgent.name}
+                        </p>
+                      )}
                     </div>
+                    {isWaiting && !isSelected && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleTakeConversation(c.id)
+                        }}
+                        className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
+                      >
+                        Prendre
+                      </Button>
+                    )}
                   </button>
                 )
               })

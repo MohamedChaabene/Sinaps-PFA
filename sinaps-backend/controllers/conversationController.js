@@ -116,6 +116,20 @@ exports.escalateConversation = async (req, res) => {
 exports.assignAgent = async (req, res) => {
   try {
     const { agentId } = req.body;
+    
+    // Check if conversation is already assigned to a different agent
+    const existingConversation = await Conversation.findById(req.params.id);
+    if (!existingConversation) {
+      return res.status(404).json({ error: 'Conversation introuvable' });
+    }
+    
+    // Prevent stealing: if already assigned to another agent, reject unless admin
+    if (existingConversation.assignedAgent && 
+        existingConversation.assignedAgent.toString() !== agentId &&
+        req.agent.role !== 'admin') {
+      return res.status(403).json({ error: 'Cette conversation est déjà assignée à un autre agent' });
+    }
+    
     const conversation = await populateConversation(
       Conversation.findByIdAndUpdate(
         req.params.id,
@@ -146,6 +160,13 @@ exports.closeConversation = async (req, res) => {
     const numericRating = Number(rating);
     if (Number.isInteger(numericRating) && numericRating >= 1 && numericRating <= 5) {
       update.satisfaction = { rating: numericRating, comment: comment || '' };
+    }
+
+    // If called by an agent/admin, set resolution metadata
+    if (req.agent) {
+      update.resolvedBy = 'agent';
+      update.resolvedAt = new Date();
+      update.resolutionType = 'agent_resolved';
     }
 
     const conversation = await populateConversation(

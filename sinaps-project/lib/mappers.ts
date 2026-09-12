@@ -40,6 +40,11 @@ export function mapBackendConversation(conv: any, messages: any[] = []): Convers
     unreadCount: 0,
     status: conv.status,
     handledBy: conv.handledBy || "ia",
+    assignedAgent: conv.assignedAgent ? {
+      id: conv.assignedAgent._id,
+      name: conv.assignedAgent.name,
+      email: conv.assignedAgent.email,
+    } : undefined,
     messages: messages.map(mapBackendMessage),
   }
 }
