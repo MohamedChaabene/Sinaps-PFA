@@ -38,13 +38,28 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const conversationIdRef = useRef<string | null>(null);
   conversationIdRef.current = conversation?.id || null;
+  
+  // BUG-001 FIX: Request version counter to prevent stale responses from overwriting newer state
+  const loadConversationVersionRef = useRef<number>(0);
 
   const loadConversationDetails = useCallback(async (id: string) => {
+    // BUG-001 FIX: Increment version counter for this request
+    const currentVersion = ++loadConversationVersionRef.current;
+    
     try {
       const data = await apiFetchConversationById(id);
       if (data?.conversation) {
         const mapped = mapBackendConversation(data.conversation, data.messages || []);
-        setConversation(mapped);
+        
+        // BUG-001 FIX: Only update state if this response is not stale
+        setConversation((prev) => {
+          // Check if this response is stale (a newer request has already updated state)
+          if (currentVersion !== loadConversationVersionRef.current) {
+            return prev; // Ignore stale response
+          }
+          return mapped;
+        });
+        
         setError(null);
       }
     } catch (err: any) {
@@ -154,22 +169,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleSendMessage = async (content: string, attachments?: MessageAttachment[]) => {
     if (!conversation?.id) return;
     const convId = conversation.id;
-    const isCurrentlyIA = conversation.handledBy === 'ia';
 
     setIsSending(true);
-    if (isCurrentlyIA) {
-      setIsTyping(true);
-    }
 
     try {
       await apiSendMessage(convId, content, attachments);
-      await loadConversationDetails(convId);
+      // BUG-001 FIX: Removed redundant loadConversationDetails call
+      // Socket-driven message_received/conversation_updated events will handle realtime updates
     } catch (err: any) {
       setError(err.message || "Erreur d'envoi du message");
       throw err;
     } finally {
       setIsSending(false);
-      setIsTyping(false);
+      // BUG-001 FIX: Removed local typing state management
+      // Server-driven typing_status events handle the typing indicator
     }
   };
 

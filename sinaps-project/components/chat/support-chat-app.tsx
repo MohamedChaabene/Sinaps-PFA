@@ -33,6 +33,9 @@ export function SupportChatApp() {
   const [loading, setLoading] = React.useState(true)
   const [needsEntry, setNeedsEntry] = React.useState(false)
   const [loadingQuickReplyAction, setLoadingQuickReplyAction] = React.useState<string | null>(null)
+  
+  // BUG-001 FIX: Request version counter to prevent stale responses from overwriting newer state
+  const loadConversationVersionRef = React.useRef(0)
 
   async function startSession(name: string, email: string, credential?: string, avatar?: string) {
     setLoading(true)
@@ -53,10 +56,20 @@ export function SupportChatApp() {
   }
 
   async function loadConversation(id: string) {
+    // BUG-001 FIX: Increment version counter for this request
+    const currentVersion = ++loadConversationVersionRef.current
+    
     try {
       const { conversation: conv, messages } = await fetchConversationById(id)
       const mapped = mapBackendConversation(conv, messages)
+      
+      // BUG-001 FIX: Only update state if this response is not stale
       setConversation((prev) => {
+        // Check if this response is stale (a newer request has already updated state)
+        if (currentVersion !== loadConversationVersionRef.current) {
+          return prev // Ignore stale response
+        }
+        
         // If current state was manually switched to IA, preserve handledBy unless backend resolved it
         if (prev && prev.id === id && prev.handledBy === "ia" && conv.status !== "resolu" && !conv.assignedAgent) {
           return {
@@ -134,18 +147,15 @@ export function SupportChatApp() {
 
   async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
     if (!conversationId) return
-    const isCurrentlyIA = conversation?.handledBy === "ia"
     try {
-      if (isCurrentlyIA) {
-        setConversation((prev) => (prev ? { ...prev, isTyping: true } : null))
-      }
       await apiSendMessage(conversationId, "client", text, attachments)
-      await loadConversation(conversationId)
+      // BUG-001 FIX: Removed redundant loadConversation call
+      // Socket-driven message_received/conversation_updated events will handle realtime updates
     } catch (error) {
       toast.error("Erreur lors de l'envoi du message")
-    } finally {
-      setConversation((prev) => (prev ? { ...prev, isTyping: false } : null))
     }
+    // BUG-001 FIX: Removed local typing state management
+    // Server-driven typing_status events handle the typing indicator
   }
 
   async function handleEscalate() {
