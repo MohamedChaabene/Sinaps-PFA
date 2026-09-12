@@ -2,6 +2,22 @@ export type ConversationStatus = 'resolu' | 'en_cours' | 'en_attente'
 
 export type MessageSender = 'client' | 'ia' | 'humain'
 
+export type QuickReplyAction =
+  | "CONFIRM_RESOLVED"
+  | "NEW_QUESTION"
+  | "ESCALATE_TO_HUMAN"
+  | "RETRY_AI"
+  | "NEED_MORE_HELP"
+  | "YES_ANOTHER_QUESTION"
+  | "NO_ALL_DONE"
+
+export interface QuickReply {
+  id: string
+  label: string
+  action: QuickReplyAction
+  metadata?: Record<string, unknown>
+}
+
 export interface MessageAttachment {
   url: string
   type: 'image' | 'video' | 'document' | 'link'
@@ -16,6 +32,7 @@ export interface ChatMessage {
   content: string
   time: string
   attachments?: MessageAttachment[]
+  quickReplies?: QuickReply[]
 }
 
 export interface Conversation {

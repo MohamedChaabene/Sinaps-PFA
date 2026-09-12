@@ -146,6 +146,19 @@ export async function closeConversation(id: string, rating: number, comment: str
   return parseOrThrow(res)
 }
 
+export async function sendQuickReply(
+  conversationId: string,
+  action: string,
+  metadata?: Record<string, unknown>
+) {
+  const res = await fetch(`${API_URL}/conversations/${conversationId}/quick-reply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAnyAuthHeaders() },
+    body: JSON.stringify({ action, metadata: metadata || {} }),
+  })
+  return parseOrThrow(res)
+}
+
 // ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------

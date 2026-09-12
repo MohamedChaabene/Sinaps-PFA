@@ -16,6 +16,7 @@ import {
   sendMessage as apiSendMessage,
   escalateConversation as apiEscalateConversation,
   deescalateConversation as apiDeescalateConversation,
+  sendQuickReply as apiSendQuickReply,
   findOrCreateUser,
   findOrCreateConversation,
   mapBackendConversation,
@@ -31,6 +32,7 @@ export function SupportChatApp() {
   const [satisfactionOpen, setSatisfactionOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const [needsEntry, setNeedsEntry] = React.useState(false)
+  const [loadingQuickReplyAction, setLoadingQuickReplyAction] = React.useState<string | null>(null)
 
   async function startSession(name: string, email: string, credential?: string, avatar?: string) {
     setLoading(true)
@@ -195,6 +197,19 @@ export function SupportChatApp() {
     setNeedsEntry(true)
   }
 
+  async function handleQuickReplyClick(action: string, metadata?: Record<string, unknown>) {
+    if (!conversationId) return
+    setLoadingQuickReplyAction(action)
+    try {
+      await apiSendQuickReply(conversationId, action, metadata)
+      await loadConversation(conversationId)
+    } catch (error) {
+      toast.error("Erreur lors de l'action")
+    } finally {
+      setLoadingQuickReplyAction(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background p-4">
@@ -245,7 +260,12 @@ export function SupportChatApp() {
         onClose={() => setSatisfactionOpen(true)}
         onLogout={handleReset}
       />
-      <ChatThread conversation={conversation} />
+      <ChatThread 
+        conversation={conversation} 
+        onQuickReplyClick={handleQuickReplyClick}
+        disabledQuickReplies={conversation.status === "resolu"}
+        loadingQuickReplyAction={loadingQuickReplyAction}
+      />
 
       {conversation.status === "resolu" ? (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border bg-card/90 backdrop-blur-xs px-4 py-3 sm:px-6 shadow-2xs">

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/message-scroller"
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import { MarkdownContent } from "@/components/chat/markdown-content"
+import { QuickReplyButtons } from "@/components/chat/quick-reply-buttons"
 import { getInitials } from "@/lib/utils"
 import { API_BASE_URL } from "@/lib/api"
 import type { Conversation } from "@/lib/chat-data"
@@ -100,7 +101,17 @@ function EmptyConversationState() {
   )
 }
 
-export function ChatThread({ conversation }: { conversation: Conversation }) {
+export function ChatThread({ 
+  conversation, 
+  onQuickReplyClick, 
+  disabledQuickReplies = false,
+  loadingQuickReplyAction = null 
+}: { 
+  conversation: Conversation
+  onQuickReplyClick?: (action: string, metadata?: Record<string, unknown>) => void
+  disabledQuickReplies?: boolean
+  loadingQuickReplyAction?: string | null
+}) {
   return (
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="flex-1 bg-background">
@@ -265,6 +276,18 @@ export function ChatThread({ conversation }: { conversation: Conversation }) {
                           </>
                         )}
                       </MessageFooter>
+
+                      {/* Quick Replies - only for AI/human messages with quickReplies */}
+                      {!isClient && message.quickReplies && message.quickReplies.length > 0 && onQuickReplyClick && (
+                        <div className="mt-2">
+                          <QuickReplyButtons
+                            quickReplies={message.quickReplies}
+                            onQuickReplyClick={onQuickReplyClick}
+                            disabled={disabledQuickReplies}
+                            loadingAction={loadingQuickReplyAction}
+                          />
+                        </div>
+                      )}
                     </MessageContent>
                   </Message>
                 </MessageScrollerItem>

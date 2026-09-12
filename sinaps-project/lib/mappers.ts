@@ -19,6 +19,7 @@ export function mapBackendMessage(msg: any): ChatMessage {
     authorName: msg.authorName,
     content: msg.content,
     attachments: msg.attachments || [],
+    quickReplies: msg.quickReplies || [],
     time: new Date(msg.createdAt).toLocaleTimeString("fr-FR", {
       hour: "2-digit",
       minute: "2-digit",
