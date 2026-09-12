@@ -18,6 +18,10 @@ const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
+// Render puts the Express app behind a reverse proxy. Trust the first proxy
+// so Express and express-rate-limit can safely determine the client IP.
+app.set('trust proxy', 1);
+
 const allowedOrigins = [
   process.env.CLIENT_ORIGIN,
   process.env.CLIENT_URL,
