@@ -55,8 +55,8 @@ export default function AgentPage() {
       const stored = localStorage.getItem("sinaps_agent")
       if (stored) {
         const parsed = JSON.parse(stored)
-        if (parsed?.agent?.id) {
-          setCurrentAgentId(parsed.agent.id)
+        if (parsed?.id) {
+          setCurrentAgentId(parsed.id)
         }
       }
     } catch (error) {
