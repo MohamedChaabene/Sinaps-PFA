@@ -4,6 +4,23 @@ const { emitToConversation, emitGlobal } = require('../socket');
 const { populateConversation } = require('../utils/queryHelpers');
 const { QUICK_REPLY_ACTIONS, RESOLUTION_TYPES } = require('../utils/constants');
 
+/**
+ * Get the active (non-resolved) conversation for a client.
+ * Returns the most recent active conversation based on lastActivityAt.
+ * Returns null if no active conversation exists.
+ * 
+ * This ensures a client has at most one active conversation at a time.
+ * If multiple active conversations exist (legacy data), returns the most recently active one.
+ */
+async function getActiveConversationForClient(clientId) {
+  return await populateConversation(
+    Conversation.findOne({
+      client: clientId,
+      status: { $ne: 'resolu' },
+    }).sort({ lastActivityAt: -1 })
+  );
+}
+
 // Créer une nouvelle conversation
 exports.createConversation = async (req, res) => {
   try {
@@ -151,14 +168,12 @@ exports.closeConversation = async (req, res) => {
 exports.findOrCreateConversation = async (req, res) => {
   try {
     const clientId = req.client.id;
-    let conversation = await populateConversation(
-      Conversation.findOne({
-        client: clientId,
-        status: { $ne: 'resolu' },
-      }).sort({ createdAt: -1 })
-    );
+    
+    // Try to find existing active conversation
+    let conversation = await getActiveConversationForClient(clientId);
 
     if (!conversation) {
+      // Create new conversation if none exists
       conversation = await Conversation.create({ 
         client: clientId,
         lastActivityAt: new Date()
