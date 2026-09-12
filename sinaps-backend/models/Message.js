@@ -10,6 +10,25 @@ const messageSchema = new mongoose.Schema({
     type: { type: String, enum: ['image', 'video', 'document', 'link'], default: 'image' },
     name: { type: String },
   }],
+  // Quick Replies for conversation flow
+  quickReplies: [{
+    id: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true
+    },
+    action: {
+      type: String,
+      required: true
+    },
+    metadata: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    }
+  }]
 }, { timestamps: true });
 
 messageSchema.index({ conversation: 1, createdAt: 1 });

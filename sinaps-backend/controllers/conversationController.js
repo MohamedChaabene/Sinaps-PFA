@@ -7,7 +7,10 @@ const { populateConversation } = require('../utils/queryHelpers');
 exports.createConversation = async (req, res) => {
   try {
     const { clientId } = req.body;
-    const conversation = await Conversation.create({ client: clientId });
+    const conversation = await Conversation.create({ 
+      client: clientId,
+      lastActivityAt: new Date()
+    });
     const populated = await populateConversation(Conversation.findById(conversation._id));
 
     emitGlobal('conversation_created', populated);
@@ -155,7 +158,10 @@ exports.findOrCreateConversation = async (req, res) => {
     );
 
     if (!conversation) {
-      conversation = await Conversation.create({ client: clientId });
+      conversation = await Conversation.create({ 
+        client: clientId,
+        lastActivityAt: new Date()
+      });
       conversation = await populateConversation(Conversation.findById(conversation._id));
 
       emitGlobal('conversation_created', conversation);
