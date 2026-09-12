@@ -10,6 +10,7 @@ const {
   assignAgent,
   closeConversation,
   findOrCreateConversation,
+  handleQuickReply,
 } = require('../controllers/conversationController');
 
 router.post('/find-or-create', requireClientAuth, findOrCreateConversation);
@@ -20,5 +21,6 @@ router.patch('/:id/escalate', requireConversationAccess, escalateConversation);
 router.patch('/:id/de-escalate', requireConversationAccess, deescalateConversation);
 router.patch('/:id/assign', requireAuth, requireAgentOrAdmin, assignAgent);
 router.patch('/:id/close', requireConversationAccess, closeConversation);
+router.post('/:id/quick-reply', requireConversationAccess, handleQuickReply);
 
 module.exports = router;

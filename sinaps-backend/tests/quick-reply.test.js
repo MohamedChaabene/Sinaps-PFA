@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const request = require('supertest');
 
 // Set JWT_SECRET for tests
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
@@ -15,6 +16,10 @@ const User = require('../models/User');
 const Agent = require('../models/Agent');
 
 const { QUICK_REPLY_ACTIONS, RESOLUTION_TYPES } = require('../utils/constants');
+const jwt = require('jsonwebtoken');
+
+// Import the app after models are loaded
+const app = require('../app');
 
 let mongoServer;
 
@@ -28,6 +33,20 @@ afterAll(async () => {
   await mongoose.disconnect();
   await mongoServer.stop();
 });
+
+beforeEach(async () => {
+  await mongoose.connection.dropDatabase();
+});
+
+// Helper function to sign client token
+function signClientToken(userId) {
+  return jwt.sign({ id: userId.toString(), role: 'client' }, process.env.JWT_SECRET, { expiresIn: '30d' });
+}
+
+// Helper function to sign agent token
+function signAgentToken(agentId, role = 'agent') {
+  return jwt.sign({ id: agentId.toString(), role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+}
 
 describe('Conversation Schema - Phase 1 Enhancements', () => {
   let user;
@@ -497,6 +516,300 @@ describe('Quick Reply Constants', () => {
 
     expectedTypes.forEach(type => {
       expect(RESOLUTION_TYPES).toHaveProperty(type);
+    });
+  });
+});
+
+describe('Quick Reply API Endpoint', () => {
+  let user;
+  let conversation;
+  let clientToken;
+
+  beforeEach(async () => {
+    user = await User.create({
+      googleId: `test-google-id-${Date.now()}-${Math.random()}`,
+      name: 'Test User',
+      email: `test-${Date.now()}@example.com`
+    });
+
+    conversation = await Conversation.create({
+      client: user._id,
+      status: 'en_cours',
+      handledBy: 'ia'
+    });
+
+    clientToken = signClientToken(user._id);
+  });
+
+  describe('Authentication', () => {
+    test('rejects unauthenticated request', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .send({ action: QUICK_REPLY_ACTIONS.CONFIRM_RESOLVED });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    test('rejects client accessing another client conversation', async () => {
+      const otherUser = await User.create({
+        googleId: `other-google-id-${Date.now()}-${Math.random()}`,
+        name: 'Other User',
+        email: `other-${Date.now()}@example.com`
+      });
+
+      const otherConversation = await Conversation.create({
+        client: otherUser._id,
+        status: 'en_cours'
+      });
+
+      const res = await request(app)
+        .post(`/api/conversations/${otherConversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.CONFIRM_RESOLVED });
+
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('Invalid Actions', () => {
+    test('rejects missing action', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({});
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toBe('Action requise');
+    });
+
+    test('rejects unknown action', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: 'INVALID_ACTION' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toBe('Action invalide');
+    });
+  });
+
+  describe('CONFIRM_RESOLVED Action', () => {
+    test('resolves AI conversation with client confirmation', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.CONFIRM_RESOLVED });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.conversation.status).toBe('resolu');
+      expect(res.body.conversation.handledBy).toBe('ia');
+      expect(res.body.conversation.resolvedBy).toBe('client');
+      expect(res.body.conversation.resolutionType).toBe('client_confirmed_ai');
+      expect(res.body.conversation.resolvedAt).not.toBeNull();
+    });
+
+    test('resolves human conversation with client confirmation', async () => {
+      const agent = await Agent.create({
+        name: 'Test Agent',
+        email: `agent-${Date.now()}@example.com`,
+        password: 'hashedpassword',
+        skills: ['test'],
+        status: 'approved'
+      });
+
+      const humanConversation = await Conversation.create({
+        client: user._id,
+        handledBy: 'humain',
+        assignedAgent: agent._id,
+        status: 'en_cours'
+      });
+
+      const res = await request(app)
+        .post(`/api/conversations/${humanConversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.CONFIRM_RESOLVED });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.status).toBe('resolu');
+      expect(res.body.conversation.handledBy).toBe('humain');
+      expect(res.body.conversation.resolvedBy).toBe('client');
+      expect(res.body.conversation.resolutionType).toBe('client_confirmed_agent');
+      expect(res.body.conversation.resolvedAt).not.toBeNull();
+    });
+  });
+
+  describe('NO_ALL_DONE Action', () => {
+    test('resolves conversation as client-confirmed', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.NO_ALL_DONE });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.status).toBe('resolu');
+      expect(res.body.conversation.resolvedBy).toBe('client');
+      expect(res.body.conversation.resolvedAt).not.toBeNull();
+    });
+  });
+
+  describe('YES_ANOTHER_QUESTION Action', () => {
+    test('keeps conversation active', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.YES_ANOTHER_QUESTION });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.status).toBe('en_cours');
+      expect(res.body.conversation.resolvedBy).toBeNull();
+      expect(res.body.conversation.resolvedAt).toBeNull();
+    });
+  });
+
+  describe('NEW_QUESTION Action', () => {
+    test('keeps conversation active', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.NEW_QUESTION });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.status).toBe('en_cours');
+      expect(res.body.conversation.resolvedBy).toBeNull();
+      expect(res.body.conversation.resolvedAt).toBeNull();
+    });
+  });
+
+  describe('NEED_MORE_HELP Action', () => {
+    test('keeps conversation active without changing handler', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.NEED_MORE_HELP });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.status).toBe('en_cours');
+      expect(res.body.conversation.handledBy).toBe('ia'); // Should remain AI-handled
+    });
+  });
+
+  describe('ESCALATE_TO_HUMAN Action', () => {
+    test('escalates to human with tracking', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.ESCALATE_TO_HUMAN });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.handledBy).toBe('humain');
+      expect(res.body.conversation.status).toBe('en_attente');
+      expect(res.body.conversation.escalationCount).toBe(1);
+      expect(res.body.conversation.lastEscalationOffer).not.toBeNull();
+    });
+
+    test('increments escalationCount on multiple escalations', async () => {
+      // First escalation
+      await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.ESCALATE_TO_HUMAN });
+
+      // Reset to AI for second escalation
+      await Conversation.findByIdAndUpdate(conversation._id, {
+        handledBy: 'ia',
+        status: 'en_cours'
+      });
+
+      // Second escalation
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.ESCALATE_TO_HUMAN });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.escalationCount).toBe(2);
+    });
+
+    test('does not automatically assign agent', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.ESCALATE_TO_HUMAN });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.assignedAgent).toBeNull();
+    });
+  });
+
+  describe('RETRY_AI Action', () => {
+    test('increments aiAttemptCount and keeps AI handling', async () => {
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.RETRY_AI });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.aiAttemptCount).toBe(1);
+      expect(res.body.conversation.handledBy).toBe('ia');
+      expect(res.body.conversation.status).toBe('en_cours');
+    });
+
+    test('increments aiAttemptCount on multiple retries', async () => {
+      // First retry
+      await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.RETRY_AI });
+
+      // Second retry
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.RETRY_AI });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.conversation.aiAttemptCount).toBe(2);
+    });
+  });
+
+  describe('Resolved Conversation Protection', () => {
+    test('prevents actions on resolved conversations', async () => {
+      // Resolve the conversation first
+      await Conversation.findByIdAndUpdate(conversation._id, {
+        status: 'resolu'
+      });
+
+      const res = await request(app)
+        .post(`/api/conversations/${conversation._id}/quick-reply`)
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({ action: QUICK_REPLY_ACTIONS.NEW_QUESTION });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toBe('Cette conversation est déjà résolue');
+    });
+  });
+
+  describe('Message Activity Tracking', () => {
+    test('updates lastActivityAt when message is sent', async () => {
+      const originalActivity = conversation.lastActivityAt;
+      
+      // Wait a bit to ensure time difference
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const res = await request(app)
+        .post('/api/messages')
+        .set('Authorization', `Bearer ${clientToken}`)
+        .send({
+          conversationId: conversation._id,
+          sender: 'client',
+          content: 'Test message'
+        });
+
+      expect(res.statusCode).toBe(201);
+      
+      const updatedConversation = await Conversation.findById(conversation._id);
+      expect(updatedConversation.lastActivityAt).not.toEqual(originalActivity);
     });
   });
 });

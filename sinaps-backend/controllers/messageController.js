@@ -19,7 +19,7 @@ exports.sendMessage = async (req, res) => {
     const updatedConv = await populateConversation(
       Conversation.findByIdAndUpdate(
         conversationId,
-        { updatedAt: new Date() },
+        { updatedAt: new Date(), lastActivityAt: new Date() },
         { returnDocument: 'after' }
       )
     );
@@ -50,7 +50,7 @@ exports.sendMessage = async (req, res) => {
         const reUpdatedConv = await populateConversation(
           Conversation.findByIdAndUpdate(
             conversationId,
-            { updatedAt: new Date() },
+            { updatedAt: new Date(), lastActivityAt: new Date() },
             { returnDocument: 'after' }
           )
         );

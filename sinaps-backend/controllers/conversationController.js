@@ -2,6 +2,7 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const { emitToConversation, emitGlobal } = require('../socket');
 const { populateConversation } = require('../utils/queryHelpers');
+const { QUICK_REPLY_ACTIONS, RESOLUTION_TYPES } = require('../utils/constants');
 
 // Créer une nouvelle conversation
 exports.createConversation = async (req, res) => {
@@ -187,6 +188,107 @@ exports.deescalateConversation = async (req, res) => {
     emitGlobal('conversation_updated', conversation);
 
     res.json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Quick Reply action handler
+exports.handleQuickReply = async (req, res) => {
+  try {
+    const { action, metadata } = req.body;
+    const conversationId = req.params.id;
+
+    // Validate action
+    if (!action) {
+      return res.status(400).json({ error: 'Action requise' });
+    }
+
+    const validActions = Object.values(QUICK_REPLY_ACTIONS);
+    if (!validActions.includes(action)) {
+      return res.status(400).json({ error: 'Action invalide' });
+    }
+
+    // Get current conversation
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation introuvable' });
+    }
+
+    // Prevent actions on resolved conversations
+    if (conversation.status === 'resolu') {
+      return res.status(400).json({ error: 'Cette conversation est déjà résolue' });
+    }
+
+    const now = new Date();
+    let update = { lastActivityAt: now };
+
+    // Handle each action
+    switch (action) {
+      case QUICK_REPLY_ACTIONS.CONFIRM_RESOLVED:
+        update.status = 'resolu';
+        update.resolvedBy = 'client';
+        update.resolvedAt = now;
+        update.resolutionType = conversation.handledBy === 'ia' 
+          ? RESOLUTION_TYPES.CLIENT_CONFIRMED_AI 
+          : RESOLUTION_TYPES.CLIENT_CONFIRMED_AGENT;
+        break;
+
+      case QUICK_REPLY_ACTIONS.NO_ALL_DONE:
+        update.status = 'resolu';
+        update.resolvedBy = 'client';
+        update.resolvedAt = now;
+        update.resolutionType = conversation.handledBy === 'ia'
+          ? RESOLUTION_TYPES.CLIENT_CONFIRMED_AI
+          : RESOLUTION_TYPES.CLIENT_CONFIRMED_AGENT;
+        break;
+
+      case QUICK_REPLY_ACTIONS.YES_ANOTHER_QUESTION:
+        // Keep conversation active, just update activity
+        break;
+
+      case QUICK_REPLY_ACTIONS.NEW_QUESTION:
+        // Keep conversation active, just update activity
+        break;
+
+      case QUICK_REPLY_ACTIONS.NEED_MORE_HELP:
+        // Keep conversation active, just update activity
+        // Do not escalate to human - use ESCALATE_TO_HUMAN for that
+        break;
+
+      case QUICK_REPLY_ACTIONS.ESCALATE_TO_HUMAN:
+        update.handledBy = 'humain';
+        update.status = 'en_attente';
+        update.escalationCount = (conversation.escalationCount || 0) + 1;
+        update.lastEscalationOffer = now;
+        break;
+
+      case QUICK_REPLY_ACTIONS.RETRY_AI:
+        update.aiAttemptCount = (conversation.aiAttemptCount || 0) + 1;
+        update.handledBy = 'ia';
+        update.status = 'en_cours';
+        break;
+
+      default:
+        return res.status(400).json({ error: 'Action non supportée' });
+    }
+
+    const updatedConversation = await populateConversation(
+      Conversation.findByIdAndUpdate(
+        conversationId,
+        update,
+        { returnDocument: 'after', runValidators: true }
+      )
+    );
+
+    // Emit conversation update via Socket.io
+    emitToConversation(conversationId, 'conversation_updated', updatedConversation);
+    emitGlobal('conversation_updated', updatedConversation);
+
+    res.json({
+      success: true,
+      conversation: updatedConversation
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
