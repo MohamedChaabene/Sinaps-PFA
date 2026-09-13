@@ -25,9 +25,10 @@ async function getActiveConversationForClient(clientId) {
 exports.createConversation = async (req, res) => {
   try {
     const { clientId } = req.body;
-    const conversation = await Conversation.create({ 
+    const conversation = await Conversation.create({
       client: clientId,
-      lastActivityAt: new Date()
+      lastActivityAt: new Date(),
+      handledBy: 'ia'
     });
     const populated = await populateConversation(Conversation.findById(conversation._id));
 
@@ -197,7 +198,8 @@ exports.findOrCreateConversation = async (req, res) => {
       // Create new conversation if none exists
       conversation = await Conversation.create({ 
         client: clientId,
-        lastActivityAt: new Date()
+        lastActivityAt: new Date(),
+        handledBy: 'ia'
       });
       conversation = await populateConversation(Conversation.findById(conversation._id));
 

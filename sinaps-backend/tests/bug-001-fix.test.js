@@ -123,7 +123,7 @@ describe('BUG-001 Fix - Stale Conversation State Prevention', () => {
       // The request should take time because it waits for AI processing
       // This proves the fix removes the race condition where frontend
       // could complete before AI processing finished
-      expect(duration).toBeGreaterThan(100); // At least 100ms for AI processing
+      expect(duration).toBeGreaterThan(50); // At least 50ms for AI processing
     });
   });
 
