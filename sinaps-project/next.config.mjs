@@ -10,6 +10,15 @@ const nextConfig = {
     // Next.js image optimization, so we disable it globally for simplicity.
     unoptimized: true,
   },
+  async redirects() {
+    return [
+      {
+        source: '/agent/login',
+        destination: '/login',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig
