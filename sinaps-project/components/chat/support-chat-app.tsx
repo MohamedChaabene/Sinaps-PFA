@@ -24,6 +24,9 @@ import {
   getStoredClientSession,
   storeClientSession,
   clearClientSession,
+  getStoredConversationId,
+  storeConversationId,
+  clearConversationId,
 } from "@/lib/api"
 import { getSocket, joinConversationRoom, leaveConversationRoom } from "@/lib/socket"
 
@@ -34,22 +37,52 @@ export function SupportChatApp() {
   const [loading, setLoading] = React.useState(true)
   const [needsEntry, setNeedsEntry] = React.useState(false)
   const [loadingQuickReplyAction, setLoadingQuickReplyAction] = React.useState<string | null>(null)
+  const [initError, setInitError] = React.useState<string | null>(null)
   
   // BUG-001 FIX: Request version counter to prevent stale responses from overwriting newer state
   const loadConversationVersionRef = React.useRef(0)
 
   async function startSession(name: string, email: string, credential?: string, avatar?: string) {
     setLoading(true)
+    setInitError(null)
     try {
       const { user, token } = await findOrCreateUser(name, email, credential, avatar)
       storeClientSession(user._id, token)
-      const conv = await findOrCreateConversation()
+      
+      // Check if there's an existing conversation ID in storage
+      const existingConversationId = getStoredConversationId()
+      let conv
+      
+      if (existingConversationId) {
+        // Try to load the existing conversation first
+        try {
+          const { conversation: fetchedConv } = await fetchConversationById(existingConversationId)
+          // Verify the conversation belongs to this user and is still active
+          // Handle both string and object client references
+          const clientId = typeof fetchedConv.client === 'string' ? fetchedConv.client : fetchedConv.client._id
+          if (clientId === user._id && fetchedConv.status !== 'resolu') {
+            setConversationId(fetchedConv._id)
+            setNeedsEntry(false)
+            await loadConversation(fetchedConv._id)
+            return
+          }
+        } catch (error) {
+          // Existing conversation is invalid or belongs to another user, clear it and create new
+          clearConversationId()
+        }
+      }
+      
+      // Create or find a new conversation
+      conv = await findOrCreateConversation()
       setConversationId(conv._id)
+      storeConversationId(conv._id)
       setNeedsEntry(false)
       await loadConversation(conv._id)
     } catch (error: any) {
       clearClientSession()
+      clearConversationId()
       setNeedsEntry(true)
+      setInitError(error.message || "Erreur de connexion au serveur")
       toast.error(error.message || "Erreur de connexion au serveur")
     } finally {
       setLoading(false)
@@ -98,13 +131,37 @@ export function SupportChatApp() {
         return
       }
       try {
+        // Check if there's an existing conversation ID in storage
+        const existingConversationId = getStoredConversationId()
+        
+        if (existingConversationId) {
+          // Try to load the existing conversation first
+          try {
+            const { conversation: fetchedConv } = await fetchConversationById(existingConversationId)
+            // Verify the conversation belongs to this user and is still active
+            const clientId = typeof fetchedConv.client === 'string' ? fetchedConv.client : fetchedConv.client._id
+            if (clientId === session.userId && fetchedConv.status !== 'resolu') {
+              setConversationId(fetchedConv._id)
+              await loadConversation(fetchedConv._id)
+              return
+            }
+          } catch (error) {
+            // Existing conversation is invalid, clear it and create new
+            clearConversationId()
+          }
+        }
+        
+        // Create or find a new conversation
         const conv = await findOrCreateConversation()
         setConversationId(conv._id)
+        storeConversationId(conv._id)
         await loadConversation(conv._id)
-      } catch (error) {
+      } catch (error: any) {
         // Session token missing/expired/rejected — fall back to re-identifying.
         clearClientSession()
+        clearConversationId()
         setNeedsEntry(true)
+        setInitError(error.message || "Erreur de connexion au serveur")
         setLoading(false)
       }
     }
@@ -218,6 +275,7 @@ export function SupportChatApp() {
 
   function handleReset() {
     clearClientSession()
+    clearConversationId()
     if (typeof window !== "undefined") {
       localStorage.removeItem("sinaps_token")
       localStorage.removeItem("sinaps_agent")
@@ -251,6 +309,16 @@ export function SupportChatApp() {
             <p className="font-heading text-base font-bold text-foreground">Sinaps Support</p>
             <p className="text-xs text-muted-foreground">Initialisation de votre session de support...</p>
           </div>
+          {initError && (
+            <div className="pt-2 flex gap-2">
+              <Button variant="outline" size="sm" className="rounded-lg" onClick={() => window.location.reload()}>
+                Réessayer
+              </Button>
+              <Button size="sm" className="rounded-lg" onClick={handleReset}>
+                Recommencer
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     )

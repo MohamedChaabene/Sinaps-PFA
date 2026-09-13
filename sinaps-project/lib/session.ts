@@ -11,6 +11,7 @@
 
 const AGENT_TOKEN_KEY = "sinaps_token"
 const CLIENT_STORAGE_KEY = "sinaps_client"
+const CONVERSATION_ID_KEY = "sinaps_conversation_id"
 
 // ---------------------------------------------------------------------------
 // Agent (support staff) session
@@ -60,6 +61,26 @@ export function storeClientSession(userId: string, token: string): void {
 export function clearClientSession(): void {
   if (typeof window === "undefined") return
   localStorage.removeItem(CLIENT_STORAGE_KEY)
+  localStorage.removeItem(CONVERSATION_ID_KEY)
+}
+
+// ---------------------------------------------------------------------------
+// Conversation ID persistence
+// ---------------------------------------------------------------------------
+
+export function getStoredConversationId(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem(CONVERSATION_ID_KEY)
+}
+
+export function storeConversationId(conversationId: string): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(CONVERSATION_ID_KEY, conversationId)
+}
+
+export function clearConversationId(): void {
+  if (typeof window === "undefined") return
+  localStorage.removeItem(CONVERSATION_ID_KEY)
 }
 
 /**

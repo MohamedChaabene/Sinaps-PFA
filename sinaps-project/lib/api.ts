@@ -27,6 +27,9 @@ export {
   clearClientSession,
   getClientAuthHeaders,
   getAnyAuthHeaders,
+  getStoredConversationId,
+  storeConversationId,
+  clearConversationId,
 } from "./session"
 
 // Re-export data mappers (backward compatibility)
@@ -42,6 +45,34 @@ async function parseOrThrow<T = any>(res: Response): Promise<T> {
     throw new Error(data?.error || `Erreur ${res.status}`)
   }
   return data
+}
+
+/**
+ * Wraps a fetch call with a timeout to prevent indefinite hanging.
+ * Throws an error if the request takes longer than the specified timeout.
+ */
+async function fetchWithTimeout<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs: number = 15000
+): Promise<T> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const response = await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+    return await parseOrThrow<T>(response)
+  } catch (error: any) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      throw new Error('Délai d\'attente dépassé. Veuillez vérifier votre connexion.')
+    }
+    throw error
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -74,13 +105,12 @@ export async function signupAgent(name: string, email: string, password: string,
  * Find or create a user account. Returns { user, token } where token is a
  * client-scoped JWT that must be sent on every subsequent request for this user.
  */
-export async function findOrCreateUser(name: string, email: string, credential?: string, avatar?: string) {
-  const res = await fetch(`${API_URL}/users/find-or-create`, {
+export async function findOrCreateUser(name: string, email: string, credential?: string, avatar?: string): Promise<{ user: any; token: string }> {
+  return fetchWithTimeout(`${API_URL}/users/find-or-create`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, credential, avatar }),
-  })
-  return parseOrThrow(res)
+  }, 15000)
 }
 
 // ---------------------------------------------------------------------------
@@ -100,18 +130,16 @@ export async function fetchConversationsFiltered(status?: string, search?: strin
   return parseOrThrow<any[]>(res)
 }
 
-export async function fetchConversationById(id: string) {
-  const res = await fetch(`${API_URL}/conversations/${id}`, { headers: getAnyAuthHeaders() })
-  return parseOrThrow(res)
+export async function fetchConversationById(id: string): Promise<{ conversation: any; messages: any[] }> {
+  return fetchWithTimeout(`${API_URL}/conversations/${id}`, { headers: getAnyAuthHeaders() }, 15000)
 }
 
-export async function findOrCreateConversation() {
-  const res = await fetch(`${API_URL}/conversations/find-or-create`, {
+export async function findOrCreateConversation(): Promise<any> {
+  return fetchWithTimeout(`${API_URL}/conversations/find-or-create`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getClientAuthHeaders() },
     body: JSON.stringify({}),
-  })
-  return parseOrThrow(res)
+  }, 15000)
 }
 
 export async function escalateConversation(id: string) {
@@ -177,7 +205,7 @@ export async function sendMessage(
   sender: string,
   content: string,
   attachments?: { url: string; type: string; name?: string }[]
-) {
+): Promise<{ aiMessage?: any }> {
   const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (sender === "humain") Object.assign(headers, getAuthHeaders())
   if (sender === "client") Object.assign(headers, getClientAuthHeaders())
