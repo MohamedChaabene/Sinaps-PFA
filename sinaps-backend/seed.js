@@ -64,6 +64,7 @@ async function populateDemoData() {
     name: 'Amine Trabelsi',
     email: 'amine.trabelsi@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amine',
+    isTestData: true,
   });
 
   const user2 = await User.create({
@@ -71,6 +72,7 @@ async function populateDemoData() {
     name: 'Sonia Gharbi',
     email: 'sonia.gharbi@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sonia',
+    isTestData: true,
   });
 
   const user3 = await User.create({
@@ -78,6 +80,7 @@ async function populateDemoData() {
     name: 'Omar Farouk',
     email: 'omar.farouk@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar',
+    isTestData: true,
   });
 
   // 3. Create Conversations & Messages
@@ -96,6 +99,7 @@ async function populateDemoData() {
     },
     createdAt: new Date(now - 3600000 * 24),
     updatedAt: new Date(now - 3600000 * 23.8),
+    isTestData: true,
   });
 
   const c1_m1 = new Date(now - 3600000 * 24);
@@ -129,6 +133,7 @@ async function populateDemoData() {
     },
     createdAt: new Date(now - 3600000 * 12),
     updatedAt: new Date(now - 3600000 * 11),
+    isTestData: true,
   });
 
   const c2_m1 = new Date(now - 3600000 * 12);
@@ -174,6 +179,7 @@ async function populateDemoData() {
     status: 'en_attente',
     createdAt: new Date(now - 600000),
     updatedAt: new Date(now - 300000),
+    isTestData: true,
   });
 
   const c3_m1 = new Date(now - 600000);

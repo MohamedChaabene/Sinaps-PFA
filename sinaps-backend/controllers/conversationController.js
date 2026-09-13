@@ -42,9 +42,14 @@ exports.createConversation = async (req, res) => {
 // Récupérer toutes les conversations (avec recherche et pagination optionnelle)
 exports.getConversations = async (req, res) => {
   try {
-    const { status, search, limit: rawLimit, page: rawPage } = req.query;
+    const { status, search, limit: rawLimit, page: rawPage, includeTestData } = req.query;
     const filter = {};
     if (status) filter.status = status;
+    
+    // Filter out test data by default unless explicitly requested
+    if (includeTestData !== 'true') {
+      filter.isTestData = { $ne: true };
+    }
 
     let query = populateConversation(Conversation.find(filter)).sort({ updatedAt: -1 });
 

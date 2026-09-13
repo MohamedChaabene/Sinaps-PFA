@@ -122,10 +122,11 @@ export async function fetchConversations(): Promise<any[]> {
   return parseOrThrow<any[]>(res)
 }
 
-export async function fetchConversationsFiltered(status?: string, search?: string): Promise<any[]> {
+export async function fetchConversationsFiltered(status?: string, search?: string, includeTestData?: string): Promise<any[]> {
   const params = new URLSearchParams()
   if (status) params.set("status", status)
   if (search) params.set("search", search)
+  if (includeTestData) params.set("includeTestData", includeTestData)
   const res = await fetch(`${API_URL}/conversations?${params.toString()}`, { headers: getAuthHeaders() })
   return parseOrThrow<any[]>(res)
 }

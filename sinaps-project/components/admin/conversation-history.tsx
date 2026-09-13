@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { Bot, Loader2, SearchIcon, Star, UserCheck, X } from "lucide-react"
+import { Bot, Loader2, SearchIcon, Star, UserCheck, X, MessageSquare, XCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,20 +16,24 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { StatusBadge } from "@/components/chat/status-badge"
-import { fetchConversationsFiltered } from "@/lib/api"
-import { getInitials } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { fetchConversationsFiltered, fetchConversationById } from "@/lib/api"
+import { getInitials, formatTimestamp, formatTime } from "@/lib/utils"
 import { toast } from "sonner"
 
 export function ConversationHistory() {
   const [conversations, setConversations] = useState<any[]>([])
   const [statusFilter, setStatusFilter] = useState("")
   const [search, setSearch] = useState("")
+  const [includeTestData, setIncludeTestData] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [selectedConversation, setSelectedConversation] = useState<any | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   async function load() {
     setLoading(true)
     try {
-      const data = await fetchConversationsFiltered(statusFilter, search)
+      const data = await fetchConversationsFiltered(statusFilter, search, includeTestData ? 'true' : undefined)
       setConversations(data)
     } catch (error: any) {
       // Only show toast for genuine server errors, not auth failures (401)
@@ -44,11 +48,23 @@ export function ConversationHistory() {
     }
   }
 
+  async function loadConversationDetail(conversationId: string) {
+    setDetailLoading(true)
+    try {
+      const { conversation, messages } = await fetchConversationById(conversationId)
+      setSelectedConversation({ conversation, messages })
+    } catch (error: any) {
+      toast.error("Erreur lors du chargement de la conversation")
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
   // Debounce filter changes so we don't fire a request on every keystroke
   useEffect(() => {
     const timeout = setTimeout(load, 300)
     return () => clearTimeout(timeout)
-  }, [statusFilter, search])
+  }, [statusFilter, search, includeTestData])
 
   const filterTabs = [
     { value: "", label: "Toutes", count: conversations.length },
@@ -93,7 +109,7 @@ export function ConversationHistory() {
         <div className="relative flex-1 max-w-md">
           <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70" />
           <Input
-            placeholder="Rechercher par client, email..."
+            placeholder="Rechercher par client..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-8 h-9 rounded-lg border-border/80 bg-card text-sm focus-visible:ring-2 focus-visible:ring-primary shadow-2xs"
@@ -137,6 +153,23 @@ export function ConversationHistory() {
               </button>
             )
           })}
+          
+          <div className="w-px h-6 bg-border/60 mx-1" />
+          
+          <button
+            type="button"
+            onClick={() => setIncludeTestData(!includeTestData)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all shadow-2xs ${
+              includeTestData
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-semibold"
+                : "border border-border/80 bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+            title="Inclure les données de test"
+          >
+            <span className="size-1.5 rounded-full bg-amber-500" />
+            <span className="hidden sm:inline">Données test</span>
+            <span className="sm:hidden">Test</span>
+          </button>
         </div>
       </div>
 
@@ -151,12 +184,13 @@ export function ConversationHistory() {
                 <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Traité par</TableHead>
                 <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Satisfaction</TableHead>
                 <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Date</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-14 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="py-14 text-center text-sm text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2.5">
                       <Loader2 className="size-6 animate-spin text-primary" />
                       <span className="font-medium text-xs">Chargement de l&apos;historique...</span>
@@ -165,7 +199,7 @@ export function ConversationHistory() {
                 </TableRow>
               ) : conversations.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-14 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={6} className="py-14 text-center text-sm text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
                       <div className="rounded-xl bg-muted/60 p-3 text-muted-foreground">
                         <SearchIcon className="size-6 text-muted-foreground/60" />
@@ -208,7 +242,6 @@ export function ConversationHistory() {
                             <p className="truncate font-semibold text-xs sm:text-sm text-foreground">
                               {c.client?.name || "Client inconnu"}
                             </p>
-                            <p className="truncate text-xs text-muted-foreground">{c.client?.email || "—"}</p>
                           </div>
                         </div>
                       </TableCell>
@@ -252,16 +285,29 @@ export function ConversationHistory() {
                       <TableCell className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
                         <div>
                           <p className="font-medium text-foreground">
-                            {new Date(c.createdAt).toLocaleDateString("fr-FR", {
+                            {formatTimestamp(c.createdAt, {
                               day: "numeric",
                               month: "short",
                               year: "numeric",
                             })}
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            {new Date(c.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                            {formatTime(c.createdAt, { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
+                      </TableCell>
+
+                      <TableCell className="py-3 px-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => loadConversationDetail(c._id)}
+                          className="h-8 px-2 rounded-lg text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors"
+                          aria-label={`Voir la conversation de ${c.client?.name || 'client inconnu'}`}
+                        >
+                          <MessageSquare className="size-3.5 mr-1.5" />
+                          <span className="hidden sm:inline">Voir</span>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   )
@@ -271,6 +317,77 @@ export function ConversationHistory() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Conversation Detail Dialog */}
+      <Dialog open={!!selectedConversation} onOpenChange={(open) => !open && setSelectedConversation(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
+                <Avatar className="size-8 rounded-lg">
+                  <AvatarImage src={selectedConversation?.conversation.client?.avatar} />
+                  <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                    {getInitials(selectedConversation?.conversation.client?.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold text-sm">{selectedConversation?.conversation.client?.name || "Client inconnu"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedConversation?.conversation.status} • {selectedConversation?.conversation.handledBy === 'ia' ? 'IA' : 'Humain'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedConversation(null)}
+                className="ml-auto"
+              >
+                <XCircle className="size-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto">
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-6 animate-spin text-primary" />
+              </div>
+            ) : selectedConversation?.messages ? (
+              <div className="space-y-4">
+                {selectedConversation.messages.map((msg: any, idx: number) => (
+                  <div
+                    key={msg._id || idx}
+                    className={`flex gap-3 ${msg.sender === 'client' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    {msg.sender !== 'client' && (
+                      <Avatar className="size-8 rounded-lg shrink-0">
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary text-xs">
+                          {msg.sender === 'ia' ? 'IA' : getInitials(msg.authorName)}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div
+                      className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                        msg.sender === 'client'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
+                      }`}
+                    >
+                      <p className="text-sm">{msg.content}</p>
+                      <p className="text-[10px] opacity-70 mt-1">
+                        {formatTime(msg.createdAt, { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground py-12">Aucun message disponible</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

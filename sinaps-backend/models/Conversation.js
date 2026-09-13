@@ -48,7 +48,9 @@ const conversationSchema = new mongoose.Schema({
   lastEscalationOffer: {
     type: Date,
     default: null
-  }
+  },
+  // Test data marker
+  isTestData: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Index for one active conversation per client

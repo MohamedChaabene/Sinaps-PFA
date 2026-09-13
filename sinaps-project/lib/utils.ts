@@ -15,3 +15,55 @@ export function getInitials(name?: string): string {
     .join('')
     .toUpperCase()
 }
+
+/**
+ * Safely format a timestamp for display.
+ * Handles missing, null, malformed, or invalid date values.
+ * Returns "Date inconnue" for invalid/missing timestamps.
+ */
+export function formatTimestamp(timestamp: any, options?: Intl.DateTimeFormatOptions): string {
+  if (!timestamp) return "Date inconnue"
+  
+  let date: Date
+  try {
+    date = new Date(timestamp)
+    // Check if date is invalid
+    if (isNaN(date.getTime())) {
+      return "Date inconnue"
+    }
+  } catch {
+    return "Date inconnue"
+  }
+  
+  try {
+    return date.toLocaleDateString("fr-FR", options)
+  } catch {
+    return "Date inconnue"
+  }
+}
+
+/**
+ * Safely format a time for display.
+ * Handles missing, null, malformed, or invalid date values.
+ * Returns "Date inconnue" for invalid/missing timestamps.
+ */
+export function formatTime(timestamp: any, options?: Intl.DateTimeFormatOptions): string {
+  if (!timestamp) return "Date inconnue"
+  
+  let date: Date
+  try {
+    date = new Date(timestamp)
+    // Check if date is invalid
+    if (isNaN(date.getTime())) {
+      return "Date inconnue"
+    }
+  } catch {
+    return "Date inconnue"
+  }
+  
+  try {
+    return date.toLocaleTimeString("fr-FR", options)
+  } catch {
+    return "Date inconnue"
+  }
+}
