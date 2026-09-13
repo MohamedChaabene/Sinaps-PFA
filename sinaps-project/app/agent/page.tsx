@@ -39,7 +39,7 @@ import {
 import { getSocket } from "@/lib/socket"
 import { getInitials } from "@/lib/utils"
 
-export default function AgentPage() {
+function AgentPageContent() {
   const [conversations, setConversations] = React.useState<Conversation[]>([])
   const [activeId, setActiveId] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -179,8 +179,7 @@ export default function AgentPage() {
   }
 
   return (
-    <AuthGuard requiredRole="agent">
-      <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
         {/* Sidebar Ticket Queue */}
         <aside
           className={`${
@@ -409,6 +408,13 @@ export default function AgentPage() {
           )}
         </main>
       </div>
+    )
+}
+
+export default function AgentPage() {
+  return (
+    <AuthGuard requiredRole="agent">
+      <AgentPageContent />
     </AuthGuard>
   )
 }
