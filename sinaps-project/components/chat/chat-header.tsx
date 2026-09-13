@@ -1,6 +1,6 @@
 "use client"
 
-import { UserRoundIcon, LogOutIcon, CheckCircle2, Bot, Sparkles, Shield, Wifi } from "lucide-react"
+import { UserRoundIcon, LogOutIcon, CheckCircle2, Bot } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { StatusBadge } from "@/components/chat/status-badge"
@@ -42,10 +42,11 @@ export function ChatHeader({
           <span
             className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-emerald-500 ring-2 ring-card shadow-xs"
             title="Session connectée en temps réel"
+            aria-label="Connecté en temps réel"
           />
         </div>
 
-        {/* Brand & Conversation metadata */}
+        {/* Brand & Conversation metadata - simplified */}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
@@ -59,33 +60,20 @@ export function ChatHeader({
                 alt="SINAPS"
                 className="h-6 sm:h-7 w-auto object-contain hidden dark:block"
               />
-              <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary tracking-wide uppercase hidden sm:inline-block">
-                Copilot
-              </span>
-              <span className="text-muted-foreground/30 text-xs hidden sm:inline">•</span>
-              <span className="text-xs font-medium text-muted-foreground truncate max-w-[140px] hidden sm:inline">
-                {conversation.clientName}
-              </span>
+              <span className="text-sm font-semibold text-foreground">SINAPS Copilot</span>
             </div>
-            <StatusBadge status={conversation.status} />
+            {/* Realtime indicator - simple green dot */}
+            <span 
+              className="size-2 rounded-full bg-emerald-500 shrink-0"
+              title="Connecté en temps réel"
+              aria-label="Connecté en temps réel"
+            />
           </div>
 
-          <div className="mt-0.5 flex items-center gap-2">
-            {isHumanMode ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
-                <span className="size-1.5 rounded-full bg-blue-500 animate-ping" />
-                <span>{hasAssignedAgent ? "Conseiller support assigné" : "En attente d'un conseiller"}</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary border border-primary/20 shadow-2xs">
-                <Sparkles className="size-3 text-primary animate-pulse" />
-                <span>Assistant IA • Gemini & RAG</span>
-              </span>
-            )}
-            <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-muted-foreground/80 font-mono">
-              <Wifi className="size-2.5 text-emerald-500" />
-              <span>Temps réel</span>
-            </span>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+            <span className="truncate">{conversation.clientName}</span>
+            <span className="text-muted-foreground/30">·</span>
+            <span className="truncate">{isHumanMode ? "Support humain" : "Gemini & RAG"}</span>
           </div>
         </div>
       </div>

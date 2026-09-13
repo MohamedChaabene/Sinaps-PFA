@@ -312,9 +312,24 @@ function AgentPageContent() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="truncate text-xs font-bold text-foreground">{c.clientName}</p>
-                        <StatusBadge status={c.status} />
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="flex-1 min-w-0 truncate text-xs font-bold text-foreground">{c.clientName}</p>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <StatusBadge status={c.status} />
+                          {isWaiting && !isSelected && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleTakeConversation(c.id)
+                              }}
+                              className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
+                            >
+                              Prendre
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="truncate text-xs text-muted-foreground mt-0.5 font-normal">
                         {c.lastMessage || "Nouvelle demande reçue..."}
@@ -325,19 +340,6 @@ function AgentPageContent() {
                         </p>
                       )}
                     </div>
-                    {isWaiting && !isSelected && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleTakeConversation(c.id)
-                        }}
-                        className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
-                      >
-                        Prendre
-                      </Button>
-                    )}
                   </button>
                 )
               })
