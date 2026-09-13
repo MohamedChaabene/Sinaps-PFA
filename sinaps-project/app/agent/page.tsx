@@ -47,8 +47,6 @@ function AgentPageContent() {
   const router = useRouter()
   const [currentAgentId, setCurrentAgentId] = React.useState<string | null>(null)
 
-  // Track active refresh requests to prevent concurrent fetches of the same conversation
-  const activeRefreshRef = React.useRef<Set<string>>(new Set())
   // Track explicit user-initiated refreshes to skip redundant Socket.IO refreshes
   const explicitRefreshRef = React.useRef<Set<string>>(new Set())
 
@@ -93,44 +91,6 @@ function AgentPageContent() {
     }
   }
 
-  // Deduplicated conversation fetch to prevent concurrent refreshes
-  async function fetchConversationDeduplicated(conversationId: string, isExplicit: boolean = false): Promise<{ conversation: any; messages: any[] } | null> {
-    // Skip if already refreshing this conversation
-    if (activeRefreshRef.current.has(conversationId)) {
-      console.log(`Skipping duplicate fetch for conversation ${conversationId}`)
-      return null
-    }
-
-    // Skip Socket.IO refresh if explicit refresh is in progress for same conversation
-    if (!isExplicit && explicitRefreshRef.current.has(conversationId)) {
-      console.log(`Skipping Socket.IO refresh for conversation ${conversationId} (explicit refresh in progress)`)
-      return null
-    }
-
-    // Mark as active refresh
-    activeRefreshRef.current.add(conversationId)
-    if (isExplicit) {
-      explicitRefreshRef.current.add(conversationId)
-    }
-
-    try {
-      const result = await fetchConversationById(conversationId)
-      return result
-    } catch (error) {
-      console.error(`Failed to fetch conversation ${conversationId}:`, error)
-      throw error
-    } finally {
-      // Remove from active refresh set
-      activeRefreshRef.current.delete(conversationId)
-      if (isExplicit) {
-        // Delay removal of explicit flag to allow Socket.IO events to complete
-        setTimeout(() => {
-          explicitRefreshRef.current.delete(conversationId)
-        }, 500)
-      }
-    }
-  }
-
   React.useEffect(() => {
     loadList()
 
@@ -139,11 +99,9 @@ function AgentPageContent() {
       loadList()
       // Only refresh active conversation via Socket.IO if not being explicitly refreshed
       if (activeId && !explicitRefreshRef.current.has(activeId)) {
-        fetchConversationDeduplicated(activeId, false).then((result) => {
-          if (result) {
-            const mapped = mapBackendConversation(result.conversation, result.messages)
-            setConversations((prev) => prev.map((c) => (c.id === activeId ? mapped : c)))
-          }
+        fetchConversationById(activeId).then(({ conversation, messages }) => {
+          const mapped = mapBackendConversation(conversation, messages)
+          setConversations((prev) => prev.map((c) => (c.id === activeId ? mapped : c)))
         }).catch(() => {})
       }
     }
@@ -162,11 +120,11 @@ function AgentPageContent() {
   async function handleSelect(id: string) {
     setActiveId(id)
     try {
-      const result = await fetchConversationDeduplicated(id, true)
-      if (result) {
-        const mapped = mapBackendConversation(result.conversation, result.messages)
-        setConversations((prev) => prev.map((c) => (c.id === id ? mapped : c)))
-      }
+      // Authoritative direct fetch for conversation selection
+      // This ensures the selected conversation always loads with its messages
+      const { conversation, messages } = await fetchConversationById(id)
+      const mapped = mapBackendConversation(conversation, messages)
+      setConversations((prev) => prev.map((c) => (c.id === id ? mapped : c)))
     } catch (error) {
       toast("Erreur lors du chargement de la conversation")
     }
@@ -176,11 +134,18 @@ function AgentPageContent() {
     if (!activeConversation) return
     try {
       await apiSendMessage(activeConversation.id, "humain", text, attachments)
-      // Use deduplicated fetch with explicit flag to prevent Socket.IO race
-      const refreshed = await fetchConversationDeduplicated(activeConversation.id, true)
-      if (refreshed) {
+      // Authoritative direct fetch after message send
+      // Mark as explicit refresh to prevent Socket.IO race condition
+      explicitRefreshRef.current.add(activeConversation.id)
+      try {
+        const refreshed = await fetchConversationById(activeConversation.id)
         const mapped = mapBackendConversation(refreshed.conversation, refreshed.messages)
         setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? mapped : c)))
+      } finally {
+        // Delay removal to allow Socket.IO events to complete
+        setTimeout(() => {
+          explicitRefreshRef.current.delete(activeConversation.id)
+        }, 500)
       }
     } catch (error) {
       toast("Erreur lors de l'envoi du message")
