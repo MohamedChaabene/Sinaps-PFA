@@ -21,6 +21,7 @@ export function ChatHeader({
   onLogout?: () => void
 }) {
   const isHumanMode = conversation.handledBy === "humain"
+  const hasAssignedAgent = !!conversation.assignedAgent
   const isResolved = conversation.status === "resolu"
 
   return (
@@ -73,7 +74,7 @@ export function ChatHeader({
             {isHumanMode ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
                 <span className="size-1.5 rounded-full bg-blue-500 animate-ping" />
-                <span>Conseiller support assigné</span>
+                <span>{hasAssignedAgent ? "Conseiller support assigné" : "En attente d'un conseiller"}</span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary border border-primary/20 shadow-2xs">
