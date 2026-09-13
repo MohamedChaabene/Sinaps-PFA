@@ -103,8 +103,6 @@ describe('BUG-001 Fix - Stale Conversation State Prevention', () => {
 
   describe('Test 3: Socket events are emitted after AI message creation', () => {
     test('Backend completes full lifecycle before HTTP response', async () => {
-      const startTime = Date.now();
-      
       const res = await request(app)
         .post('/api/messages')
         .set('Authorization', `Bearer ${clientToken}`)
@@ -114,16 +112,16 @@ describe('BUG-001 Fix - Stale Conversation State Prevention', () => {
           content: 'Test question'
         });
 
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
       expect(res.statusCode).toBe(201);
       expect(res.body.aiMessage).not.toBeNull();
       
-      // The request should take time because it waits for AI processing
+      // The key test is that the AI message is present in the response
       // This proves the fix removes the race condition where frontend
       // could complete before AI processing finished
-      expect(duration).toBeGreaterThan(50); // At least 50ms for AI processing
+      // We verify this by checking that the response contains the complete AI message
+      expect(res.body.aiMessage.sender).toBe('ia');
+      expect(res.body.aiMessage.content).toBeTruthy();
+      expect(res.body.aiMessage.content.length).toBeGreaterThan(0);
     });
   });
 
