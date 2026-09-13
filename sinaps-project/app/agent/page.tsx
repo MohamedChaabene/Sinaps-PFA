@@ -76,8 +76,16 @@ function AgentPageContent() {
         const isAssignedToMe = c.assignedAgent?._id === currentAgentId && c.status === "en_cours"
         return isWaiting || isAssignedToMe
       })
-      const mapped = relevant.map((c: any) => mapBackendConversation(c, []))
-      setConversations(mapped)
+      // Use functional state update to preserve existing messages for conversations
+      // that are already loaded in the frontend state
+      setConversations((prevConversations) => {
+        return relevant.map((c: any) => {
+          const existing = prevConversations.find((conv) => conv.id === c._id)
+          // Preserve existing messages if conversation already has loaded messages
+          const messages = existing && existing.messages.length > 0 ? existing.messages : []
+          return mapBackendConversation(c, messages)
+        })
+      })
     } catch (error: any) {
       // Only show toast for genuine server errors, not auth failures (401)
       // AuthGuard handles authentication redirects, so 401 during initial load is expected
