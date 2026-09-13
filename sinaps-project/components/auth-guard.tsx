@@ -50,10 +50,18 @@ export function AuthGuard({
       }
 
       // Proactively verify token validity with backend
+      // Use AbortController to prevent indefinite hanging if backend is unreachable
       try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+
         const res = await fetch(`${API_URL}/agents/me`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
         })
+
+        clearTimeout(timeoutId)
+
         if (!res.ok) {
           localStorage.removeItem("sinaps_token")
           localStorage.removeItem("sinaps_agent")
@@ -61,7 +69,7 @@ export function AuthGuard({
           return
         }
       } catch (err) {
-        // In case of transient network offline, allow cached session to prevent lock-out
+        // In case of transient network offline or timeout, allow cached session to prevent lock-out
         console.warn("Could not verify session with backend:", err)
       }
 
