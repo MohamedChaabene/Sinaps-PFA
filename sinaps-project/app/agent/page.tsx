@@ -68,6 +68,12 @@ function AgentPageContent() {
   }, [])
 
   async function loadList() {
+    // Guard: wait for agent ID to be initialized from localStorage
+    // This prevents race condition where loadList() executes before currentAgentId is set
+    if (!currentAgentId) {
+      return
+    }
+
     try {
       const data = await fetchConversations()
       // Show both waiting conversations AND conversations assigned to current agent
