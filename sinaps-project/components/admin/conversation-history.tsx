@@ -31,8 +31,14 @@ export function ConversationHistory() {
     try {
       const data = await fetchConversationsFiltered(statusFilter, search)
       setConversations(data)
-    } catch {
-      toast.error("Erreur lors du chargement de l'historique")
+    } catch (error: any) {
+      // Only show toast for genuine server errors, not auth failures (401)
+      // AuthGuard handles authentication redirects, so 401 during initial load is expected
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.warn('Authentication error during load - AuthGuard will handle redirect')
+      } else {
+        toast.error("Erreur lors du chargement de l'historique")
+      }
     } finally {
       setLoading(false)
     }

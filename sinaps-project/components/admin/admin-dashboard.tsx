@@ -367,8 +367,14 @@ export function AdminDashboard() {
       setPending(mapped.filter((_: Agent, i: number) => agentsData[i].status === "pending"))
       setApproved(mapped.filter((_: Agent, i: number) => agentsData[i].status === "approved"))
       setStats(statsData)
-    } catch {
-      toast.error("Erreur de chargement des données")
+    } catch (error: any) {
+      // Only show toast for genuine server errors, not auth failures (401)
+      // AuthGuard handles authentication redirects, so 401 during initial load is expected
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.warn('Authentication error during load - AuthGuard will handle redirect')
+      } else {
+        toast.error("Erreur de chargement des données")
+      }
     } finally {
       setLoading(false)
     }

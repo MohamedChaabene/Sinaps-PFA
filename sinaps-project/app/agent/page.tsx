@@ -75,8 +75,14 @@ export default function AgentPage() {
       })
       const mapped = relevant.map((c: any) => mapBackendConversation(c, []))
       setConversations(mapped)
-    } catch (error) {
-      toast("Erreur de connexion au serveur")
+    } catch (error: any) {
+      // Only show toast for genuine server errors, not auth failures (401)
+      // AuthGuard handles authentication redirects, so 401 during initial load is expected
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.warn('Authentication error during load - AuthGuard will handle redirect')
+      } else {
+        toast("Erreur de connexion au serveur")
+      }
     } finally {
       setLoading(false)
     }
