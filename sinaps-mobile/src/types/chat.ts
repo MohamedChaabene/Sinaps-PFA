@@ -18,6 +18,12 @@ export interface ChatMessage {
   time: string;
   createdAt: string;
   attachments?: MessageAttachment[];
+  quickReplies?: Array<{
+    id: string;
+    label: string;
+    action: string;
+    metadata?: Record<string, unknown>;
+  }>;
 }
 
 export interface ClientProfile {

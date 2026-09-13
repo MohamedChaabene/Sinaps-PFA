@@ -29,6 +29,7 @@ export function mapBackendMessage(msg: any): ChatMessage {
       name: att.name,
       size: att.size,
     })),
+    quickReplies: msg.quickReplies || [],
     time: formatMessageTime(msg.createdAt),
     createdAt: msg.createdAt || new Date().toISOString(),
   };

@@ -20,6 +20,7 @@ import {
   findOrCreateUser,
   findOrCreateConversation,
   mapBackendConversation,
+  mapBackendMessage,
   getStoredClientSession,
   storeClientSession,
   clearClientSession,
@@ -148,13 +149,32 @@ export function SupportChatApp() {
   async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
     if (!conversationId) return
     try {
-      await apiSendMessage(conversationId, "client", text, attachments)
-      // BUG-001 FIX: Removed redundant loadConversation call
-      // Socket-driven message_received/conversation_updated events will handle realtime updates
+      const response = await apiSendMessage(conversationId, "client", text, attachments)
+      
+      // BUG-001 FIX: Process aiMessage from HTTP response as reliable fallback
+      // This ensures AI response appears even if Socket.IO events fail
+      if (response.aiMessage) {
+        setConversation((prev) => {
+          if (!prev) return prev
+          
+          // Check for duplicate message by _id to prevent Socket.IO duplicates
+          const existingMessageIds = new Set(prev.messages.map(msg => msg.id))
+          if (existingMessageIds.has(response.aiMessage._id)) {
+            return prev // Skip duplicate
+          }
+          
+          return {
+            ...prev,
+            messages: [...prev.messages, mapBackendMessage(response.aiMessage)]
+          }
+        })
+      }
+      
+      // Socket-driven message_received/conversation_updated events still handle realtime updates
+      // and will be ignored as duplicates if they arrive for the same message
     } catch (error) {
       toast.error("Erreur lors de l'envoi du message")
     }
-    // BUG-001 FIX: Removed local typing state management
     // Server-driven typing_status events handle the typing indicator
   }
 
