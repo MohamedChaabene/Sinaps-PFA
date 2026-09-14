@@ -83,18 +83,11 @@ function AgentPageContent() {
         const isAssignedToMe = c.assignedAgent?._id === currentAgentId && c.status === "en_cours"
         return isWaiting || isAssignedToMe
       })
-      // Use functional state update to preserve existing messages for conversations
-      // that are already loaded in the frontend state
-      setConversations((prevConversations) => {
+      // Always map fresh data - backend now provides proper plain object serialization
+      // Message preservation was causing broken timestamps to persist from before the backend fix
+      setConversations(() => {
         return relevant.map((c: any) => {
-          const existing = prevConversations.find((conv) => conv.id === c._id)
-          // Preserve existing messages if conversation already has loaded messages
-          // Re-map them to update timestamps using preserved createdAt field
-          const existingMessages = existing && existing.messages.length > 0 ? existing.messages : []
-          const messages = existingMessages.map((msg: any) => 
-            mapBackendMessage({ _id: msg.id, sender: msg.sender, authorName: msg.authorName, content: msg.content, attachments: msg.attachments, quickReplies: msg.quickReplies, createdAt: msg.createdAt })
-          )
-          return mapBackendConversation(c, messages)
+          return mapBackendConversation(c, [])
         })
       })
     } catch (error: any) {

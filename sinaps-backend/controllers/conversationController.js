@@ -51,7 +51,7 @@ exports.getConversations = async (req, res) => {
       filter.isTestData = { $ne: true };
     }
 
-    let query = populateConversation(Conversation.find(filter)).sort({ updatedAt: -1 });
+    let query = populateConversation(Conversation.find(filter).lean()).sort({ updatedAt: -1 });
 
     if (rawLimit) {
       const limit = Math.min(parseInt(rawLimit, 10) || 50, 100);
