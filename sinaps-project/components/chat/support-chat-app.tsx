@@ -285,12 +285,35 @@ export function SupportChatApp() {
     setNeedsEntry(true)
   }
 
-  async function handleQuickReplyClick(action: string, metadata?: Record<string, unknown>) {
+  async function handleQuickReplyClick(action: string, metadata?: Record<string, unknown>, label?: string) {
     if (!conversationId) return
     setLoadingQuickReplyAction(action)
     try {
-      await apiSendQuickReply(conversationId, action, metadata)
-      await loadConversation(conversationId)
+      const isWorkflowAction = [
+        "CONFIRM_RESOLVED",
+        "NO_ALL_DONE",
+        "ESCALATE_TO_HUMAN",
+        "RETRY_AI",
+      ].includes(action)
+
+      if (isWorkflowAction) {
+        // 1. Execute workflow action on backend first to transition conversation state
+        await apiSendQuickReply(conversationId, action, metadata)
+        // 2. Visibly send the selected quick-reply text as a client message using normal flow
+        if (label) {
+          await handleSend(label)
+        }
+        await loadConversation(conversationId)
+      } else {
+        // Conversational quick reply (e.g. NEW_QUESTION, custom question prompt)
+        // Send the selected label through the normal client-message path
+        if (label) {
+          await handleSend(label)
+        } else {
+          await apiSendQuickReply(conversationId, action, metadata)
+          await loadConversation(conversationId)
+        }
+      }
     } catch (error) {
       toast.error("Erreur lors de l'action")
     } finally {

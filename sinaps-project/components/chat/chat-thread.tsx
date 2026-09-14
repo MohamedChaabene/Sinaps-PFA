@@ -108,7 +108,7 @@ export function ChatThread({
   loadingQuickReplyAction = null 
 }: { 
   conversation: Conversation
-  onQuickReplyClick?: (action: string, metadata?: Record<string, unknown>) => void
+  onQuickReplyClick?: (action: string, metadata?: Record<string, unknown>, label?: string) => void
   disabledQuickReplies?: boolean
   loadingQuickReplyAction?: string | null
 }) {

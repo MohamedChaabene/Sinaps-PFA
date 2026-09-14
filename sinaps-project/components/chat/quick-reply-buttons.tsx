@@ -7,7 +7,7 @@ import type { QuickReply } from "@/lib/types"
 
 interface QuickReplyButtonsProps {
   quickReplies: QuickReply[]
-  onQuickReplyClick?: (action: string, metadata?: Record<string, unknown>) => void
+  onQuickReplyClick?: (action: string, metadata?: Record<string, unknown>, label?: string) => void
   disabled?: boolean
   loadingAction?: string | null
 }
@@ -35,7 +35,7 @@ export function QuickReplyButtons({
             variant="outline"
             size="sm"
             className="rounded-lg text-xs shadow-2xs transition-all duration-200 hover:shadow-xs hover:scale-[1.02] active:scale-[0.98] h-auto min-h-8 py-1.5 px-3 max-w-full whitespace-normal break-words text-left justify-start leading-snug"
-            onClick={() => onQuickReplyClick?.(quickReply.action, quickReply.metadata)}
+            onClick={() => onQuickReplyClick?.(quickReply.action, quickReply.metadata, label)}
             disabled={isDisabled}
           >
             {isLoading ? (
