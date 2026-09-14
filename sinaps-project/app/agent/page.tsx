@@ -331,9 +331,9 @@ function AgentPageContent() {
                         : "hover:bg-muted/60"
                     }`}
                   >
-                    <Avatar className="size-9 shrink-0 rounded-xl ring-1 ring-primary/20 shadow-2xs">
-                      <AvatarImage src={c.clientAvatar || "/placeholder.svg"} className="rounded-xl object-cover" />
-                      <AvatarFallback className="rounded-xl bg-primary/10 text-primary text-xs font-bold">
+                    <Avatar aria-label={`Avatar de ${c.clientName}`} className="size-9 shrink-0 rounded-xl ring-1 ring-primary/20 shadow-2xs">
+                      <AvatarImage src={c.clientAvatar || undefined} alt={`Avatar de ${c.clientName}`} className="rounded-xl object-cover" />
+                      <AvatarFallback aria-label={`Avatar de ${c.clientName}`} className="rounded-xl bg-primary/10 text-primary text-xs font-bold">
                         {getInitials(c.clientName)}
                       </AvatarFallback>
                     </Avatar>
@@ -393,9 +393,9 @@ function AgentPageContent() {
                   >
                     <ChevronLeft className="size-5" />
                   </Button>
-                  <Avatar className="size-9 rounded-xl ring-2 ring-primary/20 shadow-xs">
-                    <AvatarImage src={activeConversation.clientAvatar || "/placeholder.svg"} className="rounded-xl object-cover" />
-                    <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-bold text-xs">
+                  <Avatar aria-label={`Avatar de ${activeConversation.clientName}`} className="size-9 rounded-xl ring-2 ring-primary/20 shadow-xs">
+                    <AvatarImage src={activeConversation.clientAvatar || undefined} alt={`Avatar de ${activeConversation.clientName}`} className="rounded-xl object-cover" />
+                    <AvatarFallback aria-label={`Avatar de ${activeConversation.clientName}`} className="rounded-xl bg-primary/10 text-primary font-bold text-xs">
                       {getInitials(activeConversation.clientName)}
                     </AvatarFallback>
                   </Avatar>

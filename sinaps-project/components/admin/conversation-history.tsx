@@ -18,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/chat/status-badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { fetchConversationsFiltered, fetchConversationById } from "@/lib/api"
-import { getInitials, formatTimestamp, formatTime } from "@/lib/utils"
+import { getInitials, formatTimestamp, formatTime, getClientAvatar } from "@/lib/utils"
 import { toast } from "sonner"
 
 export function ConversationHistory() {
@@ -232,9 +232,16 @@ export function ConversationHistory() {
                     <TableRow key={c._id} className="border-b border-border/50 hover:bg-muted/40 transition-colors">
                       <TableCell className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <Avatar className="size-8.5 rounded-lg ring-1 ring-primary/20 shrink-0">
-                            <AvatarImage src={c.client?.avatar || "/placeholder.svg"} className="rounded-lg" />
-                            <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-xs">
+                          <Avatar aria-label={`Avatar de ${c.client?.name || "Client"}`} className="size-8.5 rounded-lg ring-1 ring-primary/20 shrink-0">
+                            <AvatarImage
+                              src={getClientAvatar(c.client?.avatar, c.client)}
+                              alt={`Avatar de ${c.client?.name || "Client"}`}
+                              className="rounded-lg object-cover"
+                            />
+                            <AvatarFallback
+                              aria-label={`Avatar de ${c.client?.name || "Client"}`}
+                              className="rounded-lg bg-primary/10 text-primary font-semibold text-xs"
+                            >
                               {getInitials(c.client?.name)}
                             </AvatarFallback>
                           </Avatar>
@@ -324,9 +331,13 @@ export function ConversationHistory() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div className="flex items-center gap-3">
-                <Avatar className="size-8 rounded-lg">
-                  <AvatarImage src={selectedConversation?.conversation.client?.avatar} />
-                  <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+                <Avatar aria-label={`Avatar de ${selectedConversation?.conversation.client?.name || "Client"}`} className="size-8 rounded-lg">
+                  <AvatarImage
+                    src={getClientAvatar(selectedConversation?.conversation.client?.avatar, selectedConversation?.conversation.client)}
+                    alt={`Avatar de ${selectedConversation?.conversation.client?.name || "Client"}`}
+                    className="rounded-lg object-cover"
+                  />
+                  <AvatarFallback aria-label={`Avatar de ${selectedConversation?.conversation.client?.name || "Client"}`} className="rounded-lg bg-primary/10 text-primary">
                     {getInitials(selectedConversation?.conversation.client?.name)}
                   </AvatarFallback>
                 </Avatar>

@@ -37,6 +37,89 @@ export function getAgentAvatarColor(identifier?: string): { bg: string; text: st
   return AGENT_AVATAR_PALETTES[index]
 }
 
+export const DEFAULT_CLIENT_AVATARS = [
+  "/neutral-1.jpg",
+  "/female-1.jpg",
+  "/male-1.jpg",
+  "/neutral-2.jpg",
+  "/female-2.jpg",
+  "/male-2.jpg",
+] as const
+
+/**
+ * Checks whether an avatar string is a real provider/user avatar
+ * rather than empty or a generic placeholder.
+ */
+export function hasCustomClientAvatar(avatar?: string | null): boolean {
+  if (!avatar || typeof avatar !== 'string') return false
+  const trimmed = avatar.trim()
+  if (!trimmed) return false
+  if (
+    trimmed === "/placeholder.svg" ||
+    trimmed === "/placeholder.jpg" ||
+    trimmed === "/placeholder-user.jpg" ||
+    trimmed === "/avatar-placeholder.png" ||
+    trimmed === "placeholder.svg" ||
+    trimmed === "placeholder.jpg" ||
+    trimmed.startsWith("/placeholder") ||
+    trimmed.startsWith("/avatar-placeholder")
+  ) {
+    return false
+  }
+  return true
+}
+
+export type ClientAvatarSeed =
+  | string
+  | {
+      _id?: string | { toString(): string }
+      id?: string
+      email?: string
+      name?: string
+    }
+  | null
+  | undefined
+
+/**
+ * Deterministically resolves a client's avatar URL:
+ * 1. If the client already has a real Google/provider avatar, returns it as-is.
+ * 2. If the client has no profile image, deterministically selects one of the 6
+ *    generated fallback avatars using the client's stable ID or email.
+ */
+export function getClientAvatar(
+  avatar?: string | null,
+  client?: ClientAvatarSeed
+): string {
+  if (hasCustomClientAvatar(avatar)) {
+    return (avatar as string).trim()
+  }
+
+  let seed = ""
+  if (typeof client === "string") {
+    seed = client.trim()
+  } else if (client && typeof client === "object") {
+    const rawId = client._id ? String(client._id).trim() : (client.id ? String(client.id).trim() : "")
+    const rawEmail = client.email ? String(client.email).trim().toLowerCase() : ""
+    const rawName = client.name ? String(client.name).trim() : ""
+    // Stable ID or email are preferred for cross-session consistency
+    seed = rawId || rawEmail || rawName
+  }
+
+  if (!seed) {
+    return DEFAULT_CLIENT_AVATARS[0]
+  }
+
+  // 32-bit FNV-1a hash algorithm for uniform and deterministic distribution
+  let hash = 2166136261
+  for (let i = 0; i < seed.length; i++) {
+    hash ^= seed.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  const index = (hash >>> 0) % DEFAULT_CLIENT_AVATARS.length
+  return DEFAULT_CLIENT_AVATARS[index]
+}
+
 
 /**
  * Safely format a timestamp for display.

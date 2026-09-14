@@ -179,13 +179,13 @@ export function ChatThread({
                           </AvatarFallback>
                         </Avatar>
                       ) : (
-                        <Avatar className="size-8.5 rounded-xl ring-2 ring-primary/20 shadow-xs">
+                        <Avatar aria-label={`Avatar de ${conversation.clientName}`} className="size-8.5 rounded-xl ring-2 ring-primary/20 shadow-xs">
                           <AvatarImage
-                            src={conversation.clientAvatar || "/placeholder.svg"}
-                            alt={conversation.clientName}
+                            src={conversation.clientAvatar || undefined}
+                            alt={`Avatar de ${conversation.clientName}`}
                             className="rounded-xl object-cover"
                           />
-                          <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-bold text-xs">
+                          <AvatarFallback aria-label={`Avatar de ${conversation.clientName}`} className="rounded-xl bg-primary/10 text-primary font-bold text-xs">
                             {getInitials(conversation.clientName)}
                           </AvatarFallback>
                         </Avatar>

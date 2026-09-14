@@ -40,6 +40,8 @@ export interface Conversation {
   id: string
   clientName: string
   clientAvatar: string
+  clientId?: string
+  clientEmail?: string
   lastMessage: string
   unreadCount: number
   status: ConversationStatus

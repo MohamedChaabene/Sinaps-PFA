@@ -55,9 +55,9 @@ export function ConversationSidebar({
                       : "text-sidebar-foreground hover:bg-sidebar-accent"
                   )}
                 >
-                  <Avatar className="size-10 shrink-0">
-                    <AvatarImage src={conversation.clientAvatar || "/placeholder.svg"} alt={conversation.clientName} />
-                    <AvatarFallback>{getInitials(conversation.clientName)}</AvatarFallback>
+                  <Avatar aria-label={`Avatar de ${conversation.clientName}`} className="size-10 shrink-0">
+                    <AvatarImage src={conversation.clientAvatar || undefined} alt={`Avatar de ${conversation.clientName}`} className="object-cover" />
+                    <AvatarFallback aria-label={`Avatar de ${conversation.clientName}`}>{getInitials(conversation.clientName)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
