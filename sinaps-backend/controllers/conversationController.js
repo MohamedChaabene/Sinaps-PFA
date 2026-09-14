@@ -85,7 +85,7 @@ exports.getConversationById = async (req, res) => {
       return res.status(404).json({ error: 'Conversation introuvable' });
     }
 
-    let messageQuery = Message.find({ conversation: req.params.id }).sort({ createdAt: 1 });
+    let messageQuery = Message.find({ conversation: req.params.id }).sort({ createdAt: 1 }).lean();
     if (req.query.limit) {
       const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
       messageQuery = messageQuery.limit(limit);
