@@ -64,14 +64,14 @@ async function fetchWithTimeout<T>(
       ...init,
       signal: controller.signal,
     })
-    clearTimeout(timeoutId)
     return await parseOrThrow<T>(response)
   } catch (error: any) {
-    clearTimeout(timeoutId)
     if (error.name === 'AbortError') {
       throw new Error('Délai d\'attente dépassé. Veuillez vérifier votre connexion.')
     }
     throw error
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
