@@ -10,7 +10,8 @@ import { QuickPrompts } from "@/components/chat/quick-prompts"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import type { Conversation } from "@/lib/chat-data"
+import type { Conversation, ChatMessage, MessageAttachment } from "@/lib/chat-data"
+import { formatTime } from "@/lib/utils"
 import {
   fetchConversationById,
   sendMessage as apiSendMessage,
@@ -41,6 +42,8 @@ export function SupportChatApp() {
   
   // BUG-001 FIX: Request version counter to prevent stale responses from overwriting newer state
   const loadConversationVersionRef = React.useRef(0)
+  // Track optimistic in-flight client messages to prevent duplication or premature removal
+  const pendingMessagesRef = React.useRef<Map<string, ChatMessage>>(new Map())
 
   async function startSession(name: string, email: string, credential?: string, avatar?: string) {
     setLoading(true)
@@ -105,14 +108,38 @@ export function SupportChatApp() {
         }
         
         // If current state was manually switched to IA, preserve handledBy unless backend resolved it
-        if (prev && prev.id === id && prev.handledBy === "ia" && conv.status !== "resolu" && !conv.assignedAgent) {
-          return {
-            ...mapped,
-            handledBy: "ia",
-            status: "en_cours",
-          }
+        const handledBy = (prev && prev.id === id && prev.handledBy === "ia" && conv.status !== "resolu" && !conv.assignedAgent)
+          ? "ia"
+          : mapped.handledBy
+        const status = handledBy === "ia" && mapped.status !== "resolu" ? "en_cours" : mapped.status
+
+        // Preserve typing indicator if currently active and handledBy is not human
+        const isTyping = (prev?.isTyping || pendingMessagesRef.current.size > 0) && handledBy !== "humain"
+
+        // Retain any pending optimistic messages that have not yet reached the server
+        const serverMessageIds = new Set(mapped.messages.map((m) => m.id))
+        const pendingToKeep: ChatMessage[] = []
+
+        if (pendingMessagesRef.current.size > 0) {
+          pendingMessagesRef.current.forEach((pendingMsg, tempId) => {
+            const alreadyInServer = mapped.messages.some(
+              (sm) => sm.sender === "client" && sm.content === pendingMsg.content
+            )
+            if (alreadyInServer) {
+              pendingMessagesRef.current.delete(tempId)
+            } else if (!serverMessageIds.has(tempId)) {
+              pendingToKeep.push(pendingMsg)
+            }
+          })
         }
-        return mapped
+
+        return {
+          ...mapped,
+          handledBy,
+          status,
+          isTyping,
+          messages: [...mapped.messages, ...pendingToKeep],
+        }
       })
     } catch (error) {
       toast.error("Erreur lors du chargement de la conversation")
@@ -187,7 +214,14 @@ export function SupportChatApp() {
 
     const handleTypingStatus = (data: any) => {
       if (data?.conversationId === conversationId) {
-        setConversation((prev) => (prev ? { ...prev, isTyping: !!data.isTyping } : null))
+        setConversation((prev) => {
+          if (!prev) return null
+          // Do not turn off isTyping if an optimistic client message is still awaiting AI response
+          if (!data.isTyping && pendingMessagesRef.current.size > 0 && prev.handledBy !== "humain") {
+            return prev
+          }
+          return { ...prev, isTyping: !!data.isTyping }
+        })
       }
     }
 
@@ -205,34 +239,85 @@ export function SupportChatApp() {
 
   async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
     if (!conversationId) return
+
+    const tempId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const now = new Date()
+    const optimisticMsg: ChatMessage = {
+      id: tempId,
+      sender: "client",
+      content: text,
+      attachments: (attachments || []) as MessageAttachment[],
+      time: formatTime(now.toISOString(), { hour: "2-digit", minute: "2-digit" }),
+      createdAt: now.toISOString(),
+    }
+
+    pendingMessagesRef.current.set(tempId, optimisticMsg)
+
+    // AI only generates responses when handledBy is not 'humain' and conversation is not resolved
+    const willAiRespond = conversation?.handledBy !== "humain" && conversation?.status !== "resolu"
+
+    // 1. Optimistic UI update: immediately display the client's message and typing indicator
+    setConversation((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        lastMessage: text || (attachments?.length ? "Pièce jointe" : prev.lastMessage),
+        isTyping: willAiRespond ? true : prev.isTyping,
+        messages: [...prev.messages, optimisticMsg],
+      }
+    })
+
     try {
       const response = await apiSendMessage(conversationId, "client", text, attachments)
-      
-      // BUG-001 FIX: Process aiMessage from HTTP response as reliable fallback
-      // This ensures AI response appears even if Socket.IO events fail
-      if (response.aiMessage) {
-        setConversation((prev) => {
-          if (!prev) return prev
-          
-          // Check for duplicate message by _id to prevent Socket.IO duplicates
-          const existingMessageIds = new Set(prev.messages.map(msg => msg.id))
-          if (existingMessageIds.has(response.aiMessage._id)) {
-            return prev // Skip duplicate
+      pendingMessagesRef.current.delete(tempId)
+
+      const realClientMsg = mapBackendMessage(response.message)
+      const realAiMsg = response.aiMessage ? mapBackendMessage(response.aiMessage) : null
+
+      setConversation((prev) => {
+        if (!prev) return prev
+
+        // Replace tempId with the real client message
+        let replaced = false
+        const updated = prev.messages.map((m) => {
+          if (m.id === tempId) {
+            replaced = true
+            return realClientMsg
           }
-          
-          return {
-            ...prev,
-            messages: [...prev.messages, mapBackendMessage(response.aiMessage)]
-          }
+          return m
         })
-      }
-      
-      // Socket-driven message_received/conversation_updated events still handle realtime updates
-      // and will be ignored as duplicates if they arrive for the same message
+
+        let nextMessages = replaced ? updated : prev.messages
+
+        // If tempId was already replaced (e.g. by loadConversation), ensure real client message is present
+        if (!replaced && !nextMessages.some((m) => m.id === realClientMsg.id)) {
+          nextMessages = [...nextMessages, realClientMsg]
+        }
+
+        // Append AI response if present and not already in nextMessages
+        if (realAiMsg && !nextMessages.some((m) => m.id === realAiMsg.id)) {
+          nextMessages = [...nextMessages, realAiMsg]
+        }
+
+        return {
+          ...prev,
+          isTyping: false,
+          messages: nextMessages,
+        }
+      })
     } catch (error) {
+      pendingMessagesRef.current.delete(tempId)
+      // Rollback optimistic message on failure
+      setConversation((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          isTyping: false,
+          messages: prev.messages.filter((m) => m.id !== tempId),
+        }
+      })
       toast.error("Erreur lors de l'envoi du message")
     }
-    // Server-driven typing_status events handle the typing indicator
   }
 
   async function handleEscalate() {
@@ -297,6 +382,9 @@ export function SupportChatApp() {
       ].includes(action)
 
       if (isWorkflowAction) {
+        if (action === "ESCALATE_TO_HUMAN") {
+          setConversation((prev) => (prev ? { ...prev, handledBy: "humain", status: "en_attente", isTyping: false } : null))
+        }
         // 1. Execute workflow action on backend first to transition conversation state
         await apiSendQuickReply(conversationId, action, metadata)
         // 2. Visibly send the selected quick-reply text as a client message using normal flow
@@ -385,7 +473,7 @@ export function SupportChatApp() {
       <ChatThread 
         conversation={conversation} 
         onQuickReplyClick={handleQuickReplyClick}
-        disabledQuickReplies={conversation.status === "resolu"}
+        disabledQuickReplies={conversation.status === "resolu" || !!conversation.isTyping}
         loadingQuickReplyAction={loadingQuickReplyAction}
       />
 

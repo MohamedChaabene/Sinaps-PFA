@@ -302,24 +302,38 @@ export function ChatThread({
               )
             })}
 
-            {conversation.isTyping && (
+            {conversation.isTyping && conversation.handledBy !== "humain" && (
               <MessageScrollerItem messageId="typing-indicator">
                 <Message align="start" className="gap-2.5">
                   <MessageAvatar>
-                    <div className="flex size-8.5 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs animate-pulse ring-2 ring-primary/20">
+                    <div className="flex size-8.5 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/20">
                       <BotIcon className="size-4.5" />
                     </div>
                   </MessageAvatar>
-                  <MessageContent>
-                    <Bubble align="start" variant="secondary" className="relative">
-                      <BubbleContent className="rounded-2xl sm:rounded-[20px] rounded-bl-xs sm:rounded-bl-[5px] border border-border/80 bg-card py-2.5 px-4 flex items-center gap-2.5 shadow-2xs">
-                        <span className="flex items-center gap-1">
-                          <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-                          <span className="size-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-                          <span className="size-1.5 rounded-full bg-primary animate-bounce" />
+                  <MessageContent className="max-w-[85%] sm:max-w-[75%] space-y-1">
+                    <MessageHeader className="mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary border border-primary/20">
+                          <Sparkles className="size-3 text-primary" />
+                          <span>SINAPS Copilot</span>
                         </span>
-                        <span className="text-xs text-muted-foreground font-medium">
-                          SINAPS Copilot compose une réponse...
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          Gemini + RAG
+                        </span>
+                      </div>
+                    </MessageHeader>
+                    <Bubble align="start" variant="secondary" className="relative">
+                      <BubbleContent
+                        role="status"
+                        aria-live="polite"
+                        aria-label="SINAPS AI est en train de répondre"
+                        className="rounded-2xl sm:rounded-[20px] rounded-bl-xs sm:rounded-bl-[5px] border border-border/80 bg-card px-4 py-3 sm:px-4.5 sm:py-3.5 shadow-xs inline-flex items-center gap-1.5"
+                      >
+                        <span className="sr-only">SINAPS AI est en train de répondre</span>
+                        <span className="flex items-center gap-1.5 py-1 px-0.5" aria-hidden="true">
+                          <span className="size-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                          <span className="size-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                          <span className="size-2 rounded-full bg-primary animate-bounce" />
                         </span>
                       </BubbleContent>
                     </Bubble>

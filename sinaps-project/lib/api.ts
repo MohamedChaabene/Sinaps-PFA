@@ -205,7 +205,7 @@ export async function sendMessage(
   sender: string,
   content: string,
   attachments?: { url: string; type: string; name?: string }[]
-): Promise<{ aiMessage?: any }> {
+): Promise<{ message?: any; aiMessage?: any }> {
   const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (sender === "humain") Object.assign(headers, getAuthHeaders())
   if (sender === "client") Object.assign(headers, getClientAuthHeaders())
