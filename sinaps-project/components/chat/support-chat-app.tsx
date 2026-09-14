@@ -239,6 +239,8 @@ export function SupportChatApp() {
 
   async function handleSend(text: string, attachments?: { url: string; type: string; name?: string }[]) {
     if (!conversationId) return
+    // Prevent sending another message while AI is actively generating response
+    if (conversation?.isTyping && conversation?.handledBy !== "humain") return
 
     const tempId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     const now = new Date()
@@ -372,6 +374,8 @@ export function SupportChatApp() {
 
   async function handleQuickReplyClick(action: string, metadata?: Record<string, unknown>, label?: string) {
     if (!conversationId) return
+    // Prevent triggering quick reply while AI is actively generating response
+    if (conversation?.isTyping && conversation?.handledBy !== "humain") return
     setLoadingQuickReplyAction(action)
     try {
       const isWorkflowAction = [
@@ -495,7 +499,7 @@ export function SupportChatApp() {
       ) : (
         <>
           <QuickPrompts onSelect={(q) => handleSend(q)} disabled={conversation.isTyping} />
-          <MessageComposer onSend={handleSend} />
+          <MessageComposer onSend={handleSend} disabled={!!conversation.isTyping} />
         </>
       )}
 
