@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { Bot, Loader2, SearchIcon, Star, UserCheck, X, MessageSquare, XCircle } from "lucide-react"
+import { Bot, Loader2, SearchIcon, Star, UserCheck, MessageSquare, X } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -348,14 +348,6 @@ export function ConversationHistory() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedConversation(null)}
-                className="ml-auto"
-              >
-                <XCircle className="size-4" />
-              </Button>
             </DialogTitle>
           </DialogHeader>
           
