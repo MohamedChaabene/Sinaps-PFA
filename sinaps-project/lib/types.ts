@@ -31,6 +31,7 @@ export interface ChatMessage {
   authorAvatar?: string
   content: string
   time: string
+  createdAt?: string // Raw timestamp for re-formatting
   attachments?: MessageAttachment[]
   quickReplies?: QuickReply[]
 }

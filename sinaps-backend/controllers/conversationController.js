@@ -80,7 +80,7 @@ exports.getConversations = async (req, res) => {
 // Récupérer une conversation avec ses messages
 exports.getConversationById = async (req, res) => {
   try {
-    const conversation = await populateConversation(Conversation.findById(req.params.id));
+    const conversation = await populateConversation(Conversation.findById(req.params.id).lean());
     if (!conversation) {
       return res.status(404).json({ error: 'Conversation introuvable' });
     }

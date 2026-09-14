@@ -25,6 +25,7 @@ export function mapBackendMessage(msg: any): ChatMessage {
       hour: "2-digit",
       minute: "2-digit",
     }),
+    createdAt: msg.createdAt, // Preserve raw timestamp for re-formatting
   }
 }
 

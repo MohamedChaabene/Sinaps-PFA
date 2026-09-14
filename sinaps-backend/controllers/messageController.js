@@ -92,7 +92,9 @@ exports.sendMessage = async (req, res) => {
       )
     );
 
-    emitToConversation(conversationId, 'message_received', { message, conversation: updatedConv });
+    // Convert message to plain object for proper timestamp serialization in Socket.IO
+    const plainMessage = message.toObject();
+    emitToConversation(conversationId, 'message_received', { message: plainMessage, conversation: updatedConv });
     emitGlobal('conversation_updated', updatedConv);
 
     let aiMessage = null;
@@ -130,8 +132,10 @@ exports.sendMessage = async (req, res) => {
           )
         );
 
+        // Convert AI message to plain object for proper timestamp serialization
+        const plainAiMessage = aiMessage.toObject();
         emitToConversation(conversationId, 'message_received', {
-          message: aiMessage,
+          message: plainAiMessage,
           conversation: reUpdatedConv,
         });
         emitGlobal('conversation_updated', reUpdatedConv);
@@ -144,7 +148,8 @@ exports.sendMessage = async (req, res) => {
       }
     }
 
-    res.status(201).json({ message, aiMessage });
+    // Convert messages to plain objects for proper timestamp serialization in HTTP response
+    res.status(201).json({ message: message.toObject(), aiMessage: aiMessage ? aiMessage.toObject() : null });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

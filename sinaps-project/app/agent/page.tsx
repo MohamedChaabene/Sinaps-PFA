@@ -35,6 +35,7 @@ import {
   closeConversation as apiCloseConversation,
   assignConversation,
   mapBackendConversation,
+  mapBackendMessage,
 } from "@/lib/api"
 import { getSocket } from "@/lib/socket"
 import { getInitials } from "@/lib/utils"
@@ -88,7 +89,11 @@ function AgentPageContent() {
         return relevant.map((c: any) => {
           const existing = prevConversations.find((conv) => conv.id === c._id)
           // Preserve existing messages if conversation already has loaded messages
-          const messages = existing && existing.messages.length > 0 ? existing.messages : []
+          // Re-map them to update timestamps using preserved createdAt field
+          const existingMessages = existing && existing.messages.length > 0 ? existing.messages : []
+          const messages = existingMessages.map((msg: any) => 
+            mapBackendMessage({ _id: msg.id, sender: msg.sender, authorName: msg.authorName, content: msg.content, attachments: msg.attachments, quickReplies: msg.quickReplies, createdAt: msg.createdAt })
+          )
           return mapBackendConversation(c, messages)
         })
       })
