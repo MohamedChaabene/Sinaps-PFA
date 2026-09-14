@@ -80,12 +80,11 @@ async function fetchWithTimeout<T>(
 // ---------------------------------------------------------------------------
 
 export async function loginAgent(email: string, password: string) {
-  const res = await fetch(`${API_URL}/agents/login`, {
+  return fetchWithTimeout<any>(`${API_URL}/agents/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
-  })
-  return parseOrThrow(res)
+  }, 30000)
 }
 
 export async function signupAgent(name: string, email: string, password: string, skills: string[]) {

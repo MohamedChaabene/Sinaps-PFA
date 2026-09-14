@@ -49,6 +49,8 @@ function AgentPageContent() {
 
   // Track explicit user-initiated refreshes to skip redundant Socket.IO refreshes
   const explicitRefreshRef = React.useRef<Set<string>>(new Set())
+  // Track which conversation IDs have had their messages loaded to avoid duplicate requests
+  const loadedConversationIdsRef = React.useRef<Set<string>>(new Set())
 
   const activeConversation = conversations.find((c) => c.id === activeId) ?? null
 
@@ -83,9 +85,15 @@ function AgentPageContent() {
         return isWaiting || isAssignedToMe
       })
       // Always map fresh data - backend now provides proper plain object serialization
-      // Message preservation was causing broken timestamps to persist from before the backend fix
-      setConversations(() => {
+      // Preserve messages for conversations that have already been loaded to prevent Socket.IO from wiping them
+      setConversations((prev) => {
         return relevant.map((c: any) => {
+          // If this conversation has been loaded with messages, preserve them
+          // Look up by existing state ID to ensure consistent matching
+          const existing = prev.find((existing) => existing.id === c._id)
+          if (existing && loadedConversationIdsRef.current.has(existing.id)) {
+            return mapBackendConversation(c, existing.messages || [])
+          }
           return mapBackendConversation(c, [])
         })
       })
@@ -113,6 +121,7 @@ function AgentPageContent() {
         fetchConversationById(activeId).then(({ conversation, messages }) => {
           const mapped = mapBackendConversation(conversation, messages)
           setConversations((prev) => prev.map((c) => (c.id === activeId ? mapped : c)))
+          loadedConversationIdsRef.current.add(activeId)
         }).catch(() => {})
       }
     }
@@ -126,7 +135,24 @@ function AgentPageContent() {
       socket.off("conversation_updated", handleCreatedOrUpdated)
       socket.off("message_received", handleCreatedOrUpdated)
     }
-  }, [activeId, currentAgentId])
+  }, [currentAgentId])
+
+  // Ensure active conversation always has its messages loaded
+  // This handles: fresh login, manual selection, page refresh with activeId, conversation restoration
+  React.useEffect(() => {
+    if (!activeId) return
+
+    // Only fetch if we haven't loaded this conversation's messages yet
+    if (!loadedConversationIdsRef.current.has(activeId)) {
+      fetchConversationById(activeId).then(({ conversation, messages }) => {
+        const mapped = mapBackendConversation(conversation, messages)
+        setConversations((prev) => prev.map((c) => (c.id === activeId ? mapped : c)))
+        loadedConversationIdsRef.current.add(activeId)
+      }).catch(() => {
+        console.error("Failed to load conversation details for active conversation")
+      })
+    }
+  }, [activeId])
 
   async function handleSelect(id: string) {
     setActiveId(id)
@@ -136,6 +162,7 @@ function AgentPageContent() {
       const { conversation, messages } = await fetchConversationById(id)
       const mapped = mapBackendConversation(conversation, messages)
       setConversations((prev) => prev.map((c) => (c.id === id ? mapped : c)))
+      loadedConversationIdsRef.current.add(id)
     } catch (error) {
       toast("Erreur lors du chargement de la conversation")
     }
@@ -152,6 +179,7 @@ function AgentPageContent() {
         const refreshed = await fetchConversationById(activeConversation.id)
         const mapped = mapBackendConversation(refreshed.conversation, refreshed.messages)
         setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? mapped : c)))
+        loadedConversationIdsRef.current.add(activeConversation.id)
       } finally {
         // Delay removal to allow Socket.IO events to complete
         setTimeout(() => {
@@ -169,6 +197,7 @@ function AgentPageContent() {
       await apiCloseConversation(activeConversation.id, 0, "")
       toast.success("Demande marquée comme résolue ✅")
       setActiveId(null)
+      loadedConversationIdsRef.current.delete(activeConversation.id)
       loadList()
     } catch (error) {
       toast.error("Erreur lors de la clôture")
