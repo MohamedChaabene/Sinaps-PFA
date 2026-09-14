@@ -35,7 +35,6 @@ import {
   closeConversation as apiCloseConversation,
   assignConversation,
   mapBackendConversation,
-  mapBackendMessage,
 } from "@/lib/api"
 import { getSocket } from "@/lib/socket"
 import { getInitials } from "@/lib/utils"
