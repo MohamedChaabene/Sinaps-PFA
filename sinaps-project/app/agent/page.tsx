@@ -249,7 +249,7 @@ function AgentPageContent() {
                 <HeadsetIcon className="size-4" />
               </div>
               <div>
-                <h2 className="font-heading text-sm font-bold leading-tight">File de Support</h2>
+                <h1 className="font-heading text-sm font-bold leading-tight">File de Support</h1>
                 <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-semibold">
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Agent en ligne</span>

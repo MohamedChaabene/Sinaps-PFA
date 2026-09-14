@@ -116,14 +116,20 @@ export function StatsPanel({ stats }: { stats: Stats | null }) {
           subtitle="Escalade humaine"
           color="blue"
         />
-        <StatCard
-          title="Satisfaction client"
-          value={`${stats?.avgSatisfaction ?? 0} / 5`}
-          icon={Star}
-          progress={(Number(stats?.avgSatisfaction ?? 0) / 5) * 100}
-          subtitle="Moyenne des avis"
-          color="amber"
-        />
+        {(() => {
+          const avgNum = Number(stats?.avgSatisfaction ?? 0)
+          const hasRatings = Boolean(stats?.avgSatisfaction) && avgNum > 0
+          return (
+            <StatCard
+              title="Satisfaction client"
+              value={hasRatings ? `${stats?.avgSatisfaction} / 5` : "—"}
+              icon={Star}
+              progress={hasRatings ? (avgNum / 5) * 100 : 0}
+              subtitle={hasRatings ? "Moyenne des avis" : "Aucun avis pour le moment"}
+              color="amber"
+            />
+          )
+        })()}
         <StatCard
           title="Temps de réponse"
           value={formatDuration(stats?.avgResponseTimeSeconds ?? 0)}
@@ -169,8 +175,16 @@ export function StatsPanel({ stats }: { stats: Stats | null }) {
             />
           </div>
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
-            <span>{stats?.resolvedByIA ?? 0} conversations traitées directement par Gemini &amp; la base vectorielle</span>
-            <span>{stats?.resolvedByHuman ?? 0} conversations escaladées vers un agent de support</span>
+            <span>
+              {(stats?.resolvedByIA ?? 0) > 1
+                ? `${stats?.resolvedByIA} conversations traitées`
+                : `${stats?.resolvedByIA ?? 0} conversation traitée`} directement par Gemini &amp; la base vectorielle
+            </span>
+            <span>
+              {(stats?.resolvedByHuman ?? 0) > 1
+                ? `${stats?.resolvedByHuman} conversations escaladées`
+                : `${stats?.resolvedByHuman ?? 0} conversation escaladée`} vers un agent de support
+            </span>
           </div>
         </div>
       </Card>

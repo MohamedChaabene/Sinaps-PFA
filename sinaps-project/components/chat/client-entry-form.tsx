@@ -119,9 +119,9 @@ export function ClientEntryForm({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <CardTitle className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                 Bienvenue sur Sinaps
-              </CardTitle>
+              </h1>
               <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Connectez-vous pour échanger avec notre agent IA ou être mis en relation avec notre équipe d&apos;assistance.
               </CardDescription>
@@ -161,7 +161,7 @@ export function ClientEntryForm({
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full rounded-xl border-border bg-card hover:bg-muted/60 py-5 font-medium shadow-2xs transition-all"
+                  className="w-full h-11 rounded-xl border-border bg-card hover:bg-muted/60 font-medium shadow-2xs transition-all text-sm"
                   onClick={handleGoogleDemoClick}
                   disabled={loading}
                 >
@@ -201,12 +201,12 @@ export function ClientEntryForm({
                   Nom complet
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-2.5 size-4 text-muted-foreground/70" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70" />
                   <Input
                     id="name"
                     name="name"
                     placeholder="Ex. Sophie Martin"
-                    className="pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
+                    className="h-11 pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
                     required
                   />
                 </div>
@@ -216,13 +216,13 @@ export function ClientEntryForm({
                   Adresse e-mail
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground/70" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70" />
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     placeholder="vous@exemple.com"
-                    className="pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
+                    className="h-11 pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
                     required
                   />
                 </div>
@@ -234,7 +234,7 @@ export function ClientEntryForm({
             <Button
               type="submit"
               form="direct-form"
-              className="w-full rounded-xl bg-primary py-2.5 font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 active:scale-[0.99]"
+              className="w-full h-11 rounded-xl bg-primary font-semibold text-sm text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 active:scale-[0.99]"
               disabled={loading}
             >
               {loading ? (

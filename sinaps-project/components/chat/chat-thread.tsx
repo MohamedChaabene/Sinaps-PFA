@@ -21,7 +21,7 @@ import {
 import { Marker, MarkerContent } from "@/components/ui/marker"
 import { MarkdownContent } from "@/components/chat/markdown-content"
 import { QuickReplyButtons } from "@/components/chat/quick-reply-buttons"
-import { getInitials } from "@/lib/utils"
+import { getInitials, getAgentAvatarColor } from "@/lib/utils"
 import { API_BASE_URL } from "@/lib/api"
 import type { Conversation } from "@/lib/chat-data"
 
@@ -140,13 +140,13 @@ export function ChatThread({
                           <BotIcon className="size-4.5" />
                         </div>
                       ) : message.sender === "humain" ? (
-                        <Avatar className="size-8.5 rounded-xl ring-2 ring-blue-500/20 shadow-xs">
+                        <Avatar className={`size-8.5 rounded-xl ring-2 ${getAgentAvatarColor(message.authorName || "Conseiller").ring} shadow-xs`}>
                           <AvatarImage
-                            src={message.authorAvatar || "/placeholder.svg"}
-                            alt={message.authorName ?? "Conseiller"}
+                            src={message.authorAvatar || undefined}
+                            alt={`Avatar de ${message.authorName || "Conseiller"}`}
                             className="rounded-xl object-cover"
                           />
-                          <AvatarFallback className="rounded-xl bg-blue-500/10 text-blue-600 font-bold text-xs">
+                          <AvatarFallback className={`rounded-xl ${getAgentAvatarColor(message.authorName || "Conseiller").bg} ${getAgentAvatarColor(message.authorName || "Conseiller").text} font-bold text-xs`}>
                             {getInitials(message.authorName || "Conseiller")}
                           </AvatarFallback>
                         </Avatar>

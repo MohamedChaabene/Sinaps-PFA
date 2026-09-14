@@ -74,9 +74,9 @@ export default function LoginPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <CardTitle className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                 Portail Opérateur
-              </CardTitle>
+              </h1>
               <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Connectez-vous pour accéder à votre console d&apos;agent de support ou d&apos;administration.
               </CardDescription>

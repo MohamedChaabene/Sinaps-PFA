@@ -1,4 +1,10 @@
+import type { Metadata } from "next"
 import { AgentSignupForm } from "@/components/agent/agent-signup-form"
+
+export const metadata: Metadata = {
+  title: "Demande d'accès Agent — SINAPS Support",
+  description: "Formulaire d'inscription et de demande d'accès pour les conseillers SINAPS.",
+}
 
 export default function AgentSignupPage() {
   return (

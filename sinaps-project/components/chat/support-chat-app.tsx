@@ -351,6 +351,7 @@ export function SupportChatApp() {
 
   return (
     <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:p-3 lg:p-5">
+      <h1 className="sr-only">Assistance client SINAPS — Discussion en direct</h1>
       <ChatHeader
         conversation={conversation}
         onEscalate={handleEscalate}

@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getInitials } from "@/lib/utils"
+import { getInitials, getAgentAvatarColor } from "@/lib/utils"
 import type { Agent } from "@/lib/types"
 
 // ---------------------------------------------------------------------------
@@ -25,11 +25,12 @@ import type { Agent } from "@/lib/types"
 // ---------------------------------------------------------------------------
 
 function AgentAvatar({ agent }: { agent: Agent }) {
+  const color = getAgentAvatarColor(agent.id || agent.name)
   return (
-    <Avatar className="size-10 rounded-xl ring-2 ring-primary/20">
-      <AvatarImage src={agent.avatar || "/placeholder.svg"} alt={`Avatar de ${agent.name}`} className="rounded-xl" />
-      <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-semibold text-xs">
-        {agent.initials}
+    <Avatar className={`size-10 rounded-xl ring-2 ${color.ring}`}>
+      <AvatarImage src={agent.avatar || undefined} alt={`Avatar de ${agent.name}`} className="rounded-xl object-cover" />
+      <AvatarFallback className={`rounded-xl ${color.bg} ${color.text} font-semibold text-xs`}>
+        {agent.initials || getInitials(agent.name)}
       </AvatarFallback>
     </Avatar>
   )
