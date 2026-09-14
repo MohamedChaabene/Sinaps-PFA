@@ -95,7 +95,7 @@ export default function LoginPage() {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="agent@sinaps.com"
+                    placeholder="your@email.com"
                     className="pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
                     required
                   />
