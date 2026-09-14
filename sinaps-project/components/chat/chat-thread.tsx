@@ -105,13 +105,33 @@ export function ChatThread({
   conversation, 
   onQuickReplyClick, 
   disabledQuickReplies = false,
-  loadingQuickReplyAction = null 
+  loadingQuickReplyAction = null,
+  dismissedQuickReplyId = null,
 }: { 
   conversation: Conversation
   onQuickReplyClick?: (action: string, metadata?: Record<string, unknown>, label?: string) => void
   disabledQuickReplies?: boolean
   loadingQuickReplyAction?: string | null
+  dismissedQuickReplyId?: string | null
 }) {
+  // Quick replies are rendered only for the latest eligible message in the conversation.
+  // A message is eligible if:
+  // 1. It is a non-client message with quick replies.
+  // 2. It is the latest message in the conversation (no newer message has superseded it).
+  // 3. Conversation is active (not resolved) and handled by AI.
+  // 4. Quick replies for this message have not been dismissed by an action.
+  const lastMessage = conversation.messages.length > 0 ? conversation.messages[conversation.messages.length - 1] : null
+  const latestEligibleMessageId =
+    conversation.status !== "resolu" &&
+    conversation.handledBy !== "humain" &&
+    lastMessage &&
+    lastMessage.sender !== "client" &&
+    lastMessage.quickReplies &&
+    lastMessage.quickReplies.length > 0 &&
+    lastMessage.id !== dismissedQuickReplyId
+      ? lastMessage.id
+      : null
+
   return (
     <MessageScrollerProvider autoScroll>
       <MessageScroller className="flex-1 bg-background">
@@ -285,8 +305,8 @@ export function ChatThread({
                         )}
                       </MessageFooter>
 
-                      {/* Quick Replies - only for AI/human messages with quickReplies */}
-                      {!isClient && message.quickReplies && message.quickReplies.length > 0 && (
+                      {/* Quick Replies - only for the latest eligible message */}
+                      {!isClient && message.id === latestEligibleMessageId && message.quickReplies && message.quickReplies.length > 0 && (
                         <div className="mt-2">
                           <QuickReplyButtons
                             quickReplies={message.quickReplies}

@@ -18,9 +18,11 @@ const EMOJIS = ["😀", "😂", "🙏", "👍", "🎉", "😍", "😕", "🤔", 
 export function MessageComposer({
   onSend,
   disabled = false,
+  inputRef,
 }: {
   onSend: (text: string, attachments?: { url: string; type: string; name?: string }[]) => void
   disabled?: boolean
+  inputRef?: React.Ref<HTMLTextAreaElement>
 }) {
   const [value, setValue] = React.useState("")
   const [attachments, setAttachments] = React.useState<{ url: string; type: string; name?: string }[]>([])
@@ -112,6 +114,7 @@ export function MessageComposer({
       >
         <InputGroup className="rounded-xl border-0 shadow-none focus-within:ring-0 focus-within:border-transparent bg-transparent">
           <InputGroupTextarea
+            ref={inputRef}
             placeholder={disabled ? "SINAPS Copilot compose une réponse..." : "Écrivez votre message à l'assistance..."}
             value={value}
             disabled={disabled}

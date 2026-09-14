@@ -39,6 +39,8 @@ export function SupportChatApp() {
   const [needsEntry, setNeedsEntry] = React.useState(false)
   const [loadingQuickReplyAction, setLoadingQuickReplyAction] = React.useState<string | null>(null)
   const [initError, setInitError] = React.useState<string | null>(null)
+  const [dismissedQuickReplyId, setDismissedQuickReplyId] = React.useState<string | null>(null)
+  const composerInputRef = React.useRef<HTMLTextAreaElement>(null)
   
   // BUG-001 FIX: Request version counter to prevent stale responses from overwriting newer state
   const loadConversationVersionRef = React.useRef(0)
@@ -242,6 +244,8 @@ export function SupportChatApp() {
     // Prevent sending another message while AI is actively generating response
     if (conversation?.isTyping && conversation?.handledBy !== "humain") return
 
+    setDismissedQuickReplyId(null)
+
     const tempId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     const now = new Date()
     const optimisticMsg: ChatMessage = {
@@ -369,6 +373,7 @@ export function SupportChatApp() {
     }
     setConversation(null)
     setConversationId(null)
+    setDismissedQuickReplyId(null)
     setNeedsEntry(true)
   }
 
@@ -378,27 +383,33 @@ export function SupportChatApp() {
     if (conversation?.isTyping && conversation?.handledBy !== "humain") return
     setLoadingQuickReplyAction(action)
     try {
-      const isWorkflowAction = [
-        "CONFIRM_RESOLVED",
-        "NO_ALL_DONE",
-        "ESCALATE_TO_HUMAN",
-        "RETRY_AI",
-      ].includes(action)
-
-      if (isWorkflowAction) {
-        if (action === "ESCALATE_TO_HUMAN") {
-          setConversation((prev) => (prev ? { ...prev, handledBy: "humain", status: "en_attente", isTyping: false } : null))
-        }
-        // 1. Execute workflow action on backend first to transition conversation state
+      if (action === "ESCALATE_TO_HUMAN") {
+        // 2. 👨💼 "Parler à un agent" — pure action, no client message
+        setConversation((prev) => (prev ? { ...prev, handledBy: "humain", status: "en_attente", isTyping: false } : null))
         await apiSendQuickReply(conversationId, action, metadata)
-        // 2. Visibly send the selected quick-reply text as a client message using normal flow
-        if (label) {
-          await handleSend(label)
+        toast.success("Demande transmise à l'équipe de support 👋")
+        await loadConversation(conversationId)
+      } else if (action === "NEW_QUESTION" || action === "YES_ANOTHER_QUESTION") {
+        // 3. "J'ai une autre question" — pure UI/action, no client message, focus input
+        const lastMsg = conversation?.messages[conversation.messages.length - 1]
+        if (lastMsg) {
+          setDismissedQuickReplyId(lastMsg.id)
         }
+        await apiSendQuickReply(conversationId, action, metadata).catch(() => {})
+        setTimeout(() => {
+          composerInputRef.current?.focus()
+        }, 50)
+      } else if (action === "CONFIRM_RESOLVED" || action === "NO_ALL_DONE") {
+        // 4. ✅ "C'est ce qu'il me fallait" — resolve conversation & open satisfaction modal
+        setConversation((prev) => (prev ? { ...prev, status: "resolu" } : null))
+        await apiSendQuickReply(conversationId, action, metadata)
+        setSatisfactionOpen(true)
+        await loadConversation(conversationId)
+      } else if (action === "RETRY_AI") {
+        await apiSendQuickReply(conversationId, action, metadata)
         await loadConversation(conversationId)
       } else {
-        // Conversational quick reply (e.g. NEW_QUESTION, custom question prompt)
-        // Send the selected label through the normal client-message path
+        // Conversational quick reply with custom prompt text
         if (label) {
           await handleSend(label)
         } else {
@@ -479,6 +490,7 @@ export function SupportChatApp() {
         onQuickReplyClick={handleQuickReplyClick}
         disabledQuickReplies={conversation.status === "resolu" || !!conversation.isTyping}
         loadingQuickReplyAction={loadingQuickReplyAction}
+        dismissedQuickReplyId={dismissedQuickReplyId}
       />
 
       {conversation.status === "resolu" ? (
@@ -499,7 +511,7 @@ export function SupportChatApp() {
       ) : (
         <>
           <QuickPrompts onSelect={(q) => handleSend(q)} disabled={conversation.isTyping} />
-          <MessageComposer onSend={handleSend} disabled={!!conversation.isTyping} />
+          <MessageComposer onSend={handleSend} disabled={!!conversation.isTyping} inputRef={composerInputRef} />
         </>
       )}
 
