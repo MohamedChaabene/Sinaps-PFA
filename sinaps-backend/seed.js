@@ -60,7 +60,7 @@ async function populateDemoData() {
   // 2. Create Users
   console.log('Creating Users...');
   const user1 = await User.create({
-    googleId: 'google-user-1',
+    googleId: 'google-user-1-sinaps-test',
     name: 'Amine Trabelsi',
     email: 'amine.trabelsi@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Amine',
@@ -68,7 +68,7 @@ async function populateDemoData() {
   });
 
   const user2 = await User.create({
-    googleId: 'google-user-2',
+    googleId: 'google-user-2-sinaps-test',
     name: 'Sonia Gharbi',
     email: 'sonia.gharbi@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sonia',
@@ -76,7 +76,7 @@ async function populateDemoData() {
   });
 
   const user3 = await User.create({
-    googleId: 'google-user-3',
+    googleId: 'google-user-3-sinaps-test',
     name: 'Omar Farouk',
     email: 'omar.farouk@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Omar',

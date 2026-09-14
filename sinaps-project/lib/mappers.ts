@@ -7,6 +7,7 @@
  */
 
 import type { Conversation, ChatMessage } from "./types"
+import { formatTime } from "./utils"
 
 /**
  * Maps a raw message object from the backend to the ChatMessage type used
@@ -20,7 +21,7 @@ export function mapBackendMessage(msg: any): ChatMessage {
     content: msg.content,
     attachments: msg.attachments || [],
     quickReplies: msg.quickReplies || [],
-    time: new Date(msg.createdAt).toLocaleTimeString("fr-FR", {
+    time: formatTime(msg.createdAt, {
       hour: "2-digit",
       minute: "2-digit",
     }),

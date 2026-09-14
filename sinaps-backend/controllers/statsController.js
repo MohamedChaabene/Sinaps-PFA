@@ -4,17 +4,28 @@ const Message = require('../models/Message');
 exports.getStats = async (req, res) => {
   try {
     const [total, resolvedByIA, resolvedByHuman, satisfactionAgg, responseTimesAgg] = await Promise.all([
-      Conversation.countDocuments(),
-      Conversation.countDocuments({ status: 'resolu', handledBy: 'ia' }),
-      Conversation.countDocuments({ status: 'resolu', handledBy: 'humain' }),
+      Conversation.countDocuments({ isTestData: { $ne: true } }),
+      Conversation.countDocuments({ status: 'resolu', handledBy: 'ia', isTestData: { $ne: true } }),
+      Conversation.countDocuments({ status: 'resolu', handledBy: 'humain', isTestData: { $ne: true } }),
       Conversation.aggregate([
-        { $match: { 'satisfaction.rating': { $exists: true, $ne: null } } },
+        { $match: { 'satisfaction.rating': { $exists: true, $ne: null }, isTestData: { $ne: true } } },
         { $group: { _id: null, avg: { $avg: '$satisfaction.rating' } } },
       ]),
       // Performance optimization: Calculate average response time directly via MongoDB aggregation pipeline
       // Prevents Out-Of-Memory (OOM) crashes by avoiding loading all database messages into Node.js heap.
+      // Filter out test data from response time calculations
       Message.aggregate([
         { $match: { sender: { $in: ['client', 'ia', 'humain'] } } },
+        {
+          $lookup: {
+            from: 'conversations',
+            localField: 'conversation',
+            foreignField: '_id',
+            as: 'conv'
+          }
+        },
+        { $unwind: '$conv' },
+        { $match: { 'conv.isTestData': { $ne: true } } },
         {
           $group: {
             _id: '$conversation',
