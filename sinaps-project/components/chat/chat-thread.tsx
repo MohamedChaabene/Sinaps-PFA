@@ -140,13 +140,21 @@ export function ChatThread({
                           <BotIcon className="size-4.5" />
                         </div>
                       ) : message.sender === "humain" ? (
-                        <Avatar className={`size-8.5 rounded-xl ring-2 ${getAgentAvatarColor(message.authorName || "Conseiller").ring} shadow-xs`}>
+                        <Avatar
+                          aria-label={`Avatar de ${message.authorName || "Conseiller"}`}
+                          role="img"
+                          className={`size-8.5 rounded-xl ring-2 ${getAgentAvatarColor(message.authorName || "Conseiller").ring} shadow-xs`}
+                        >
                           <AvatarImage
                             src={message.authorAvatar || undefined}
                             alt={`Avatar de ${message.authorName || "Conseiller"}`}
                             className="rounded-xl object-cover"
                           />
-                          <AvatarFallback className={`rounded-xl ${getAgentAvatarColor(message.authorName || "Conseiller").bg} ${getAgentAvatarColor(message.authorName || "Conseiller").text} font-bold text-xs`}>
+                          <AvatarFallback
+                            aria-label={`Avatar de ${message.authorName || "Conseiller"}`}
+                            role="img"
+                            className={`rounded-xl ${getAgentAvatarColor(message.authorName || "Conseiller").bg} ${getAgentAvatarColor(message.authorName || "Conseiller").text} font-bold text-xs`}
+                          >
                             {getInitials(message.authorName || "Conseiller")}
                           </AvatarFallback>
                         </Avatar>
@@ -278,12 +286,12 @@ export function ChatThread({
                       </MessageFooter>
 
                       {/* Quick Replies - only for AI/human messages with quickReplies */}
-                      {!isClient && message.quickReplies && message.quickReplies.length > 0 && onQuickReplyClick && (
+                      {!isClient && message.quickReplies && message.quickReplies.length > 0 && (
                         <div className="mt-2">
                           <QuickReplyButtons
                             quickReplies={message.quickReplies}
                             onQuickReplyClick={onQuickReplyClick}
-                            disabled={disabledQuickReplies}
+                            disabled={disabledQuickReplies || !onQuickReplyClick}
                             loadingAction={loadingQuickReplyAction}
                           />
                         </div>

@@ -26,10 +26,11 @@ import type { Agent } from "@/lib/types"
 
 function AgentAvatar({ agent }: { agent: Agent }) {
   const color = getAgentAvatarColor(agent.id || agent.name)
+  const accessibleName = `Avatar de ${agent.name}`
   return (
-    <Avatar className={`size-10 rounded-xl ring-2 ${color.ring}`}>
-      <AvatarImage src={agent.avatar || undefined} alt={`Avatar de ${agent.name}`} className="rounded-xl object-cover" />
-      <AvatarFallback className={`rounded-xl ${color.bg} ${color.text} font-semibold text-xs`}>
+    <Avatar aria-label={accessibleName} role="img" className={`size-10 rounded-xl ring-2 ${color.ring}`}>
+      <AvatarImage src={agent.avatar || undefined} alt={accessibleName} className="rounded-xl object-cover" />
+      <AvatarFallback aria-label={accessibleName} role="img" className={`rounded-xl ${color.bg} ${color.text} font-semibold text-xs`}>
         {agent.initials || getInitials(agent.name)}
       </AvatarFallback>
     </Avatar>
