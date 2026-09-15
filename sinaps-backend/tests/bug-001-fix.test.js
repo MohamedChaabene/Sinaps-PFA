@@ -81,6 +81,21 @@ describe('BUG-001 Fix - Stale Conversation State Prevention', () => {
     });
   });
 
+  test('invoice questions do not return an unrelated order-tracking response', async () => {
+    const res = await request(app)
+      .post('/api/messages')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({
+        conversationId: conversation._id,
+        sender: 'client',
+        content: 'Je ne trouve pas la rubrique correspondante. Est-elle accessible depuis la page Facturation ?'
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.aiMessage.content).not.toContain('suivre votre commande');
+    expect(res.body.aiMessage.content).toContain("Je n'ai pas trouvé de réponse exacte");
+  });
+
   describe('Test 2: AI message is saved to database before response', () => {
     test('AI message exists in MongoDB after HTTP response', async () => {
       const res = await request(app)

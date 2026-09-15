@@ -38,6 +38,11 @@ async function getAIResponse(userMessage) {
   const relevantDocs = isBillingQuestion
     ? retrievedDocs.filter((doc) => doc.category === 'billing')
     : retrievedDocs;
+  const noAnswerFallback = "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
+
+  if (isBillingQuestion && relevantDocs.length === 0) {
+    return noAnswerFallback;
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -46,7 +51,7 @@ async function getAIResponse(userMessage) {
     if (relevantDocs.length > 0) {
       return `${relevantDocs[0].answer} 🤖`;
     }
-    return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
+    return noAnswerFallback;
   }
 
   try {
@@ -110,13 +115,13 @@ RÈGLES STRICTES - À RESPECTER IMPÉRATIVEMENT:
     if (relevantDocs.length > 0) {
       return `${relevantDocs[0].answer} 🤖`;
     }
-    return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
+    return noAnswerFallback;
   } catch (err) {
     console.warn('Gemini API call failed, using local RAG fallback:', err.message);
     if (relevantDocs.length > 0) {
       return `${relevantDocs[0].answer} 🤖`;
     }
-    return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
+    return noAnswerFallback;
   }
 }
 
