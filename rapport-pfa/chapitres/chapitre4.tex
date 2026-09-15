@@ -104,7 +104,7 @@ Multer enregistre les fichiers avec un nom unique. Types acceptés : images, vid
 
 \section{Moteur IA}
 
-Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ construction du prompt $\rightarrow$ essai de modèles Gemini $\rightarrow$ repli RAG textuel. La FAQ d'exemple couvre notamment : suivi de commande, retard, remboursement, mot de passe, code promo. Elle n'est pas un corpus métier confidentiel de SINAPS.
+Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ construction du prompt $\rightarrow$ essai de modèles Gemini $\rightarrow$ repli RAG textuel. La FAQ d'exemple couvre notamment : suivi de commande, retard, remboursement, mot de passe, code promo. Elle n'est pas un corpus métier confidentiel de SINAPS TEC.
 
 \section{Frontend}
 
@@ -146,7 +146,7 @@ Le tableau de bord affiche les indicateurs SLA calculés, la liste des agents à
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth]{images/sinaps-admin-dashboard.png}
-  \caption{Tableau de bord administrateur de SINAPS}
+  \caption{Tableau de bord administrateur de SINAPS TEC}
   \label{fig:admin-dashboard}
 \end{figure}
 
@@ -161,7 +161,7 @@ Les captures ci-dessous sont des \textbf{recommandations de documentation}, et n
 \begin{enumerate}[leftmargin=1.6em]
   \item \textbf{Important --- Chat IA et actions rapides}. Capture de \texttt{/} après une question documentée, avec réponse IA, horodatage et boutons « C'est ce qu'il me fallait », « autre question » et « agent ». Placement : après le paragraphe sur l'espace client. Caption : \textit{Conversation client avec réponse RAG/Gemini et actions rapides}. Label : \texttt{fig:client-chat-ai}.
   \item \textbf{Important --- Escalade et espace agent}. Capture de \texttt{/} puis \texttt{/agent} montrant le statut en attente, la file et une réponse humaine. Placement : après le paragraphe sur l'espace agent. Caption : \textit{Escalade d'une conversation vers la file des agents}. Label : \texttt{fig:human-escalation}.
-  \item \textbf{Important --- Dashboard administrateur}. Capture de \texttt{/admin} montrant les KPI, la validation des agents et l'historique filtrable. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Tableau de bord administrateur de SINAPS}. Label : \texttt{fig:admin-dashboard}.
+  \item \textbf{Important --- Dashboard administrateur}. Capture de \texttt{/admin} montrant les KPI, la validation des agents et l'historique filtrable. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Tableau de bord administrateur de SINAPS TEC}. Label : \texttt{fig:admin-dashboard}.
   \item \textbf{Important --- Clôture et satisfaction}. Capture du dialogue de notation 1--5 avec commentaire facultatif. Placement : après le paragraphe sur la satisfaction. Caption : \textit{Évaluation de la satisfaction à la clôture d'une conversation}. Label : \texttt{fig:satisfaction-dialog}.
   \item \textbf{Optionnel --- Identification client}. Capture de \texttt{/} avant connexion, avec Google Sign-In et formulaire direct. Placement : au début de la sous-section « Espace client ». Caption : \textit{Identification du client par Google ou formulaire}. Label : \texttt{fig:client-auth}.
   \item \textbf{Optionnel --- Pièce jointe et profils}. Capture du fil avec une pièce jointe et les avatars client/agent. Placement : après le paragraphe sur l'espace client. Caption : \textit{Message avec pièce jointe et avatars persistés}. Label : \texttt{fig:message-attachment-avatar}.
