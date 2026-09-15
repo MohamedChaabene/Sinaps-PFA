@@ -34,13 +34,17 @@ async function getAIResponse(userMessage) {
 
   // Step 1: RAG Retrieval Stage - Retrieve relevant knowledge snippets
   const retrievedDocs = retrieveRelevantContext(userMessage, 2);
+  const isBillingQuestion = /\b(facture|factures|facturation|invoice|billing)\b/i.test(userMessage);
+  const relevantDocs = isBillingQuestion
+    ? retrievedDocs.filter((doc) => doc.category === 'billing')
+    : retrievedDocs;
 
   const apiKey = process.env.GEMINI_API_KEY;
 
   // Fallback if Gemini key is not provided or invalid
   if (!apiKey || apiKey === 'your_gemini_api_key' || apiKey.trim() === '') {
-    if (retrievedDocs.length > 0) {
-      return `${retrievedDocs[0].answer} 🤖`;
+    if (relevantDocs.length > 0) {
+      return `${relevantDocs[0].answer} 🤖`;
     }
     return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
   }
@@ -50,8 +54,8 @@ async function getAIResponse(userMessage) {
     const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-latest'];
 
     // Format retrieved knowledge snippets into context
-    const contextText = retrievedDocs.length > 0
-      ? retrievedDocs.map((doc) => `[SOURCE: ${doc.source}] Q: ${doc.question} => R: ${doc.answer}`).join('\n')
+    const contextText = relevantDocs.length > 0
+      ? relevantDocs.map((doc) => `[SOURCE: ${doc.source}] Q: ${doc.question} => R: ${doc.answer}`).join('\n')
       : 'Aucun document spécifique trouvé dans la base de connaissances.';
 
     const prompt = `Tu es l'agent d'assistance client IA de la plateforme Sinaps.
@@ -103,14 +107,14 @@ RÈGLES STRICTES - À RESPECTER IMPÉRATIVEMENT:
     if (text) return text;
 
     // Fallback if all models fail
-    if (retrievedDocs.length > 0) {
-      return `${retrievedDocs[0].answer} 🤖`;
+    if (relevantDocs.length > 0) {
+      return `${relevantDocs[0].answer} 🤖`;
     }
     return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
   } catch (err) {
     console.warn('Gemini API call failed, using local RAG fallback:', err.message);
-    if (retrievedDocs.length > 0) {
-      return `${retrievedDocs[0].answer} 🤖`;
+    if (relevantDocs.length > 0) {
+      return `${relevantDocs[0].answer} 🤖`;
     }
     return "Je n'ai pas trouvé de réponse exacte dans ma base de connaissances. Je peux vous mettre en relation avec un agent de support humain si vous le souhaitez ! 👋";
   }

@@ -6,7 +6,14 @@ exports.getStats = async (req, res) => {
     const [total, resolvedByIA, resolvedByHuman, satisfactionAgg, responseTimesAgg] = await Promise.all([
       Conversation.countDocuments({ isTestData: { $ne: true } }),
       Conversation.countDocuments({ status: 'resolu', handledBy: 'ia', isTestData: { $ne: true } }),
-      Conversation.countDocuments({ status: 'resolu', handledBy: 'humain', isTestData: { $ne: true } }),
+      Conversation.countDocuments({
+        $or: [
+          { handledBy: 'humain' },
+          { assignedAgent: { $ne: null } },
+          { escalationCount: { $gt: 0 } },
+        ],
+        isTestData: { $ne: true },
+      }),
       Conversation.aggregate([
         { $match: { 'satisfaction.rating': { $exists: true, $ne: null }, isTestData: { $ne: true } } },
         { $group: { _id: null, avg: { $avg: '$satisfaction.rating' } } },

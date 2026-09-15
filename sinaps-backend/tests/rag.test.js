@@ -210,5 +210,11 @@ describe('Gemini Service', () => {
       expect(response).toBeTruthy();
       expect(response.length).toBeGreaterThan(0);
     });
+
+    test('does not route invoice questions to order tracking fallback', async () => {
+      const response = await getAIResponse("J'ai une question sur mon invoice");
+      expect(response).not.toContain('suivre votre commande');
+      expect(response).toContain("Je n'ai pas trouvé de réponse exacte");
+    });
   });
 });
