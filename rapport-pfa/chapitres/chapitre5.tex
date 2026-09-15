@@ -10,10 +10,11 @@ La stratégie retenue est essentiellement \textbf{automatisée côté backend} :
   \item tests d'\textbf{intégration} HTTP avec Supertest et une base \textbf{MongoDB en mémoire} ;
   \item tests \textbf{unitaires} du middleware d'authentification (modèle Conversation mocké) ;
   \item tests du \textbf{téléversement} (Multer) ;
-  \item tests du \textbf{retriever RAG} et du repli \texttt{getAIResponse} sans clé Gemini.
+  \item tests du \textbf{retriever RAG} et du repli \texttt{getAIResponse} sans clé Gemini ;
+  \item tests des \textbf{actions rapides}, du cycle de résolution, des horodatages et de l'isolation des données de démonstration.
 \end{itemize}
 
-Le frontend Next.js ne contient pas de suite de tests unitaires dédiée dans le dépôt. La validation des écrans a été \textbf{manuelle} (usage réel de Google, Gemini et Atlas). Les résultats détaillés de cette validation manuelle : \acompleter{date, scénarios parcourus, anomalies éventuellement notées}.
+Le frontend Next.js ne contient pas de suite de tests unitaires dédiée dans le dépôt. Une validation manuelle des écrans est possible avec Google, Gemini et Atlas, mais ses date, scénarios et résultats détaillés ne figurent pas dans les sources disponibles : \acompleter{compléter uniquement si ces éléments sont confirmés}.
 
 Commande :
 
@@ -22,7 +23,7 @@ cd sinaps-backend
 npm test
 \end{lstlisting}
 
-Les sorties chiffrées de la dernière exécution (nombre de tests, succès, échecs) : \acompleter{coller ici le résumé Jest}.
+La dernière exécution locale de la commande ci-dessus a produit le résultat suivant : \textbf{13 suites passées, 205 tests passés, 0 échec, 0 snapshot}. Cette validation couvre le backend ; elle ne constitue pas une mesure de couverture ni une garantie de performance en production.
 
 \section{Tests d'intégration API}
 
@@ -82,6 +83,11 @@ Ces tests valident le \textbf{retriever local} et le \textbf{repli}. Ils ne mesu
 \begin{itemize}[leftmargin=1.4em]
   \item pas de tests E2E navigateur (Playwright, Cypress) dans le dépôt ;
   \item pas de tests de charge Socket.io ;
-  \item pas de recette formelle signée par l'encadrant documentée ici : \acompleter{si une démonstration a été faite à M.~Kais, indiquer la date} ;
-  \item les indicateurs du dashboard dépendent des données présentes (seed ou usage réel) ; ils ne sont pas des KPI d'un service en production.
+  \item aucune recette formelle signée par l'encadrant n'est documentée dans les sources disponibles ;
+  \item les indicateurs du dashboard dépendent des données réelles présentes ; les données du seed sont marquées \texttt{isTestData} et exclues des KPI par défaut ;
+  \item aucune preuve de déploiement public ou de mesure de production n'est présente dans le dépôt.
 \end{itemize}
+
+\section{Corrections validées avant la version finale}
+
+La suite finale vérifie aussi plusieurs corrections directement liées à la fiabilité du produit : prévention des réponses IA hors sujet pour les demandes de facturation, calcul distinct des escalades humaines, conservation des horodatages lors du chargement agent, protection contre les réponses de chargement obsolètes, actions rapides idempotentes, et filtrage des données de démonstration dans l'administration. Ces éléments sont documentés par les tests dédiés présents dans \texttt{sinaps-backend/tests}.

@@ -89,7 +89,7 @@ RF04 & Workflow de statuts (en cours, en attente, résolu) et mode IA / humain. 
 RF05 & Bascule vers un opérateur humain à l'initiative du client. & Réalisé \\
 RF06 & Retour vers l'IA (désescalade). & Réalisé \\
 RF07 & Plusieurs agents (comptes distincts, compétences saisies à l'inscription). & Comptes : réalisé. Routage automatique par compétence : \textbf{non réalisé}. \\
-RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web). \\
+RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web), avec indicateur de saisie, verrouillage pendant la réponse IA et retours d'action. \\
 RF09 & Échange de documents, images, vidéos. & Réalisé (upload Multer, types filtrés). Aperçu \og unfurl \fg{} de liens arbitraires : non spécifié comme module séparé. \\
 RF10 & Clôture et enquête de satisfaction (note 1--5, commentaire). & Réalisé \\
 RF11 & Inscription agent, validation ou rejet par l'admin. & Réalisé \\
@@ -97,6 +97,8 @@ RF12 & Historique des conversations, recherche et filtre par statut. & Réalisé
 RF13 & Statistiques : volume, résolution IA vs humain, satisfaction moyenne, temps de réponse. & Réalisé (agrégations MongoDB, pas de chiffres marketing fictifs). \\
 RF14 & Application mobile native (React Native / Flutter). & \textbf{Non réalisé} (web responsive uniquement). \\
 RF15 & File d'attente / messagerie temps réel. & Réalisé (Socket.io). \\
+RF16 & Suggestions d'actions rapides après une réponse IA. & Réalisé (confirmation, nouvelle question, escalade ; actions contextualisées). \\
+RF17 & Affichage cohérent des messages et des profils. & Réalisé (horodatages persistés, avatars client de repli déterministes, avatars agent). \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -134,7 +136,7 @@ Les chiffres illustratifs du document de sujet (satisfaction 94~\%, 2,4~min, 68~
   \item conteneurisation et orchestration (Docker, Kubernetes) ;
   \item RAG vectoriel (embeddings, base vectorielle, LangChain) ;
   \item affectation automatique d'un agent selon ses compétences ;
-  \item déploiement public en production.
+  \item déploiement public en production (non vérifiable dans le dépôt actuel).
 \end{itemize}
 
 Ces éléments peuvent figurer parmi les perspectives (conclusion), sans être présentés comme livrés.

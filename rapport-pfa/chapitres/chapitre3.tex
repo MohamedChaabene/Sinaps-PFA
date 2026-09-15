@@ -169,6 +169,11 @@ status & \texttt{en\_cours} $\mid$ \texttt{en\_attente} $\mid$ \texttt{resolu} &
 handledBy & \texttt{ia} $\mid$ \texttt{humain} & Qui répond \\
 satisfaction.rating & Number 1--5 & Optionnel à la clôture \\
 satisfaction.comment & String & Optionnel \\
+resolvedBy, resolvedAt & String, Date & Origine et instant de résolution \\
+resolutionType & Enum & Résolution confirmée par le client, par l'agent ou abandon \\
+lastActivityAt & Date & Sélection de la conversation active la plus récente \\
+aiAttemptCount, escalationCount & Number & Suivi des tentatives IA et des escalades \\
+isTestData & Boolean & Marqueur exclu des indicateurs opérationnels \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -186,6 +191,8 @@ sender & \texttt{client} $\mid$ \texttt{ia} $\mid$ \texttt{humain} & Provenance 
 authorName & String & Affichage \\
 content & String & Texte (peut être vide si pièce jointe) \\
 attachments[] & url, type, name & \texttt{image} $\mid$ \texttt{video} $\mid$ \texttt{document} $\mid$ \texttt{link} \\
+quickReplies[] & id, label, action, metadata & Actions proposées après une réponse IA \\
+timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'affichage du fil \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -265,7 +272,7 @@ Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe 
 
 \subsection{Clôture et satisfaction}
 
-\texttt{PATCH /conversations/:id/close} accepte une note entière entre 1 et 5. Une valeur hors intervalle (par exemple 0) \textbf{n'est pas} enregistrée comme satisfaction, afin d'éviter de fausser la moyenne. Le statut devient \texttt{resolu}.
+\texttt{PATCH /conversations/:id/close} accepte une note entière entre 1 et 5. Une valeur hors intervalle (par exemple 0) \textbf{n'est pas} enregistrée comme satisfaction, afin d'éviter de fausser la moyenne. Le statut devient \texttt{resolu} et la cause de résolution est tracée dans \texttt{resolutionType}. Les actions rapides permettent notamment de confirmer une résolution IA, de poser une nouvelle question ou de demander un agent.
 
 \section{Conception de l'authentification et des droits}
 

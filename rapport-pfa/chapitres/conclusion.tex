@@ -3,9 +3,11 @@
 
 Ce PFA a consisté à concevoir et réaliser \textbf{Op Support IA}, une application web de support client dans laquelle un agent IA s'appuie sur une petite base de connaissances, un opérateur humain peut prendre le relais, et un administrateur pilote comptes, historique et indicateurs.
 
-Le travail a été mené \textbf{seul}, à \textbf{distance}, de façon \textbf{informelle}, du 22~juin au 6~septembre~2026, sur un sujet proposé par \textbf{M.~Kais} (SINAPS). L'application livrée comprend un frontend Next.js, un backend Express, une persistance MongoDB Atlas, une authentification Google et JWT, un moteur RAG lexical couplé à Gemini, des WebSockets, un téléversement de fichiers contrôlé, et une suite de tests backend.
+Le travail a été mené \textbf{seul}, à \textbf{distance}, de façon \textbf{informelle}, du 22~juin au 6~septembre~2026, sur un sujet proposé par \textbf{M.~Kais} (SINAPS). L'application livrée comprend un frontend Next.js, un backend Express, une persistance MongoDB Atlas, une authentification Google et JWT, un moteur RAG lexical couplé à Gemini, des WebSockets, des actions rapides, un téléversement de fichiers contrôlé, des horodatages et une suite de tests backend.
 
 Par rapport au document de sujet, le cœur fonctionnel (chat, RAG, escalade, agents, admin, SLA, contenus riches sous forme de pièces jointes, tests) est en place. En revanche, l'\textbf{application mobile native}, le \textbf{routage par compétences}, le \textbf{RAG vectoriel} et le \textbf{déploiement} d'hébergement public n'ont pas été réalisés --- par choix de périmètre, compte tenu de la durée et du caractère individuel du stage.
+
+La version finale a été vérifiée par \textbf{13 suites et 205 tests backend passés}. Les corrections finales ont notamment porté sur les réponses IA hors sujet, les indicateurs d'escalade, le chargement concurrent des conversations, la sérialisation des horodatages, les avatars de repli, les actions rapides et l'exclusion des données de démonstration des indicateurs. Cette validation reste une validation du dépôt et de l'environnement de test ; aucun résultat de déploiement public n'est affirmé.
 
 Sur le plan pédagogique, la principale difficulté a été l'\textbf{apprentissage simultané} de l'écosystème utilisé : Node.js, Express, React, Next.js, et les notions de RAG. Cette montée en compétence a été nécessaire pour livrer une chaîne fullstack cohérente plutôt qu'un prototype d'interface isolé.
 

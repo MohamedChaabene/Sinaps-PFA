@@ -54,7 +54,7 @@ Chemin & Rôle \\
 \end{tabularx}
 \end{table}
 
-Le frontend écoute par défaut \texttt{NEXT\_PUBLIC\_API\_URL=http://localhost:5000/api}. Le backend écoute le port \textbf{5000}. Un endpoint \texttt{GET /api/health} permet de vérifier que l'API est joignable.
+Le frontend écoute par défaut \texttt{NEXT\_PUBLIC\_API\_URL=http://localhost:5000/api}. Le backend écoute le port \textbf{5000}. Un endpoint \texttt{GET /api/health} permet de vérifier que l'API est joignable. Le dépôt fournit aussi des Dockerfiles et un fichier Compose pour le développement, mais aucune configuration de déploiement public n'est présente.
 
 \section{Backend : API REST, middleware et WebSockets}
 
@@ -112,13 +112,43 @@ Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ constru
 
 Après identification (\texttt{ClientEntryForm}, bouton Google et/ou formulaire), \texttt{SupportChatApp} charge le fil, affiche \texttt{ChatThread}, \texttt{QuickPrompts}, \texttt{MessageComposer}, et les actions d'escalade / désescalade dans \texttt{ChatHeader}. Un dialogue de satisfaction s'ouvre à la clôture.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/sinaps-satisfaction-dialog.png}
+  \caption{Évaluation de la satisfaction à la clôture d'une conversation}
+  \label{fig:satisfaction-dialog}
+\end{figure}
+
+Les réponses IA peuvent porter des \textbf{actions rapides} : confirmer que la réponse a suffi, poser une autre question ou demander un agent humain. Une action est envoyée comme message client et son état de chargement est affiché ; les boutons ne sont proposés que sur le dernier message IA éligible. Le compositeur est verrouillé pendant la génération IA afin d'éviter les doublons.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/sinaps-client-chat-ai.png}
+  \caption{Conversation client avec réponse RAG/Gemini et actions rapides}
+  \label{fig:client-chat-ai}
+\end{figure}
+
 \subsection{Espace agent}
 
 La page \texttt{/agent} est protégée (\texttt{AuthGuard}). L'agent se connecte sur \texttt{/login}. L'inscription se fait sur \texttt{/agent/signup} (compétences en texte). Tant que le compte est \texttt{pending}, le login renvoie une erreur 403.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/sinaps-human-escalation.png}
+  \caption{Escalade d'une conversation vers la file des agents}
+  \label{fig:human-escalation}
+\end{figure}
+
 \subsection{Espace administrateur}
 
-Le tableau de bord affiche les indicateurs SLA calculés, la liste des agents à valider (compétences en badges), et un historique avec recherche (nom / e-mail client) et onglets de statut.
+Le tableau de bord affiche les indicateurs SLA calculés, la liste des agents à valider (compétences en badges), et un historique avec recherche (nom / e-mail client) et onglets de statut. Les conversations marquées comme données de test sont exclues des indicateurs et des listes opérationnelles par défaut. Les dernières corrections ont également stabilisé le chargement concurrent des conversations, le rendu des horodatages et les avatars de repli côté client.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{images/sinaps-admin-dashboard.png}
+  \caption{Tableau de bord administrateur de SINAPS}
+  \label{fig:admin-dashboard}
+\end{figure}
 
 \section{Données de démonstration}
 
@@ -126,21 +156,19 @@ Le script \texttt{npm run seed} recrée des comptes d'exemple (mot de passe de s
 
 \section{Captures d'écran à insérer}
 
-Les captures n'étaient pas disponibles au moment de la rédaction. Les insérer après compilation, en situations réelles (Google, Gemini, Atlas).
+Les captures ci-dessous sont des \textbf{recommandations de documentation}, et non des résultats inventés. Les captures importantes montrent les parcours fonctionnels principaux ; les captures optionnelles peuvent être regroupées ou remplacées par les diagrammes déjà présents au chapitre~3.
 
 \begin{enumerate}[leftmargin=1.6em]
-  \item \textbf{Figure --- Identification client} (Google et formulaire nom/e-mail).
-  \item \textbf{Figure --- Chat avec réponse IA} (question du type \og Comment suivre ma commande ? \fg{}).
-  \item \textbf{Figure --- Pièce jointe} dans le fil.
-  \item \textbf{Figure --- Escalade} (statut en attente, file agent).
-  \item \textbf{Figure --- Réponse d'un agent humain}.
-  \item \textbf{Figure --- Dialogue de satisfaction}.
-  \item \textbf{Figure --- Login agent / admin}.
-  \item \textbf{Figure --- Inscription agent}.
-  \item \textbf{Figure --- Dashboard admin} (stats + validation + historique).
+  \item \textbf{Important --- Chat IA et actions rapides}. Capture de \texttt{/} après une question documentée, avec réponse IA, horodatage et boutons « C'est ce qu'il me fallait », « autre question » et « agent ». Placement : après le paragraphe sur l'espace client. Caption : \textit{Conversation client avec réponse RAG/Gemini et actions rapides}. Label : \texttt{fig:client-chat-ai}.
+  \item \textbf{Important --- Escalade et espace agent}. Capture de \texttt{/} puis \texttt{/agent} montrant le statut en attente, la file et une réponse humaine. Placement : après le paragraphe sur l'espace agent. Caption : \textit{Escalade d'une conversation vers la file des agents}. Label : \texttt{fig:human-escalation}.
+  \item \textbf{Important --- Dashboard administrateur}. Capture de \texttt{/admin} montrant les KPI, la validation des agents et l'historique filtrable. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Tableau de bord administrateur de SINAPS}. Label : \texttt{fig:admin-dashboard}.
+  \item \textbf{Important --- Clôture et satisfaction}. Capture du dialogue de notation 1--5 avec commentaire facultatif. Placement : après le paragraphe sur la satisfaction. Caption : \textit{Évaluation de la satisfaction à la clôture d'une conversation}. Label : \texttt{fig:satisfaction-dialog}.
+  \item \textbf{Optionnel --- Identification client}. Capture de \texttt{/} avant connexion, avec Google Sign-In et formulaire direct. Placement : au début de la sous-section « Espace client ». Caption : \textit{Identification du client par Google ou formulaire}. Label : \texttt{fig:client-auth}.
+  \item \textbf{Optionnel --- Pièce jointe et profils}. Capture du fil avec une pièce jointe et les avatars client/agent. Placement : après le paragraphe sur l'espace client. Caption : \textit{Message avec pièce jointe et avatars persistés}. Label : \texttt{fig:message-attachment-avatar}.
+  \item \textbf{Optionnel --- Inscription et validation}. Capture de \texttt{/agent/signup} puis de la table des agents en attente. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Inscription d'un agent et validation administrative}. Label : \texttt{fig:agent-approval}.
 \end{enumerate}
 
-\todofig{Insérer ici les captures listées ci-dessus (interface client, agent et administrateur).}
+Un \textbf{diagramme de séquence} reste préférable à une capture pour expliquer le flux interne RAG $\rightarrow$ Gemini $\rightarrow$ persistance $\rightarrow$ Socket.io ; la figure~\ref{fig:seq-ia} remplit déjà ce rôle.
 
 \section{Mise en route (développement local)}
 
@@ -150,4 +178,4 @@ cd sinaps-backend && npm install && npm run seed && npm run dev
 cd sinaps-project && npm install && npm run dev
 \end{lstlisting}
 
-Variables nécessaires côté backend : \texttt{PORT}, \texttt{MONGO\_URI}, \texttt{JWT\_SECRET}, \texttt{GEMINI\_API\_KEY}, \texttt{GOOGLE\_CLIENT\_ID} ; côté frontend : \texttt{NEXT\_PUBLIC\_API\_URL}, \texttt{NEXT\_PUBLIC\_GOOGLE\_CLIENT\_ID}. Sans clés Google/Gemini, des modes dégradés existent (identification directe, réponses RAG locales), mais le stage a bien utilisé Google Sign-In et Gemini en conditions réelles.
+Variables nécessaires côté backend : \texttt{PORT}, \texttt{MONGO\_URI}, \texttt{JWT\_SECRET}, \texttt{GEMINI\_API\_KEY}, \texttt{GOOGLE\_CLIENT\_ID} ; côté frontend : \texttt{NEXT\_PUBLIC\_API\_URL}, \texttt{NEXT\_PUBLIC\_GOOGLE\_CLIENT\_ID}. Sans clés Google/Gemini, des modes dégradés existent (identification directe, réponses RAG locales). Le dépôt confirme l'intégration de Google Sign-In, Gemini et MongoDB Atlas, mais ne fournit pas de compte rendu détaillé d'une recette manuelle en conditions réelles.
