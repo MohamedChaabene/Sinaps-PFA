@@ -5,20 +5,20 @@ Ce rapport présente le travail réalisé dans le cadre du Projet de Fin d'Anné
 
 Le système permet à un client d'ouvrir une conversation, d'obtenir une réponse automatique fondée sur une base de connaissances (approche RAG) et, si besoin, de basculer vers un agent humain en temps réel. Des suggestions d'action rapide accompagnent les réponses IA, tandis que les messages, horodatages, avatars et changements de statut sont persistés. Un espace agent gère la file d'attente des demandes escaladées ; un espace administrateur valide les comptes, consulte l'historique et affiche des indicateurs (volume, résolution IA ou humaine, satisfaction, délai de réponse).
 
-La solution est organisée en deux applications : un frontend \textbf{Next.js} (React, TypeScript) et un backend \textbf{Node.js / Express}, avec persistance \textbf{MongoDB}, authentification JWT et Google, génération de réponses via \textbf{Gemini} et un retriever local TF-IDF / similarité cosinus. Des tests automatisés (Jest, Supertest) couvrent l'API, l'authentification, le téléversement, le retriever, les actions rapides, les statuts, les horodatages et l'isolation des données de démonstration.
+La solution comprend un frontend web \textbf{Next.js} (React, TypeScript), un client mobile \textbf{Expo / React Native} et un backend \textbf{Node.js / Express}, avec persistance \textbf{MongoDB}, authentification JWT et Google, génération de réponses via \textbf{Gemini} et un retriever local TF-IDF / similarité cosinus. Des tests automatisés (Jest, Supertest) couvrent le backend ; le client mobile possède en outre une vérification de typage TypeScript, sans suite de tests automatisés ni recette formelle documentée dans le dépôt.
 
 \vspace{8pt}
 \noindent\textbf{Mots-clés :} support client, agent IA, RAG, Next.js, Express, MongoDB, Socket.io, JWT, PFA.
 
 \vspace{1.4cm}
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
+\chapter*{Résumé en anglais}
+\addcontentsline{toc}{chapter}{Résumé en anglais}
 
-This report describes a second-year software engineering internship project (PFA) at ISIMS Sfax. The remote internship at \textbf{SINAPS TEC} ran from 22~June to 6~September~2026. The resulting system, \textbf{Op Support IA}, is a web application for AI-assisted customer support.
+Ce rapport décrit un projet de stage de deuxième année du cycle ingénieur en Génie Logiciel (PFA) réalisé à l'ISIMS de Sfax. Le stage à distance au sein de \textbf{SINAPS TEC} s'est déroulé du 22~juin au 6~septembre~2026. Le système obtenu, \textbf{Op Support IA}, comprend une application web et un client mobile de support client assisté par IA.
 
-A client can start a conversation, receive an automatic answer grounded in a knowledge base (RAG), and escalate to a human agent when needed. Support agents handle the escalated queue; administrators approve accounts and inspect history and SLA-oriented statistics.
+Le client peut ouvrir une conversation, recevoir une réponse automatique fondée sur une base de connaissances (RAG) et demander l'intervention d'un agent humain lorsque cela est nécessaire. Les agents traitent la file des demandes escaladées ; les administrateurs valident les comptes, consultent l'historique et examinent des indicateurs opérationnels orientés SLA.
 
-The implementation uses a \textbf{Next.js} frontend and a \textbf{Node.js / Express} backend, with \textbf{MongoDB}, JWT and Google authentication, \textbf{Gemini} plus a local TF-IDF/cosine retriever, and automated tests with Jest and Supertest.
+L'implémentation utilise un frontend \textbf{Next.js}, un client mobile \textbf{Expo / React Native} et un backend \textbf{Node.js / Express}, avec \textbf{MongoDB}, une authentification JWT et Google, \textbf{Gemini} associé à un retriever local TF-IDF / similarité cosinus, ainsi que des tests automatisés avec Jest et Supertest.
 
 \vspace{8pt}
-\noindent\textbf{Keywords:} customer support, AI agent, RAG, Next.js, Express, MongoDB, Socket.io, JWT.
+\noindent\textbf{Mots-clés :} support client, agent IA, RAG, Next.js, React Native, Express, MongoDB, Socket.io, JWT.

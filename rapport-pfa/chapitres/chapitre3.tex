@@ -1,10 +1,10 @@
 \chapter{Conception du système}
 
-Ce chapitre traduit les besoins du chapitre~2 en vues d'architecture, de données et de comportement. Les diagrammes correspondent au \textbf{système implémenté}, pas à la stack maximale listée dans le document de sujet (Python, PostgreSQL, React Native, Kafka, etc.).
+Ce chapitre traduit les besoins du chapitre~2 en vues d'architecture, de données et de comportement. Les diagrammes correspondent au \textbf{système implémenté}, pas à la stack maximale listée dans le document de sujet (Python, PostgreSQL, Flutter, Kafka, etc.).
 
 \section{Architecture générale}
 
-Le système est une architecture \textbf{à deux applications} communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB.
+Le système est une architecture composée d'un frontend web Next.js, d'un client mobile Expo / React Native et d'un backend Express communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB.
 
 \begin{figure}[H]
 \centering
@@ -13,7 +13,8 @@ Le système est une architecture \textbf{à deux applications} communiquant par 
   box/.style={draw=sinapsbleu, rounded corners=3pt, align=center, inner sep=7pt, fill=white, drop shadow},
   title/.style={font=\bfseries\small\color{sinapsbleu}}
 ]
-\node[box, fill=sinapsbleu!8, minimum width=4.2cm] (fe) {\textbf{Frontend}\\ Next.js 16 / React 19\\ TypeScript, Tailwind\\ \texttt{:3000}};
+\node[box, fill=sinapsbleu!8, minimum width=4.2cm] (fe) {\textbf{Frontend web}\\ Next.js 16 / React 19\\ TypeScript, Tailwind\\ \texttt{:3000}};
+\node[box, fill=sinapsbleu!8, minimum width=4.2cm, below=1.15cm of fe] (mobile) {\textbf{Client mobile}\\ Expo / React Native\\ TypeScript\\ Android, iOS, Web};
 \node[box, fill=sinapsbleu!8, minimum width=4.6cm, right=1.3cm of fe] (be) {\textbf{Backend}\\ Node.js / Express 5\\ Socket.io, JWT, Multer\\ \texttt{:5000}};
 \node[box, fill=grisclair, minimum width=3.6cm, below=1.15cm of be] (db) {\textbf{MongoDB Atlas}\\ User, Agent,\\ Conversation, Message};
 \node[box, fill=grisclair, minimum width=3.6cm, left=1.1cm of db] (ai) {\textbf{IA}\\ Retriever TF-IDF\\ + API Gemini};
@@ -21,25 +22,26 @@ Le système est une architecture \textbf{à deux applications} communiquant par 
 
 \draw[-{Latex}] (fe) -- node[above, font=\scriptsize]{REST JSON} (be);
 \draw[-{Latex}] (be) -- node[above, font=\scriptsize]{Socket.io} (fe);
+\draw[-{Latex}] (mobile) -- node[below, font=\scriptsize]{REST JSON / Socket.io} (be);
 \draw[-{Latex}] (be) -- (db);
 \draw[-{Latex}] (be) -- (ai);
 \draw[-{Latex}] (be) -- (ext);
 \end{tikzpicture}
-\caption{Architecture logique d'Op Support IA (vue déployable en local)}
+\caption{Architecture logique d'Op Support IA avec clients web et mobile (vue déployable en local)}
 \label{fig:archi}
 \end{figure}
 
 Les flux principaux sont :
 
 \begin{enumerate}[leftmargin=1.6em]
-  \item le navigateur charge l'UI Next.js (routes App Router) ;
+  \item le navigateur ou le client mobile charge l'interface correspondante ;
   \item les appels métier passent par \texttt{/api/...} sur Express ;
   \item après un message client, si la conversation est en mode IA, le backend appelle le retriever puis Gemini (ou le repli) et enregistre un message \texttt{ia} ;
   \item Socket.io notifie la salle \texttt{conversation\_<id>} et, pour les listes, un événement global ;
   \item les fichiers sont stockés sur disque sous \texttt{uploads/} et servis en statique.
 \end{enumerate}
 
-Cette vue correspond à la figure \og Clients / Frontend / Backend / Agent IA / Base / Admin \fg{} du sujet, avec des choix figés : \textbf{pas} de React Native, \textbf{pas} de Python, \textbf{MongoDB} (et non PostgreSQL), \textbf{Gemini} (et non OpenAI / LangChain).
+Cette vue correspond à la figure \og Clients / Frontend / Backend / Agent IA / Base / Admin \fg{} du sujet, avec des choix figés : \textbf{React Native} pour le client mobile, \textbf{pas} de Python, \textbf{MongoDB} (et non PostgreSQL), \textbf{Gemini} (et non OpenAI / LangChain).
 
 \section{Diagramme de cas d'utilisation}
 

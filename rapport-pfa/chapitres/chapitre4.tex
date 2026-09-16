@@ -14,6 +14,7 @@ Couche & Choix dans le dépôt \\
 \midrule
 Frontend & Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, composants d'UI type shadcn / Radix, Lucide, Sonner, \texttt{@react-oauth/google}, socket.io-client \\
 Backend & Node.js, Express 5, Mongoose 9, Socket.io 4, JWT, bcryptjs, google-auth-library, \texttt{@google/generative-ai}, Multer, CORS, dotenv \\
+Mobile & Expo 57, React Native 0.86, React 19, TypeScript, Socket.io-client, AsyncStorage, Expo Auth Session, Image Picker et Document Picker \\
 Données & MongoDB (URI Atlas en environnement réel) \\
 Tests & Jest, Supertest, mongodb-memory-server, Nodemon (dev) \\
 Outils hors dépôt & VS Code, Cursor, Antigravity, GitHub, Postman, consoles Google et Atlas \\
@@ -21,13 +22,13 @@ Outils hors dépôt & VS Code, Cursor, Antigravity, GitHub, Postman, consoles Go
 \end{tabularx}
 \end{table}
 
-\textbf{Justification succincte.} Next.js fournit le routage et un frontend React moderne, conformément à l'orientation \og React \fg{} du sujet, tout en restant une application web. Express est l'API demandée côté Node. MongoDB Atlas évite d'administrer un serveur local de production. Gemini a été retenu (et utilisé effectivement) plutôt qu'OpenAI. Socket.io couvre le besoin de réactivité du chat et de la file agent. JWT sépare clairement sessions client et sessions agent.
+\textbf{Justification succincte.} Next.js fournit le routage et un frontend React moderne, conformément à l'orientation \og React \fg{} du sujet, tout en restant une application web. Expo / React Native fournit un client mobile distinct réutilisant le backend commun. Express est l'API demandée côté Node. MongoDB Atlas évite d'administrer un serveur local de production. Gemini a été retenu (et utilisé effectivement) plutôt qu'OpenAI. Socket.io couvre le besoin de réactivité du chat et de la file agent. JWT sépare clairement sessions client et sessions agent.
 
-Les alternatives du sujet (Vue.js, Flutter, Firebase, Auth0, Kafka, Docker, Kubernetes, LangChain) \textbf{n'ont pas été mises en œuvre}.
+Les alternatives du sujet (Vue.js, Flutter, Firebase, Auth0, Kafka, Docker, Kubernetes, LangChain) \textbf{n'ont pas été mises en œuvre}. React Native est utilisé uniquement dans le client mobile Expo présent dans le dépôt.
 
 \section{Organisation du code}
 
-Le dépôt est scindé en deux dossiers.
+Le dépôt est organisé autour de trois applications ou sous-projets principaux : le frontend web, le backend et le client mobile.
 
 \begin{table}[H]
 \centering
@@ -50,6 +51,8 @@ Chemin & Rôle \\
 \texttt{sinaps-backend/data/knowledgeBase.js} & FAQ d'exemple \\
 \texttt{sinaps-backend/tests/} & Suites Jest \\
 \texttt{sinaps-backend/seed.js} & Jeu de démonstration \\
+\texttt{sinaps-mobile/src/} & Client Expo / React Native : authentification, chat, temps réel, écrans agent et administrateur \\
+\texttt{sinaps-mobile/src/context/} & Contextes d'authentification, de configuration, de thème et de conversation \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -96,7 +99,7 @@ Lors d'une connexion Socket.io, le client peut \texttt{join\_conversation} / \te
 
 \subsection{Statistiques}
 
-\texttt{getStats} calcule : nombre total de conversations, résolues par IA, résolues par un humain, moyenne des notes renseignées, et un \textbf{temps de réponse moyen} (écart entre le premier message client et la première réponse IA ou humaine), en une passe sur les messages plutôt qu'en boucle na\"ive requête par conversation.
+\texttt{getStats} calcule : nombre total de conversations, résolues par IA, résolues par un humain, moyenne des notes renseignées, et un \textbf{temps de réponse moyen} (écart entre le premier message client et la première réponse IA ou humaine), en une passe sur les messages plutôt qu'en boucle na\"ive requête par conversation. Ces valeurs sont des indicateurs opérationnels orientés SLA, et non la preuve du respect d'un contrat SLA formel.
 
 \subsection{Téléversement}
 
@@ -104,7 +107,7 @@ Multer enregistre les fichiers avec un nom unique. Types acceptés : images, vid
 
 \section{Moteur IA}
 
-Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ construction du prompt $\rightarrow$ essai de modèles Gemini $\rightarrow$ repli RAG textuel. La FAQ d'exemple couvre notamment : suivi de commande, retard, remboursement, mot de passe, code promo. Elle n'est pas un corpus métier confidentiel de SINAPS TEC.
+Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ construction du prompt $\rightarrow$ essai de modèles Gemini $\rightarrow$ repli RAG textuel. La FAQ d'exemple couvre notamment : suivi de commande, retard, remboursement, mot de passe, code promo. Pour une question de facturation, seuls les documents de catégorie \texttt{billing} sont conservés ; en l'absence de document pertinent, le service propose une mise en relation humaine plutôt que d'inventer une réponse. Elle n'est pas un corpus métier confidentiel de SINAPS TEC.
 
 \section{Frontend}
 
@@ -135,13 +138,13 @@ La page \texttt{/agent} est protégée (\texttt{AuthGuard}). L'agent se connecte
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{images/sinaps-human-escalation.png}
-  \caption{Escalade d'une conversation vers la file des agents}
+  \caption{Écran de conversation client avec commandes de retour à l'IA et de clôture}
   \label{fig:human-escalation}
 \end{figure}
 
 \subsection{Espace administrateur}
 
-Le tableau de bord affiche les indicateurs SLA calculés, la liste des agents à valider (compétences en badges), et un historique avec recherche (nom / e-mail client) et onglets de statut. Les conversations marquées comme données de test sont exclues des indicateurs et des listes opérationnelles par défaut. Les dernières corrections ont également stabilisé le chargement concurrent des conversations, le rendu des horodatages et les avatars de repli côté client.
+Le tableau de bord affiche les indicateurs opérationnels orientés SLA calculés, la liste des agents à valider (compétences en badges), et un historique avec recherche (nom / e-mail client) et onglets de statut. Les conversations marquées comme données de test sont exclues des indicateurs et des listes opérationnelles par défaut. Les dernières corrections ont également stabilisé le chargement concurrent des conversations, le rendu des horodatages et les avatars de repli côté client.
 
 \begin{figure}[H]
   \centering
@@ -149,6 +152,12 @@ Le tableau de bord affiche les indicateurs SLA calculés, la liste des agents à
   \caption{Tableau de bord administrateur de SINAPS TEC}
   \label{fig:admin-dashboard}
 \end{figure}
+
+\subsection{Client mobile}
+
+Le dossier \texttt{sinaps-mobile/} contient un client Expo / React Native connecté aux mêmes routes HTTP et au même serveur Socket.io que le client web. Il propose une authentification client par nom / e-mail ou Google, une authentification agent / administrateur par e-mail et mot de passe, la persistance de session, le chat, les pièces jointes, les indicateurs de frappe, l'escalade, le retour vers l'IA, la clôture avec satisfaction et le mode sombre. Des écrans distincts permettent également à un agent de consulter la file, de prendre en charge une conversation, de répondre et de la résoudre, et à un administrateur de consulter les statistiques, les agents et l'historique.
+
+Le client mobile a été vérifié par \texttt{npx tsc --noEmit}, mais aucune suite de tests automatisés ni recette formelle mobile n'est présente dans le dépôt. Les fonctionnalités décrites ci-dessus sont donc distinguées de la validation backend documentée au chapitre~5.
 
 \section{Données de démonstration}
 
@@ -160,8 +169,8 @@ Les captures ci-dessous sont des \textbf{recommandations de documentation}, et n
 
 \begin{enumerate}[leftmargin=1.6em]
   \item \textbf{Important --- Chat IA et actions rapides}. Capture de \texttt{/} après une question documentée, avec réponse IA, horodatage et boutons « C'est ce qu'il me fallait », « autre question » et « agent ». Placement : après le paragraphe sur l'espace client. Caption : \textit{Conversation client avec réponse RAG/Gemini et actions rapides}. Label : \texttt{fig:client-chat-ai}.
-  \item \textbf{Important --- Escalade et espace agent}. Capture de \texttt{/} puis \texttt{/agent} montrant le statut en attente, la file et une réponse humaine. Placement : après le paragraphe sur l'espace agent. Caption : \textit{Escalade d'une conversation vers la file des agents}. Label : \texttt{fig:human-escalation}.
-  \item \textbf{Important --- Dashboard administrateur}. Capture de \texttt{/admin} montrant les KPI, la validation des agents et l'historique filtrable. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Tableau de bord administrateur de SINAPS TEC}. Label : \texttt{fig:admin-dashboard}.
+  \item \textbf{Important --- Conversation client et actions de statut}. La capture fournie montre les commandes de retour à l'IA et de clôture ; elle ne suffit pas à prouver visuellement une escalade ou une réponse humaine. Placement : après le paragraphe sur l'espace agent. Caption : \textit{Écran de conversation client avec commandes de retour à l'IA et de clôture}. Label : \texttt{fig:human-escalation}. Une nouvelle capture est recommandée pour documenter la file agent et un message humain.
+  \item \textbf{Important --- Tableau de bord administrateur}. Capture de \texttt{/admin} montrant les KPI, la validation des agents et l'historique filtrable. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Tableau de bord administrateur de SINAPS TEC}. Label : \texttt{fig:admin-dashboard}.
   \item \textbf{Important --- Clôture et satisfaction}. Capture du dialogue de notation 1--5 avec commentaire facultatif. Placement : après le paragraphe sur la satisfaction. Caption : \textit{Évaluation de la satisfaction à la clôture d'une conversation}. Label : \texttt{fig:satisfaction-dialog}.
   \item \textbf{Optionnel --- Identification client}. Capture de \texttt{/} avant connexion, avec Google Sign-In et formulaire direct. Placement : au début de la sous-section « Espace client ». Caption : \textit{Identification du client par Google ou formulaire}. Label : \texttt{fig:client-auth}.
   \item \textbf{Optionnel --- Pièce jointe et profils}. Capture du fil avec une pièce jointe et les avatars client/agent. Placement : après le paragraphe sur l'espace client. Caption : \textit{Message avec pièce jointe et avatars persistés}. Label : \texttt{fig:message-attachment-avatar}.

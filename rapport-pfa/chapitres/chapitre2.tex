@@ -25,7 +25,7 @@ Une page de questions/réponses suffit pour les cas les plus fréquents mais :
 \begin{itemize}[leftmargin=1.4em]
   \item elle n'entretient pas un fil de discussion ;
   \item elle ne déclenche pas d'escalade ni d'assignation ;
-  \item elle n'enregistre ni SLA ni note de satisfaction.
+  \item elle n'enregistre ni indicateurs opérationnels orientés SLA ni note de satisfaction.
 \end{itemize}
 
 \subsection{Limites d'un support 100~\% humain}
@@ -89,16 +89,16 @@ RF04 & Workflow de statuts (en cours, en attente, résolu) et mode IA / humain. 
 RF05 & Bascule vers un opérateur humain à l'initiative du client. & Réalisé \\
 RF06 & Retour vers l'IA (désescalade). & Réalisé \\
 RF07 & Plusieurs agents (comptes distincts, compétences saisies à l'inscription). & Comptes : réalisé. Routage automatique par compétence : \textbf{non réalisé}. \\
-RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web), avec indicateur de saisie, verrouillage pendant la réponse IA et retours d'action. \\
+RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web et mobile), avec indicateur de saisie, verrouillage pendant la réponse IA et retours d'action. \\
 RF09 & Échange de documents, images, vidéos. & Réalisé (upload Multer, types filtrés). Aperçu \og unfurl \fg{} de liens arbitraires : non spécifié comme module séparé. \\
 RF10 & Clôture et enquête de satisfaction (note 1--5, commentaire). & Réalisé \\
 RF11 & Inscription agent, validation ou rejet par l'admin. & Réalisé \\
 RF12 & Historique des conversations, recherche et filtre par statut. & Réalisé (espace admin). \\
 RF13 & Statistiques : volume, résolution IA vs humain, satisfaction moyenne, temps de réponse. & Réalisé (agrégations MongoDB, pas de chiffres marketing fictifs). \\
-RF14 & Application mobile native (React Native / Flutter). & \textbf{Non réalisé} (web responsive uniquement). \\
+RF14 & Application mobile native (React Native / Flutter). & \textbf{Partiellement réalisé} : client Expo / React Native présent et connecté au backend ; aucune version Flutter ni recette formelle documentée. \\
 RF15 & File d'attente / messagerie temps réel. & Réalisé (Socket.io). \\
 RF16 & Suggestions d'actions rapides après une réponse IA. & Réalisé (confirmation, nouvelle question, escalade ; actions contextualisées). \\
-RF17 & Affichage cohérent des messages et des profils. & Réalisé (horodatages persistés, avatars client de repli déterministes, avatars agent). \\
+RF17 & Affichage cohérent des messages et des profils. & Réalisé (web et mobile ; horodatages persistés, avatars client de repli déterministes, avatars agent). \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -107,7 +107,7 @@ RF17 & Affichage cohérent des messages et des profils. & Réalisé (horodatages
 
 \begin{description}[style=nextline,leftmargin=1.2em,font=\bfseries]
   \item[RNF01 --- Utilisabilité] Interface en français, simple, adaptée à un usage type Slack light (exigence de design du sujet).
-  \item[RNF02 --- Adaptabilité d'écran] Fonctionnement sur desktop, tablette et smartphone via une UI responsive (Next.js), sans application native.
+  \item[RNF02 --- Adaptabilité d'écran] Fonctionnement sur desktop, tablette et smartphone via l'UI responsive Next.js ; un client mobile Expo / React Native distinct est également présent dans le dépôt.
   \item[RNF03 --- Sécurité] Mots de passe agents hachés (bcrypt) ; JWT ; vérification du jeton Google ; restriction d'accès aux conversations (propriétaire client ou agent/admin) ; messages \texttt{ia} non injectables depuis l'extérieur ; upload authentifié et filtré.
   \item[RNF04 --- Disponibilité du bot] Si \texttt{GEMINI\_API\_KEY} est absente ou l'appel échoue, un repli sur le meilleur extrait RAG (ou un message d'invitation à l'escalade) évite un silence total.
   \item[RNF05 --- Temps réel] Diffusion des messages et des mises à jour de conversation par Socket.io (salles par conversation et événements globaux).
