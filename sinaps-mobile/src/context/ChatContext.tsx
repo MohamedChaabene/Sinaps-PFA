@@ -6,23 +6,32 @@ import {
   fetchConversationById as apiFetchConversationById,
   escalateConversation as apiEscalateConversation,
   deescalateConversation as apiDeescalateConversation,
+  sendQuickReply as apiSendQuickReply,
   closeConversation as apiCloseConversation,
 } from '../api/conversations';
 import { sendMessage as apiSendMessage } from '../api/messages';
 import { mapBackendConversation, mapBackendMessage } from '../utils/formatters';
-import { getSocket, joinConversationRoom, leaveConversationRoom } from '../socket/socket';
+import {
+  getSocket,
+  joinConversationRoom,
+  leaveConversationRoom,
+  subscribeSocketConnection,
+  SocketConnectionState,
+} from '../socket/socket';
 
 interface ChatContextType {
   conversation: Conversation | null;
   isLoading: boolean;
   isSending: boolean;
   isTyping: boolean;
+  socketState: SocketConnectionState;
   error: string | null;
   refreshConversation: () => Promise<void>;
   sendMessage: (content: string, attachments?: MessageAttachment[]) => Promise<void>;
   escalateToHuman: () => Promise<void>;
   switchToAI: () => Promise<void>;
   closeConversation: (rating: number, comment?: string) => Promise<void>;
+  sendQuickReply: (action: string, metadata?: Record<string, unknown>) => Promise<void>;
   startNewConversation: () => Promise<void>;
 }
 
@@ -34,6 +43,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [socketState, setSocketState] = useState<SocketConnectionState>('disconnected');
   const [error, setError] = useState<string | null>(null);
 
   const conversationIdRef = useRef<string | null>(null);
@@ -97,6 +107,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isAuthenticated, loadConversationDetails, logout]);
 
   useEffect(() => {
+    const unsubscribe = subscribeSocketConnection(setSocketState);
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     initConversation();
   }, [initConversation]);
 
@@ -115,14 +130,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const handleMessageReceived = (data: any) => {
           if (!isMounted) return;
           if (data?.conversation && data.conversation._id === convId) {
-            loadConversationDetails(convId!).catch(() => {});
+            loadConversationDetails(convId!).catch((error) => {
+              setError(error instanceof Error ? error.message : 'Impossible de synchroniser la conversation');
+            });
           }
         };
 
         const handleConversationUpdated = (updated: any) => {
           if (!isMounted) return;
           if (updated?._id === convId) {
-            loadConversationDetails(convId!).catch(() => {});
+            loadConversationDetails(convId!).catch((error) => {
+              setError(error instanceof Error ? error.message : 'Impossible de synchroniser la conversation');
+            });
           }
         };
 
@@ -138,7 +157,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         socket.on('typing_status', handleTypingStatus);
 
         return () => {
-          leaveConversationRoom(convId!).catch(() => {});
+          leaveConversationRoom(convId!).catch((error) => {
+            setError(error instanceof Error ? error.message : 'Impossible de quitter la conversation en temps réel');
+          });
           socket.off('message_received', handleMessageReceived);
           socket.off('conversation_updated', handleConversationUpdated);
           socket.off('typing_status', handleTypingStatus);
@@ -237,17 +258,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           : null
       );
-    } catch {
-      // Continue client-side gracefully if backend route fails
-      setConversation((prev) =>
-        prev
-          ? {
-              ...prev,
-              handledBy: 'ia',
-              status: 'en_cours',
-            }
-          : null
-      );
+    } catch (err: any) {
+      setError(err.message || "Erreur lors du retour au mode IA");
+      throw err;
+    }
+  };
+
+  const handleQuickReply = async (action: string, metadata?: Record<string, unknown>) => {
+    if (!conversation?.id) return;
+    try {
+      await apiSendQuickReply(conversation.id, action, metadata);
+      await loadConversationDetails(conversation.id);
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de l'action");
+      throw err;
     }
   };
 
@@ -274,12 +298,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isSending,
         isTyping,
+        socketState,
         error,
         refreshConversation,
         sendMessage: handleSendMessage,
         escalateToHuman: handleEscalateToHuman,
         switchToAI: handleSwitchToAI,
         closeConversation: handleCloseConversation,
+        sendQuickReply: handleQuickReply,
         startNewConversation: handleStartNewConversation,
       }}
     >

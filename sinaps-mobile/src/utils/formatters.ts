@@ -22,6 +22,7 @@ export function mapBackendMessage(msg: any): ChatMessage {
     id: msg._id || msg.id || `${Date.now()}-${Math.random()}`,
     sender: msg.sender,
     authorName: msg.authorName,
+    authorAvatar: msg.authorAvatar,
     content: msg.content || '',
     attachments: (msg.attachments || []).map((att: any) => ({
       url: att.url,

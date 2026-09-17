@@ -44,9 +44,18 @@ export const MessageBubble: React.FC<Props> = ({
               <Bot size={18} color={colors.primaryFg} />
             </View>
           ) : (
-            <View style={[styles.avatar, { backgroundColor: colors.infoLight, borderWidth: 1, borderColor: colors.info }]}>
-              <UserRound size={18} color={colors.info} />
-            </View>
+            message.authorAvatar ? (
+              <Image
+                source={{ uri: resolveAttachmentUrl(backendUrl, message.authorAvatar) }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.infoLight, borderWidth: 1, borderColor: colors.info }]}>
+                <Text style={[styles.avatarInitials, { color: colors.info }]}>
+                  {(message.authorName || 'AS').slice(0, 2).toUpperCase()}
+                </Text>
+              </View>
+            )
           )}
         </View>
       )}
@@ -66,7 +75,7 @@ export const MessageBubble: React.FC<Props> = ({
                 >
                   🤖 Agent IA
                 </Text>
-                <Text style={[styles.aiSubText, { color: colors.textMuted }]}>Gemini 3.5 &amp; RAG</Text>
+                <Text style={[styles.aiSubText, { color: colors.textMuted }]}>Assistant IA avec RAG</Text>
               </View>
             ) : (
               <View style={styles.humanBadge}>
@@ -120,6 +129,8 @@ export const MessageBubble: React.FC<Props> = ({
                       activeOpacity={0.85}
                       onPress={() => onPressAttachment && onPressAttachment(att, resolved)}
                       style={styles.imageWrapper}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ouvrir ${att.name || 'la pièce jointe'}`}
                     >
                       <Image
                         source={{ uri: resolved }}
@@ -141,6 +152,8 @@ export const MessageBubble: React.FC<Props> = ({
                         ? styles.clientFilePill
                         : { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
                     ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ouvrir ${att.name || 'le document joint'}`}
                   >
                     <FileText
                       size={16}
@@ -174,6 +187,8 @@ export const MessageBubble: React.FC<Props> = ({
               onPress={handleCopy}
               style={styles.copyBtn}
               activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel="Copier le message"
             >
               {copied ? (
                 <>
@@ -217,6 +232,15 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.md,
+  },
+  avatarInitials: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   bubbleWrapper: {
     maxWidth: '82%',

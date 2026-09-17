@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Hash, Bot, UserRound, CheckCircle2, Settings, LogOut, Sparkles, Sun, Moon } from 'lucide-react-native';
 import { Conversation } from '../types/chat';
 import { StatusBadge } from './StatusBadge';
+import { ConnectionIndicator } from './ConnectionIndicator';
+import { SocketConnectionState } from '../socket/socket';
 import { useTheme } from '../context/ThemeContext';
 import { RADIUS, SPACING } from '../constants/theme';
 
@@ -14,6 +16,7 @@ interface Props {
   onCloseConversation: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
+  socketState: SocketConnectionState;
 }
 
 export const ChatHeader: React.FC<Props> = ({
@@ -23,6 +26,7 @@ export const ChatHeader: React.FC<Props> = ({
   onCloseConversation,
   onOpenSettings,
   onLogout,
+  socketState,
 }) => {
   const insets = useSafeAreaInsets();
   const { colors, isDarkMode, toggleTheme } = useTheme();
@@ -64,11 +68,12 @@ export const ChatHeader: React.FC<Props> = ({
                 <>
                   <Sparkles size={12} color={colors.primary} />
                   <Text style={[styles.modeText, { color: colors.primary }]}>
-                    Gemini 3.5 & RAG
+                    Assistant IA avec RAG
                   </Text>
                 </>
               )}
             </View>
+            <ConnectionIndicator state={socketState} />
           </View>
         </View>
 
@@ -97,6 +102,8 @@ export const ChatHeader: React.FC<Props> = ({
                 ]}
                 onPress={onSwitchToAI}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Revenir au mode IA"
               >
                 <Bot size={14} color={colors.success} />
                 <Text style={[styles.aiModeBtnText, { color: colors.success }]}>Mode IA</Text>
@@ -109,6 +116,8 @@ export const ChatHeader: React.FC<Props> = ({
                 ]}
                 onPress={onEscalate}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Demander l'aide d'un agent humain"
               >
                 <UserRound size={14} color={colors.primary} />
                 <Text style={[styles.humanModeBtnText, { color: colors.primary }]}>Humain</Text>

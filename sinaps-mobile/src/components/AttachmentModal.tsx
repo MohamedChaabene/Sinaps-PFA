@@ -38,7 +38,7 @@ export const AttachmentModal: React.FC<Props> = ({
           <Text style={styles.title} numberOfLines={1}>
             {attachment.name || 'Pièce jointe'}
           </Text>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Fermer la pièce jointe">
             <X size={22} color={colors.textLight} />
           </TouchableOpacity>
         </View>

@@ -52,13 +52,13 @@ export const SatisfactionModal: React.FC<Props> = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} accessibilityViewIsModal>
       <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.dialog, { backgroundColor: colors.card }]}>
           {/* Header */}
           <View style={styles.dialogHeader}>
             <Text style={[styles.dialogTitle, { color: colors.textPrimary }]}>Comment évaluez-vous le support ?</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button" accessibilityLabel="Fermer l'évaluation">
               <X size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -77,6 +77,8 @@ export const SatisfactionModal: React.FC<Props> = ({
                 activeOpacity={0.7}
                 style={styles.starBtn}
                 accessibilityLabel={`${star} étoiles`}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: star === rating }}
               >
                 <Star
                   size={36}

@@ -9,6 +9,7 @@ import {
 import { Bot, Sparkles, UserCheck } from 'lucide-react-native';
 import { ChatMessage, MessageAttachment } from '../types/chat';
 import { MessageBubble } from './MessageBubble';
+import { QuickReplyButtons } from './QuickReplyButtons';
 import { useTheme } from '../context/ThemeContext';
 import { RADIUS, SPACING } from '../constants/theme';
 
@@ -18,6 +19,10 @@ interface Props {
   backendUrl: string;
   onPressAttachment?: (attachment: MessageAttachment, resolvedUrl: string) => void;
   onCopyText?: (text: string) => void;
+  onQuickReply?: (action: string, metadata?: Record<string, unknown>, label?: string) => void;
+  quickReplyLoadingAction?: string | null;
+  dismissedQuickReplyId?: string | null;
+  quickRepliesEnabled?: boolean;
 }
 
 export const ChatThread: React.FC<Props> = ({
@@ -26,9 +31,21 @@ export const ChatThread: React.FC<Props> = ({
   backendUrl,
   onPressAttachment,
   onCopyText,
+  onQuickReply,
+  quickReplyLoadingAction,
+  dismissedQuickReplyId,
+  quickRepliesEnabled = true,
 }) => {
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const { colors } = useTheme();
+  const lastMessage = messages[messages.length - 1];
+  const latestQuickReplyMessage =
+    quickRepliesEnabled &&
+    lastMessage &&
+    lastMessage.sender !== 'client' &&
+    (lastMessage.quickReplies?.length || 0) > 0
+      ? lastMessage
+      : null;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -52,7 +69,7 @@ export const ChatThread: React.FC<Props> = ({
       <View style={styles.emptyBadges}>
         <View style={[styles.emptyBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Sparkles size={13} color={colors.primary} />
-          <Text style={[styles.emptyBadgeText, { color: colors.textSecondary }]}>IA Gemini 3.5 + RAG</Text>
+          <Text style={[styles.emptyBadgeText, { color: colors.textSecondary }]}>Assistant IA avec RAG</Text>
         </View>
         <View style={[styles.emptyBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <UserCheck size={13} color={colors.info} />
@@ -73,12 +90,24 @@ export const ChatThread: React.FC<Props> = ({
       ]}
       ListEmptyComponent={renderEmptyState}
       renderItem={({ item }) => (
-        <MessageBubble
-          message={item}
-          backendUrl={backendUrl}
-          onPressAttachment={onPressAttachment}
-          onCopyText={onCopyText}
-        />
+        <>
+          <MessageBubble
+            message={item}
+            backendUrl={backendUrl}
+            onPressAttachment={onPressAttachment}
+            onCopyText={onCopyText}
+          />
+          {latestQuickReplyMessage?.id === item.id &&
+            dismissedQuickReplyId !== item.id &&
+            latestQuickReplyMessage.quickReplies && (
+              <QuickReplyButtons
+                quickReplies={latestQuickReplyMessage.quickReplies}
+                onQuickReply={onQuickReply}
+                loadingAction={quickReplyLoadingAction}
+                disabled={!!isTyping}
+              />
+            )}
+        </>
       )}
       ListFooterComponent={
         isTyping ? (

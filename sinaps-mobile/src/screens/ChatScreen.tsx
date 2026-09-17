@@ -43,12 +43,17 @@ export const ChatScreen: React.FC<Props> = ({ onOpenSettings }) => {
     escalateToHuman,
     switchToAI,
     closeConversation,
+    sendQuickReply,
+    socketState,
     startNewConversation,
   } = useChat();
 
   const [satisfactionVisible, setSatisfactionVisible] = useState(false);
   const [selectedAttachment, setSelectedAttachment] = useState<MessageAttachment | null>(null);
   const [selectedAttachmentUrl, setSelectedAttachmentUrl] = useState<string>('');
+  const [quickReplyLoadingAction, setQuickReplyLoadingAction] = useState<string | null>(null);
+  const [dismissedQuickReplyId, setDismissedQuickReplyId] = useState<string | null>(null);
+  const [composerFocusSignal, setComposerFocusSignal] = useState(0);
 
   const isResolved = conversation?.status === 'resolu';
 
@@ -73,6 +78,33 @@ export const ChatScreen: React.FC<Props> = ({ onOpenSettings }) => {
   const handleOpenAttachment = (attachment: MessageAttachment, resolvedUrl: string) => {
     setSelectedAttachment(attachment);
     setSelectedAttachmentUrl(resolvedUrl);
+  };
+
+  const handleQuickReply = async (
+    action: string,
+    metadata?: Record<string, unknown>,
+    _label?: string
+  ) => {
+    if (!conversation || quickReplyLoadingAction) return;
+    setQuickReplyLoadingAction(action);
+    try {
+      if (action === 'NEW_QUESTION' || action === 'YES_ANOTHER_QUESTION') {
+        const lastMessage = conversation.messages[conversation.messages.length - 1];
+        if (lastMessage) setDismissedQuickReplyId(lastMessage.id);
+        setComposerFocusSignal((value) => value + 1);
+      }
+      await sendQuickReply(action, metadata);
+      if (action === 'CONFIRM_RESOLVED' || action === 'NO_ALL_DONE') {
+        setSatisfactionVisible(true);
+      }
+      if (action === 'ESCALATE_TO_HUMAN') {
+        Alert.alert('Demande transmise', "Un agent de support prendra le relais.");
+      }
+    } catch {
+      // The context exposes the server error in the screen error state.
+    } finally {
+      setQuickReplyLoadingAction(null);
+    }
   };
 
   const handleCopyText = (text: string) => {
@@ -129,6 +161,7 @@ export const ChatScreen: React.FC<Props> = ({ onOpenSettings }) => {
         onCloseConversation={() => setSatisfactionVisible(true)}
         onOpenSettings={onOpenSettings}
         onLogout={logout}
+        socketState={socketState}
       />
 
       <View style={styles.threadWrapper}>
@@ -138,6 +171,10 @@ export const ChatScreen: React.FC<Props> = ({ onOpenSettings }) => {
           backendUrl={backendUrl}
           onPressAttachment={handleOpenAttachment}
           onCopyText={handleCopyText}
+          onQuickReply={handleQuickReply}
+          quickReplyLoadingAction={quickReplyLoadingAction}
+          dismissedQuickReplyId={dismissedQuickReplyId}
+          quickRepliesEnabled={!isResolved && conversation?.handledBy === 'ia'}
         />
       </View>
 
@@ -172,7 +209,11 @@ export const ChatScreen: React.FC<Props> = ({ onOpenSettings }) => {
       ) : (
         <>
           <QuickPrompts onSelectPrompt={(q) => sendMessage(q)} disabled={isTyping} />
-          <MessageComposer onSendMessage={sendMessage} disabled={isTyping} />
+          <MessageComposer
+            onSendMessage={sendMessage}
+            disabled={isTyping}
+            focusSignal={composerFocusSignal}
+          />
         </>
       )}
 

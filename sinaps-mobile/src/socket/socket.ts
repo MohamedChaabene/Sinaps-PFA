@@ -4,6 +4,20 @@ import { getStoredSession } from '../utils/storage';
 
 let socket: Socket | null = null;
 let currentConnectedUrl: string | null = null;
+export type SocketConnectionState = 'connecting' | 'connected' | 'disconnected' | 'error';
+const connectionListeners = new Set<(state: SocketConnectionState) => void>();
+
+function notifyConnectionState(state: SocketConnectionState) {
+  connectionListeners.forEach((listener) => listener(state));
+}
+
+export function subscribeSocketConnection(
+  listener: (state: SocketConnectionState) => void
+): () => void {
+  connectionListeners.add(listener);
+  listener(socket?.connected ? 'connected' : 'disconnected');
+  return () => connectionListeners.delete(listener);
+}
 
 export async function getSocket(): Promise<Socket> {
   const baseUrl = await getApiBaseUrl();
@@ -14,6 +28,7 @@ export async function getSocket(): Promise<Socket> {
       socket.disconnect();
     }
     currentConnectedUrl = baseUrl;
+    notifyConnectionState('connecting');
     socket = io(baseUrl, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
@@ -26,14 +41,17 @@ export async function getSocket(): Promise<Socket> {
     });
 
     socket.on('connect', () => {
+      notifyConnectionState('connected');
       console.log('✅ Socket.IO connected to:', baseUrl);
     });
 
     socket.on('connect_error', (error) => {
+      notifyConnectionState('error');
       console.warn('⚠️ Socket.IO connection error:', error.message);
     });
 
     socket.on('disconnect', (reason) => {
+      notifyConnectionState('disconnected');
       console.log('🔌 Socket.IO disconnected:', reason);
     });
   }
@@ -68,6 +86,7 @@ export async function sendTypingStatus(
 export function disconnectSocket(): void {
   if (socket) {
     socket.disconnect();
+    notifyConnectionState('disconnected');
     socket = null;
     currentConnectedUrl = null;
   }

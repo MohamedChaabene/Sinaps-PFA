@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   TextInput,
@@ -23,15 +23,21 @@ const QUICK_EMOJIS = ['😀', '😂', '🙏', '👍', '🎉', '😍', '😕', '�
 interface Props {
   onSendMessage: (text: string, attachments?: MessageAttachment[]) => Promise<void>;
   disabled?: boolean;
+  focusSignal?: number;
 }
 
-export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) => {
+export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled, focusSignal = 0 }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (focusSignal > 0 && !disabled) inputRef.current?.focus();
+  }, [focusSignal, disabled]);
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -185,7 +191,7 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
               <Text style={[styles.attachmentChipText, { color: colors.primary }]} numberOfLines={1}>
                 {att.name || 'Pièce jointe'}
               </Text>
-              <TouchableOpacity onPress={() => removeAttachment(idx)} hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}>
+              <TouchableOpacity onPress={() => removeAttachment(idx)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button" accessibilityLabel={`Supprimer ${att.name || 'la pièce jointe'}`}>
                 <X size={13} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
@@ -203,6 +209,8 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
                 style={styles.emojiBtn}
                 onPress={() => appendEmoji(emoji)}
                 activeOpacity={0.6}
+                accessibilityRole="button"
+                accessibilityLabel={`Ajouter ${emoji}`}
               >
                 <Text style={styles.emojiText}>{emoji}</Text>
               </TouchableOpacity>
@@ -218,6 +226,8 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
           onPress={() => setShowEmojis(!showEmojis)}
           activeOpacity={0.6}
           accessibilityLabel="Emojis"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showEmojis, disabled: !!disabled }}
         >
           <Smile size={20} color={showEmojis ? colors.primary : colors.textMuted} />
         </TouchableOpacity>
@@ -228,6 +238,8 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
           disabled={uploading}
           activeOpacity={0.6}
           accessibilityLabel="Joindre un fichier"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: uploading || !!disabled, busy: uploading }}
         >
           {uploading ? (
             <ActivityIndicator size="small" color={colors.primary} />
@@ -237,6 +249,7 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
         </TouchableOpacity>
 
         <TextInput
+          ref={inputRef}
           style={[
             styles.textInput,
             {
@@ -252,6 +265,7 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
           multiline
           maxLength={1500}
           editable={!disabled}
+          accessibilityLabel="Message à envoyer"
         />
 
         <TouchableOpacity
@@ -264,6 +278,8 @@ export const MessageComposer: React.FC<Props> = ({ onSendMessage, disabled }) =>
           disabled={!canSend}
           activeOpacity={0.7}
           accessibilityLabel="Envoyer le message"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSend, busy: uploading }}
         >
           <SendHorizonal size={18} color={colors.primaryFg} />
         </TouchableOpacity>

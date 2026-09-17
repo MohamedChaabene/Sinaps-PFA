@@ -38,14 +38,20 @@ export async function escalateConversation(id: string): Promise<any> {
 }
 
 export async function deescalateConversation(id: string): Promise<any> {
-  try {
-    return await apiRequest(`/conversations/${id}/de-escalate`, {
-      method: 'PATCH',
-    });
-  } catch (error) {
-    console.warn('De-escalate call failed or not supported:', error);
-    return null;
-  }
+  return apiRequest(`/conversations/${id}/de-escalate`, {
+    method: 'PATCH',
+  });
+}
+
+export async function sendQuickReply(
+  id: string,
+  action: string,
+  metadata?: Record<string, unknown>
+): Promise<any> {
+  return apiRequest(`/conversations/${id}/quick-reply`, {
+    method: 'POST',
+    body: JSON.stringify({ action, metadata: metadata || {} }),
+  });
 }
 
 export async function closeConversation(
