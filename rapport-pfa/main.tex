@@ -35,10 +35,10 @@
 \usepackage{colortbl}
 \usepackage{caption}
 \usepackage{subcaption}
-\usepackage{amssymb}
 
 % --- Listings, liens, chemins ------------------------------------------------
 \usepackage{listings}
+\usepackage{needspace}
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{csquotes}
@@ -61,7 +61,7 @@
   urlcolor=sinapsbleu,
   pdftitle={Rapport de PFA --- Op Support IA},
   pdfauthor={Mohamed Chaabene},
-  pdfsubject={Conception et réalisation d'une application web de support client assisté par IA}
+  pdfsubject={Conception et réalisation d'une solution web et mobile de support client assisté par IA}
 }
 
 \captionsetup{font=small,labelfont=bf,skip=6pt}
@@ -77,7 +77,6 @@
   {\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
 
 \pagestyle{fancy}
-\setlength{\headheight}{15pt}
 \fancyhf{}
 \fancyhead[L]{\small\itshape Rapport de PFA --- Op Support IA}
 \fancyhead[R]{\small Mohamed Chaabene}
@@ -103,30 +102,27 @@
   commentstyle=\itshape\color{black!50},
   stringstyle=\color{sinapsvert!70!black},
   tabsize=2,
-  captionpos=b
+  captionpos=b,
+  literate={é}{{\'e}}1 {è}{{\`e}}1 {ê}{{\^e}}1 {ë}{{\"e}}1
+           {à}{{\`a}}1 {â}{{\^a}}1 {ä}{{\"a}}1
+           {ù}{{\`u}}1 {û}{{\^u}}1 {ü}{{\"u}}1
+           {ô}{{\^o}}1 {ö}{{\"o}}1 {î}{{\^i}}1 {ï}{{\"i}}1
+           {ç}{{\c c}}1 {É}{{\'E}}1 {À}{{\`A}}1
 }
-
-\newcommand{\todofig}[1]{%
-  \begin{center}
-  \fcolorbox{sinapsbleu!40}{grisclair}{%
-    \parbox{0.92\textwidth}{\centering\vspace{1.4cm}\textit{#1}\vspace{1.4cm}}%
-  }
-  \end{center}
-}
-
-\newcommand{\acompleter}[1]{\textcolor{red}{\textbf{[À COMPLÉTER : #1]}}}
 
 \begin{document}
 
 % Pages liminaires (romain)
 \pagenumbering{roman}
 \input{pages/garde}
-\newpage
+\clearpage
+\setcounter{page}{1}
 \input{pages/resume}
 \newpage
 \input{pages/dedicace}
 \newpage
 \input{pages/remerciements}
+\newpage
 \tableofcontents
 \newpage
 \listoffigures

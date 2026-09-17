@@ -1,6 +1,6 @@
 \chapter{Réalisation}
 
-Ce chapitre décrit l'implémentation \textbf{effective} : organisation du code, choix techniques, points d'implémentation notables et écrans à documenter par captures.
+Ce chapitre décrit l'implémentation \textbf{effective} : organisation du code, choix techniques, points d'implémentation notables et écrans illustrés par les captures intégrées.
 
 \section{Environnement et choix techniques}
 
@@ -10,25 +10,58 @@ Ce chapitre décrit l'implémentation \textbf{effective} : organisation du code,
 \label{tab:stack}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
-Couche & Choix dans le dépôt \\
+Catégorie & Choix réellement utilisés \\
 \midrule
-Frontend & Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, composants d'UI type shadcn / Radix, Lucide, Sonner, \texttt{@react-oauth/google}, socket.io-client \\
-Backend & Node.js, Express 5, Mongoose 9, Socket.io 4, JWT, bcryptjs, google-auth-library, \texttt{@google/generative-ai}, Multer, CORS, dotenv \\
-Mobile & Expo 57, React Native 0.86, React 19, TypeScript, Socket.io-client, AsyncStorage, Expo Auth Session, Image Picker et Document Picker \\
-Données & MongoDB (URI Atlas en environnement réel) \\
-Tests & Jest, Supertest, mongodb-memory-server, Nodemon (dev) \\
-Outils hors dépôt & VS Code, Cursor, Antigravity, GitHub, Postman, consoles Google et Atlas \\
+Frontend Web & Next.js 16 (App Router), React 19 et TypeScript \\
+Backend / API & Node.js et Express 5, avec une API REST/JSON \\
+Application mobile & React Native 0.86, Expo 57 et TypeScript \\
+Données & MongoDB avec Mongoose 9 ; MongoDB Atlas pour l'environnement distant documenté \\
+IA / RAG & Google Gemini et retriever local fondé sur TF-IDF et la similarité cosinus \\
+Communication temps réel & Socket.io côté backend, Web et mobile \\
+Authentification & JWT pour les sessions et Google OAuth pour l'identification client \\
+Tests & Jest, Supertest et MongoDB Memory Server ; Postman est mentionné dans la documentation pour les vérifications manuelles de l'API \\
+Versionnement / déploiement & Git et GitHub ; Vercel pour le Web et Render pour le backend \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\textbf{Justification succincte.} Next.js fournit le routage et un frontend React moderne, conformément à l'orientation \og React \fg{} du sujet, tout en restant une application web. Expo / React Native fournit un client mobile distinct réutilisant le backend commun. Express est l'API demandée côté Node. MongoDB Atlas évite d'administrer un serveur local de production. Gemini a été retenu (et utilisé effectivement) plutôt qu'OpenAI. Socket.io couvre le besoin de réactivité du chat et de la file agent. JWT sépare clairement sessions client et sessions agent.
+\textbf{Lecture de la stack.} Le terme \textbf{MERN} désigne ici l'association MongoDB, Express.js, React et Node.js. Next.js est le framework utilisé autour de l'application React web ; TypeScript apporte un typage statique aux clients web et mobile. Express.js expose l'API REST du backend Node.js, avec des échanges JSON, tandis que MongoDB assure la persistance des utilisateurs, agents, conversations et messages. Mongoose définit les schémas utilisés par le backend.
 
-Les alternatives du sujet (Vue.js, Flutter, Firebase, Auth0, Kafka, Docker, Kubernetes, LangChain) \textbf{n'ont pas été mises en œuvre}. React Native est utilisé uniquement dans le client mobile Expo présent dans le dépôt.
+\textbf{Client mobile.} React Native et Expo constituent une application séparée du frontend Web, partageant le backend REST et Socket.io. Cette stack mobile n'est donc pas une composante supplémentaire de MERN.
+
+\textbf{IA et recherche documentaire.} Le service Google Gemini génère les réponses lorsqu'il est disponible. Avant cette génération, le retriever local normalise les textes, calcule des scores TF-IDF et compare les vecteurs par similarité cosinus afin de sélectionner les éléments pertinents de la base de connaissances. En l'absence de réponse Gemini exploitable, le backend dispose également d'un repli local.
+
+\textbf{Temps réel et authentification.} Socket.io complète l'API REST pour diffuser les messages et les mises à jour de conversations. Google OAuth intervient dans l'identification client, tandis que des jetons JWT représentent les sessions client, agent et administrateur et sont contrôlés par les middleware du backend.
+
+\textbf{Tests et variantes MongoDB.} Jest orchestre les tests, Supertest vérifie les routes HTTP et MongoDB Memory Server fournit une base isolée pour les tests automatisés. \textbf{MongoDB} désigne la technologie de persistance ; \textbf{MongoDB Atlas} désigne le service distant documenté pour l'environnement de production ; \textbf{MongoDB Memory Server} est réservé à l'isolation des tests. Git et GitHub assurent le versionnement et l'hébergement du dépôt. Postman est mentionné dans la documentation du projet pour les vérifications manuelles de l'API ; aucun compte rendu détaillé ni collection Postman n'est conservé dans le dépôt.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/SINAPS Architecture Diagram.png}
+\caption{Architecture générale et stack technologique de SINAPS}
+\label{fig:architecture-stack}
+\end{figure}
+
+\textbf{Justification succincte.} Next.js fournit le routage et un frontend React moderne, conformément à l'orientation \og React \fg{} du sujet. Express est l'API demandée côté Node. MongoDB Atlas évite d'administrer un serveur local de production. Gemini a été retenu (et utilisé effectivement) plutôt qu'OpenAI. Socket.io couvre le besoin de réactivité du chat et de la file agent. JWT sépare clairement sessions client et sessions agent.
+
+\subsection{Déploiement et hébergement}
+
+La chaîne de déploiement vérifiée est \textbf{GitHub $\rightarrow$ Vercel (Web)} et \textbf{GitHub $\rightarrow$ Render (Backend)}. Le frontend public est accessible à \texttt{https://sinaps-pfa.vercel.app} et utilise l'API Render \texttt{https://sinaps-backend-jm1h.onrender.com/api}. L'endpoint \texttt{GET /api/health} a répondu avec le statut HTTP 200, puis une identification par nom et e-mail, la création d'une conversation et un échange avec réponse IA ont été vérifiés depuis le Web. Ces vérifications ne constituent pas une preuve de fonctionnement natif Android ou iOS.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/Architecture de déploiement SINAPS.png}
+\caption{Architecture de déploiement et d'hébergement de SINAPS}
+\label{fig:deployment-architecture}
+\end{figure}
+
+Pour la persistance distante documentée, MongoDB Atlas est fourni au backend via \texttt{MONGO\_URI}. Le code de connexion accepte également une base MongoDB locale ou une base en mémoire pour le développement et les tests ; ces variantes ne doivent pas être confondues avec Atlas. La vérification effectuée dans ce rapport porte sur l'API publique et le parcours Web ; les paramètres privés de la base distante ne sont pas exposés.
+
+Les alternatives du sujet (Vue.js, Flutter, Firebase, Auth0, Kafka, LangChain) \textbf{n'ont pas été mises en œuvre}.
 
 \section{Organisation du code}
 
-Le dépôt est organisé autour de trois applications ou sous-projets principaux : le frontend web, le backend et le client mobile.
+Le dépôt est organisé autour de trois sous-projets : frontend web, backend et client mobile.
 
 \begin{table}[H]
 \centering
@@ -52,12 +85,11 @@ Chemin & Rôle \\
 \texttt{sinaps-backend/tests/} & Suites Jest \\
 \texttt{sinaps-backend/seed.js} & Jeu de démonstration \\
 \texttt{sinaps-mobile/src/} & Client Expo / React Native : authentification, chat, temps réel, écrans agent et administrateur \\
-\texttt{sinaps-mobile/src/context/} & Contextes d'authentification, de configuration, de thème et de conversation \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Le frontend écoute par défaut \texttt{NEXT\_PUBLIC\_API\_URL=http://localhost:5000/api}. Le backend écoute le port \textbf{5000}. Un endpoint \texttt{GET /api/health} permet de vérifier que l'API est joignable. Le dépôt fournit aussi des Dockerfiles et un fichier Compose pour le développement, mais aucune configuration de déploiement public n'est présente.
+Le frontend écoute par défaut \texttt{NEXT\_PUBLIC\_API\_URL=http://localhost:5000/api}. Le backend écoute le port \textbf{5000}. Un endpoint \texttt{GET /api/health} permet de vérifier que l'API est joignable. Aucun manifeste spécifique à Vercel ou Render n'est présent dans le dépôt ; leurs paramètres de déploiement sont documentés dans le README et reposent sur les variables d'environnement indiquées.
 
 \section{Backend : API REST, middleware et WebSockets}
 
@@ -82,6 +114,7 @@ PATCH & \texttt{/api/conversations/:id/de-escalate} & Retour IA \\
 PATCH & \texttt{/api/conversations/:id/assign} & Assignation d'agent \\
 PATCH & \texttt{/api/conversations/:id/close} & Clôture $\pm$ satisfaction \\
 POST & \texttt{/api/messages} & Envoi ; déclenche l'IA si besoin \\
+POST & \texttt{/api/conversations/:id/quick-reply} & Exécution d'une action rapide \\
 POST & \texttt{/api/upload} & Fichier (session requise) \\
 POST & \texttt{/api/agents/signup} & Inscription \texttt{pending} \\
 POST & \texttt{/api/agents/login} & JWT staff \\
@@ -95,19 +128,28 @@ GET & \texttt{/api/stats} & Indicateurs admin \\
 
 \subsection{Temps réel}
 
-Lors d'une connexion Socket.io, le client peut \texttt{join\_conversation} / \texttt{leave\_conversation}. Le backend émet \texttt{message\_received} et \texttt{conversation\_updated} vers la salle, et \texttt{conversation\_created} / \texttt{conversation\_updated} en global pour les listes.
+Lors d'une connexion Socket.io, le client peut \texttt{join\_conversation} ou \texttt{leave\_conversation}. Le backend émet \texttt{message\_received} et \texttt{conversation\_updated} vers la salle. Les événements globaux \texttt{conversation\_created} et \texttt{conversation\_updated} servent au rafraîchissement des listes.
 
 \subsection{Statistiques}
 
-\texttt{getStats} calcule : nombre total de conversations, résolues par IA, résolues par un humain, moyenne des notes renseignées, et un \textbf{temps de réponse moyen} (écart entre le premier message client et la première réponse IA ou humaine), en une passe sur les messages plutôt qu'en boucle na\"ive requête par conversation. Ces valeurs sont des indicateurs opérationnels orientés SLA, et non la preuve du respect d'un contrat SLA formel.
+\texttt{getStats} calcule le nombre total de conversations, les résolutions par IA ou par un humain, la moyenne des notes renseignées et un \textbf{temps de réponse moyen} à partir des messages.
 
 \subsection{Téléversement}
 
-Multer enregistre les fichiers avec un nom unique. Types acceptés : images, vidéos, PDF, Word. Taille maximale configurable (\texttt{MAX\_UPLOAD\_SIZE\_MB}, défaut 15~Mo). Le filtrage repose sur le type MIME déclaré par le client : il écarte les usages accidentels, sans constituer une analyse d'octets magiques.
+Multer enregistre les fichiers avec un nom unique. Types acceptés : images, vidéos, PDF et Word. La taille maximale est configurable (\texttt{MAX\_UPLOAD\_SIZE\_MB}, défaut 15~Mo) et le type MIME déclaré est filtré.
 
 \section{Moteur IA}
 
-Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ construction du prompt $\rightarrow$ essai de modèles Gemini $\rightarrow$ repli RAG textuel. La FAQ d'exemple couvre notamment : suivi de commande, retard, remboursement, mot de passe, code promo. Pour une question de facturation, seuls les documents de catégorie \texttt{billing} sont conservés ; en l'absence de document pertinent, le service propose une mise en relation humaine plutôt que d'inventer une réponse. Elle n'est pas un corpus métier confidentiel de SINAPS TEC.
+Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ construction du prompt $\rightarrow$ essai de modèles Gemini $\rightarrow$ repli RAG textuel. La FAQ d'exemple couvre notamment : suivi de commande, retard, remboursement, mot de passe, code promo. Elle n'est pas un corpus métier confidentiel de SINAPS TEC.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/Pipeline RAG de SINAPS.png}
+\caption{Pipeline de recherche augmentée par génération (RAG) de SINAPS}
+\label{fig:rag-pipeline}
+\end{figure}
+
+Le retriever normalise le français (minuscules, accents, apostrophes et ponctuation), tokenise les textes, retire des mots vides et applique une normalisation de variations lexicales. Il calcule ensuite des vecteurs TF-IDF et plusieurs similarités cosinus : question (poids 0,5), mots-clés (0,3), texte combiné (0,1) et réponse (0,05), avec un bonus pour les mots-clés pertinents. Seuls les documents dont le score est strictement supérieur à \textbf{0,35} sont retenus, avec un maximum de \textbf{deux documents} (\texttt{topK = 2}). Les demandes de facturation sont limitées aux documents de catégorie \texttt{billing}. Sans clé Gemini, en cas d'échec du modèle ou sans document pertinent, le service utilise la meilleure réponse locale ou propose une mise en relation humaine.
 
 \section{Frontend}
 
@@ -138,13 +180,13 @@ La page \texttt{/agent} est protégée (\texttt{AuthGuard}). L'agent se connecte
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{images/sinaps-human-escalation.png}
-  \caption{Écran de conversation client avec commandes de retour à l'IA et de clôture}
+  \caption{Escalade d'une conversation vers la file des agents}
   \label{fig:human-escalation}
 \end{figure}
 
 \subsection{Espace administrateur}
 
-Le tableau de bord affiche les indicateurs opérationnels orientés SLA calculés, la liste des agents à valider (compétences en badges), et un historique avec recherche (nom / e-mail client) et onglets de statut. Les conversations marquées comme données de test sont exclues des indicateurs et des listes opérationnelles par défaut. Les dernières corrections ont également stabilisé le chargement concurrent des conversations, le rendu des horodatages et les avatars de repli côté client.
+Le tableau de bord affiche les indicateurs opérationnels de satisfaction et de délai de réponse, la liste des agents à valider (compétences en badges), et un historique avec recherche (nom / e-mail client) et onglets de statut. Les conversations marquées comme données de test sont exclues des indicateurs et des listes opérationnelles par défaut. Les dernières corrections ont également stabilisé le chargement concurrent des conversations, le rendu des horodatages et les avatars de repli côté client.
 
 \begin{figure}[H]
   \centering
@@ -153,31 +195,15 @@ Le tableau de bord affiche les indicateurs opérationnels orientés SLA calculé
   \label{fig:admin-dashboard}
 \end{figure}
 
-\subsection{Client mobile}
+  \subsection{Client mobile}
 
-Le dossier \texttt{sinaps-mobile/} contient un client Expo / React Native connecté aux mêmes routes HTTP et au même serveur Socket.io que le client web. Il propose une authentification client par nom / e-mail ou Google, une authentification agent / administrateur par e-mail et mot de passe, la persistance de session, le chat, les pièces jointes, les indicateurs de frappe, l'escalade, le retour vers l'IA, la clôture avec satisfaction et le mode sombre. Des écrans distincts permettent également à un agent de consulter la file, de prendre en charge une conversation, de répondre et de la résoudre, et à un administrateur de consulter les statistiques, les agents et l'historique.
+  Le dossier \texttt{sinaps-mobile/} contient un client Expo / React Native connecté aux mêmes routes HTTP et au même serveur Socket.io que le client web. Il propose l'authentification client par nom / e-mail ou Google, l'authentification agent / administrateur par e-mail et mot de passe, la persistance de session, le chat, les pièces jointes, l'indicateur de frappe, l'escalade, le retour vers l'IA, la clôture avec satisfaction et le mode sombre. Des écrans distincts permettent également à un agent de consulter la file, de prendre en charge une conversation, de répondre et de la résoudre, ainsi qu'à un administrateur de consulter les statistiques, les agents et l'historique.
 
-Le client mobile a été vérifié par \texttt{npx tsc --noEmit}, mais aucune suite de tests automatisés ni recette formelle mobile n'est présente dans le dépôt. Les fonctionnalités décrites ci-dessus sont donc distinguées de la validation backend documentée au chapitre~5.
+  Le mobile n'est pas fonctionnellement identique au web : les actions rapides contextuelles attachées à certaines réponses IA sur le web sont remplacées par des suggestions statiques qui envoient directement une question ; son compositeur propose les images et documents, mais pas le parcours vidéo exposé par le web ; et l'inscription d'un agent reste disponible uniquement sur \texttt{/agent/signup}. La connexion Google mobile dépend en outre d'une build native Expo configurée.   Enfin, les valeurs de secours prévues dans l'écran administrateur mobile lorsque les statistiques sont absentes ne doivent pas être considérées comme des mesures de production.   Le client mobile a été lancé en Expo Web sur \texttt{http://localhost:8081} avec l'API Render : l'écran de connexion, l'identification directe, le chargement d'une conversation, l'envoi d'un message, une réponse IA et une connexion Socket.io ont été observés. Cette vérification ne couvre ni une build native Android/iOS ni Google Sign-In natif. Le dépôt contient la configuration TypeScript du client mobile, mais aucune suite de tests automatisés mobile n'est présente.
 
-\section{Données de démonstration}
+  \section{Données de démonstration}
 
 Le script \texttt{npm run seed} recrée des comptes d'exemple (mot de passe de seed : \texttt{password123}) : administrateur \texttt{admin@sinaps.com}, agents validés et un agent en attente, plus des utilisateurs et conversations de démonstration. Ces comptes servent aux captures et aux tests manuels ; ils ne constituent pas une population réelle de production.
-
-\section{Captures d'écran à insérer}
-
-Les captures ci-dessous sont des \textbf{recommandations de documentation}, et non des résultats inventés. Les captures importantes montrent les parcours fonctionnels principaux ; les captures optionnelles peuvent être regroupées ou remplacées par les diagrammes déjà présents au chapitre~3.
-
-\begin{enumerate}[leftmargin=1.6em]
-  \item \textbf{Important --- Chat IA et actions rapides}. Capture de \texttt{/} après une question documentée, avec réponse IA, horodatage et boutons « C'est ce qu'il me fallait », « autre question » et « agent ». Placement : après le paragraphe sur l'espace client. Caption : \textit{Conversation client avec réponse RAG/Gemini et actions rapides}. Label : \texttt{fig:client-chat-ai}.
-  \item \textbf{Important --- Conversation client et actions de statut}. La capture fournie montre les commandes de retour à l'IA et de clôture ; elle ne suffit pas à prouver visuellement une escalade ou une réponse humaine. Placement : après le paragraphe sur l'espace agent. Caption : \textit{Écran de conversation client avec commandes de retour à l'IA et de clôture}. Label : \texttt{fig:human-escalation}. Une nouvelle capture est recommandée pour documenter la file agent et un message humain.
-  \item \textbf{Important --- Tableau de bord administrateur}. Capture de \texttt{/admin} montrant les KPI, la validation des agents et l'historique filtrable. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Tableau de bord administrateur de SINAPS TEC}. Label : \texttt{fig:admin-dashboard}.
-  \item \textbf{Important --- Clôture et satisfaction}. Capture du dialogue de notation 1--5 avec commentaire facultatif. Placement : après le paragraphe sur la satisfaction. Caption : \textit{Évaluation de la satisfaction à la clôture d'une conversation}. Label : \texttt{fig:satisfaction-dialog}.
-  \item \textbf{Optionnel --- Identification client}. Capture de \texttt{/} avant connexion, avec Google Sign-In et formulaire direct. Placement : au début de la sous-section « Espace client ». Caption : \textit{Identification du client par Google ou formulaire}. Label : \texttt{fig:client-auth}.
-  \item \textbf{Optionnel --- Pièce jointe et profils}. Capture du fil avec une pièce jointe et les avatars client/agent. Placement : après le paragraphe sur l'espace client. Caption : \textit{Message avec pièce jointe et avatars persistés}. Label : \texttt{fig:message-attachment-avatar}.
-  \item \textbf{Optionnel --- Inscription et validation}. Capture de \texttt{/agent/signup} puis de la table des agents en attente. Placement : après le paragraphe sur l'espace administrateur. Caption : \textit{Inscription d'un agent et validation administrative}. Label : \texttt{fig:agent-approval}.
-\end{enumerate}
-
-Un \textbf{diagramme de séquence} reste préférable à une capture pour expliquer le flux interne RAG $\rightarrow$ Gemini $\rightarrow$ persistance $\rightarrow$ Socket.io ; la figure~\ref{fig:seq-ia} remplit déjà ce rôle.
 
 \section{Mise en route (développement local)}
 

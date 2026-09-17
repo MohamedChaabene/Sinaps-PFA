@@ -1,10 +1,12 @@
 \chapter{Conception du système}
 
-Ce chapitre traduit les besoins du chapitre~2 en vues d'architecture, de données et de comportement. Les diagrammes correspondent au \textbf{système implémenté}, pas à la stack maximale listée dans le document de sujet (Python, PostgreSQL, Flutter, Kafka, etc.).
+\section{Introduction}
+
+Ce chapitre présente les choix de conception retenus pour transformer les besoins du chapitre~2 en une architecture, des modèles de données et des scénarios de fonctionnement cohérents. Les diagrammes décrivent le \textbf{système implémenté} et distinguent les responsabilités des clients, du backend, des services internes et des acteurs humains.
 
 \section{Architecture générale}
 
-Le système est une architecture composée d'un frontend web Next.js, d'un client mobile Expo / React Native et d'un backend Express communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB.
+Le système est une architecture composée de deux clients (web et mobile) et d'un backend commun, communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB. Le client web repose sur Next.js / React et le client mobile sur Expo / React Native. Le backend expose une API REST/JSON, coordonne l'authentification, les conversations, le moteur RAG/Gemini et les échanges temps réel avec Socket.io.
 
 \begin{figure}[H]
 \centering
@@ -13,35 +15,47 @@ Le système est une architecture composée d'un frontend web Next.js, d'un clien
   box/.style={draw=sinapsbleu, rounded corners=3pt, align=center, inner sep=7pt, fill=white, drop shadow},
   title/.style={font=\bfseries\small\color{sinapsbleu}}
 ]
-\node[box, fill=sinapsbleu!8, minimum width=4.2cm] (fe) {\textbf{Frontend web}\\ Next.js 16 / React 19\\ TypeScript, Tailwind\\ \texttt{:3000}};
-\node[box, fill=sinapsbleu!8, minimum width=4.2cm, below=1.15cm of fe] (mobile) {\textbf{Client mobile}\\ Expo / React Native\\ TypeScript\\ Android, iOS, Web};
+\node[box, fill=sinapsbleu!8, minimum width=4.2cm] (fe) {\textbf{Frontend}\\ Next.js 16 / React 19\\ TypeScript, Tailwind\\ \texttt{:3000}};
 \node[box, fill=sinapsbleu!8, minimum width=4.6cm, right=1.3cm of fe] (be) {\textbf{Backend}\\ Node.js / Express 5\\ Socket.io, JWT, Multer\\ \texttt{:5000}};
-\node[box, fill=grisclair, minimum width=3.6cm, below=1.15cm of be] (db) {\textbf{MongoDB Atlas}\\ User, Agent,\\ Conversation, Message};
-\node[box, fill=grisclair, minimum width=3.6cm, left=1.1cm of db] (ai) {\textbf{IA}\\ Retriever TF-IDF\\ + API Gemini};
-\node[box, fill=grisclair, minimum width=3.4cm, right=1.1cm of db] (ext) {\textbf{Externes}\\ Google OAuth\\ fichiers \texttt{/uploads}};
+\node[box, fill=sinapsbleu!8, minimum width=4.2cm, below=1.35cm of fe, xshift=-2.5cm] (mobile) {\textbf{Client mobile}\\ Expo / React Native\\ HTTP + Socket.io};
+\node[box, fill=grisclair, minimum width=3.6cm, below=1.5cm of be] (db) {\textbf{MongoDB}\\ User, Agent,\\ Conversation, Message};
+\node[box, fill=grisclair, minimum width=3.6cm, left=1.2cm of db] (ai) {\textbf{IA}\\ Retriever TF-IDF\\ + API Gemini};
+\node[box, fill=grisclair, minimum width=3.4cm, right=1.2cm of db] (ext) {\textbf{Externes}\\ Google OAuth\\ fichiers \texttt{/uploads}};
 
-\draw[-{Latex}] (fe) -- node[above, font=\scriptsize]{REST JSON} (be);
-\draw[-{Latex}] (be) -- node[above, font=\scriptsize]{Socket.io} (fe);
-\draw[-{Latex}] (mobile) -- node[below, font=\scriptsize]{REST JSON / Socket.io} (be);
-\draw[-{Latex}] (be) -- (db);
-\draw[-{Latex}] (be) -- (ai);
-\draw[-{Latex}] (be) -- (ext);
+\draw[-{Latex}] (fe.east) -- node[above, font=\scriptsize, yshift=2pt]{REST / JSON} (be.west);
+\draw[-{Latex}] (be.west) -- node[below, font=\scriptsize, yshift=-2pt]{Socket.io} (fe.east);
+\draw[-{Latex}] (mobile.east) -- node[below, font=\scriptsize]{REST / Socket.io} (be.south west);
+\draw[-{Latex}] (be.south) -- (db.north);
+\draw[-{Latex}] (be.south west) -- (ai.north east);
+\draw[-{Latex}] (be.south east) -- (ext.north west);
 \end{tikzpicture}
-\caption{Architecture logique d'Op Support IA avec clients web et mobile (vue déployable en local)}
+\caption{Architecture logique d'Op Support IA (vue déployable en local)}
 \label{fig:archi}
 \end{figure}
 
 Les flux principaux sont :
 
 \begin{enumerate}[leftmargin=1.6em]
-  \item le navigateur ou le client mobile charge l'interface correspondante ;
-  \item les appels métier passent par \texttt{/api/...} sur Express ;
+  \item le navigateur charge l'interface Next.js ;
+  \item les appels métier passent par l'API Express ;
   \item après un message client, si la conversation est en mode IA, le backend appelle le retriever puis Gemini (ou le repli) et enregistre un message \texttt{ia} ;
-  \item Socket.io notifie la salle \texttt{conversation\_<id>} et, pour les listes, un événement global ;
-  \item les fichiers sont stockés sur disque sous \texttt{uploads/} et servis en statique.
+  \item Socket.io notifie la salle de conversation et, pour les listes, un événement global ;
+  \item les fichiers sont stockés sur disque sous \texttt{uploads/} et servis en statique ;
+  \item le client peut demander une prise en charge humaine ; l'agent traite alors la conversation depuis sa file.
 \end{enumerate}
 
-Cette vue correspond à la figure \og Clients / Frontend / Backend / Agent IA / Base / Admin \fg{} du sujet, avec des choix figés : \textbf{React Native} pour le client mobile, \textbf{pas} de Python, \textbf{MongoDB} (et non PostgreSQL), \textbf{Gemini} (et non OpenAI / LangChain).
+\section{Architecture logicielle}
+
+L'organisation logique repose sur quatre ensembles complémentaires :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item les \textbf{clients}, web et mobile, qui présentent les interfaces de conversation, d'agent et d'administration et communiquent avec le backend ;
+  \item le \textbf{backend}, qui expose l'API REST, applique les contrôles d'accès, persiste les données et coordonne les changements d'état ;
+  \item les \textbf{services internes}, qui regroupent l'authentification, le retriever RAG, la génération Gemini, le téléversement et les notifications Socket.io ;
+  \item la \textbf{persistance et les services externes}, constitués de MongoDB pour les entités métier, de Google OAuth pour l'identification client et de Gemini pour la génération lorsqu'une clé valide est disponible.
+\end{itemize}
+
+Cette séparation permet aux deux clients de partager les mêmes conversations, messages et règles d'autorisation sans dupliquer la logique métier. Les composants techniques restent distincts des acteurs humains identifiés au chapitre~2.
 
 \section{Diagramme de cas d'utilisation}
 
@@ -95,29 +109,25 @@ Cette vue correspond à la figure \og Clients / Frontend / Backend / Agent IA / 
 \label{fig:cu}
 \end{figure}
 
-\todofig{Figure complémentaire (optionnelle) : reprendre ce diagramme dans un outil UML (StarUML, PlantUML) pour une version plus lisible en impression A4.}
-
-\section{Description des cas d'utilisation principaux}
-
 \subsection{CU01 --- S'identifier (client)}
 
-Le client fournit un \textbf{jeton Google} (vérifié avec \texttt{GOOGLE\_CLIENT\_ID}) ou un couple nom / e-mail. Le serveur trouve ou crée un \texttt{User} et délivre un JWT de rôle \texttt{client} (durée 30~jours). Une conversation non résolue est réutilisée, sinon une nouvelle conversation est créée (\texttt{handledBy = ia}, \texttt{status = en\_cours}).
+Le client fournit un \textbf{jeton Google}, vérifié avec \texttt{GOOGLE\_CLIENT\_ID}, ou un couple nom / e-mail. Le serveur trouve ou crée le profil client et délivre un JWT de rôle \texttt{client}. Une conversation non résolue est réutilisée, sinon une nouvelle conversation est créée avec \texttt{handledBy = ia} et \texttt{status = en\_cours}.
 
 \subsection{CU02 --- Envoyer un message}
 
-Précondition : session client et conversation ouverte. Le message est persisté. Si \texttt{handledBy = ia}, le service IA produit une réponse enregistrée comme message \texttt{ia}. Les deux messages sont émis sur Socket.io.
+Avec une session client et une conversation ouverte, le message est persisté. Si \texttt{handledBy = ia}, le service IA produit une réponse enregistrée comme message \texttt{ia}. Les deux messages sont émis sur Socket.io.
 
 \subsection{CU03 --- Escalader}
 
-Le client (ou un profil autorisé sur la conversation) passe \texttt{handledBy} à \texttt{humain} et \texttt{status} à \texttt{en\_attente}. Les agents voient le fil dans la file.
+Le client, ou un profil autorisé sur la conversation, passe \texttt{handledBy} à \texttt{humain} et \texttt{status} à \texttt{en\_attente}. Les agents voient alors le fil dans la file.
 
 \subsection{CU04 --- Traiter une demande (agent)}
 
-L'agent authentifié (compte \texttt{approved}) consulte la liste, peut être assigné (\texttt{assignedAgent}, statut \texttt{en\_cours}), répond avec \texttt{sender = humain}, puis clôture.
+L'agent authentifié et approuvé consulte la liste, peut être assigné, répond avec \texttt{sender = humain}, puis clôture la conversation.
 
 \subsection{CU05 --- Administrer}
 
-L'admin consulte \texttt{GET /api/stats} et \texttt{GET /api/conversations}, approuve (\texttt{status = approved}) ou supprime un agent en attente.
+L'administrateur consulte \texttt{GET /api/stats} et \texttt{GET /api/conversations}, approuve ou supprime un agent en attente et filtre les conversations.
 
 \section{Modèle de données}
 
@@ -199,7 +209,7 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'aff
 \end{tabularx}
 \end{table}
 
-\section{Diagramme de classes (vue d'analyse)}
+\section{Diagramme de classes}
 
 \begin{figure}[H]
 \centering
@@ -225,25 +235,26 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'aff
   \nodepart{two}
   escalate()\\ deescalate()\\ assign()\\ close()
 };
-\node[cls, right=0.7cm of conv] (msg) {
+\node[cls, right=1.25cm of conv] (msg) {
   \textbf{Message}\\
   sender\\ authorName\\ content\\ attachments[]
   \nodepart{two}
   ---
 };
 
-\draw[-{Latex}] (conv) -- node[left, font=\tiny]{1} (user);
-\node[font=\tiny] at ($(conv)!0.5!(user)+(0.35,0)$) {*};
-\draw[-{Latex}] (conv.east) -- node[above, font=\tiny]{0..1} (agent.south);
-\draw[-{Latex}] (msg) -- node[above, font=\tiny]{*} node[below, font=\tiny]{1} (conv);
+\draw[-{Latex}] (conv) -- node[pos=0.15, left, font=\tiny]{0..*} node[pos=0.85, right, font=\tiny]{1} (user);
+\draw[-{Latex}] (conv.east) -- node[pos=0.15, right, font=\tiny]{0..1} node[pos=0.85, left, font=\tiny]{0..*} (agent.south);
+\draw[-{Latex}] (msg) -- node[pos=0.15, above, font=\tiny]{1..*} node[pos=0.85, below, font=\tiny]{1} (conv);
 \end{tikzpicture}
 \caption{Diagramme de classes aligné sur les schémas Mongoose}
 \label{fig:classes}
 \end{figure}
 
-\section{Scénarios dynamiques}
+\section{Diagrammes de séquence}
 
 \subsection{Envoi d'un message client et réponse IA}
+
+Le client transmet le message au backend, qui le persiste, interroge le retriever et le service Gemini lorsque la conversation est prise en charge par l'IA. La réponse éventuelle est enregistrée puis diffusée aux clients par Socket.io.
 
 \begin{figure}[H]
 \centering
@@ -270,13 +281,53 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'aff
 
 \subsection{Escalade vers un humain}
 
-Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe à \texttt{handledBy = humain}, \texttt{status = en\_attente}. Socket.io émet \texttt{conversation\_updated} vers la salle et en global, afin que l'espace agent rafraîchisse la file.
+Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe à \texttt{handledBy = humain} et \texttt{status = en\_attente}. Socket.io émet \texttt{conversation\_updated} vers la salle ; un événement global permet à l'espace agent de rafraîchir la file.
 
 \subsection{Clôture et satisfaction}
 
-\texttt{PATCH /conversations/:id/close} accepte une note entière entre 1 et 5. Une valeur hors intervalle (par exemple 0) \textbf{n'est pas} enregistrée comme satisfaction, afin d'éviter de fausser la moyenne. Le statut devient \texttt{resolu} et la cause de résolution est tracée dans \texttt{resolutionType}. Les actions rapides permettent notamment de confirmer une résolution IA, de poser une nouvelle question ou de demander un agent.
+\texttt{PATCH /conversations/:id/close} accepte une note entière entre 1 et 5. Une valeur hors intervalle, par exemple 0, n'est pas enregistrée comme satisfaction. Le statut devient \texttt{resolu} et la cause de résolution est tracée dans \texttt{resolutionType}. Les actions rapides permettent notamment de confirmer une résolution IA, de poser une nouvelle question ou de demander un agent.
 
-\section{Conception de l'authentification et des droits}
+\section{Cycle de vie d'une conversation}
+
+Une conversation est créée ou réutilisée lors de l'identification du client. Elle commence avec \texttt{handledBy = ia} et \texttt{status = en\_cours}. Les messages sont alors traités par l'IA lorsque le client écrit dans une conversation ouverte. La figure~\ref{fig:conversation-state} synthétise les états et transitions décrits ci-dessous.
+
+Lorsque le client demande une prise en charge humaine, ou lorsqu'un acteur autorisé effectue cette action, la conversation passe à \texttt{handledBy = humain} et \texttt{status = en\_attente}. Un agent approuvé peut la prendre en charge ; elle est alors éventuellement associée à \texttt{assignedAgent} et repasse à \texttt{status = en\_cours}. L'agent peut répondre, puis clôturer la conversation.
+
+La clôture fait passer le statut à \texttt{resolu}. Une note entière de 1 à 5 et un commentaire peuvent être enregistrés ; la résolution conserve également son origine et son instant. Le retour vers l'IA est possible avant la clôture par désescalade. Les statuts et modes associés sont récapitulés dans l'annexe~\ref{tab:annexe-statuts}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  state/.style={draw=sinapsbleu, thick, rounded corners=3pt, align=center, minimum width=3.7cm, minimum height=0.85cm, fill=sinapsbleu!8},
+  terminal/.style={draw=sinapsbleu, thick, circle, minimum size=0.45cm, fill=sinapsbleu!25},
+  transition/.style={-{Latex}, draw=sinapsbleu, thick},
+  note/.style={font=\scriptsize, align=center}
+]
+\node[terminal] (start) {};
+\node[state, below=0.55cm of start] (ia) {EN\_COURS\\prise en charge par l'IA};
+\node[state, below=1.05cm of ia] (waiting) {EN\_ATTENTE\\demande d'aide humaine};
+\node[state, below=1.05cm of waiting] (human) {EN\_COURS\\prise en charge humaine};
+\node[state, below=1.05cm of human] (resolved) {RESOLU};
+\node[terminal, below=0.55cm of resolved] (end) {};
+\node[note, right=0.55cm of ia] (iaNote) {traitement IA};
+\node[note, right=0.55cm of waiting] (waitNote) {assignation à un agent};
+\node[note, right=0.55cm of human] (humanNote) {retour vers l'IA};
+\node[note, right=0.55cm of resolved] (ratingNote) {évaluation facultative};
+
+\draw[transition] (start) -- (ia);
+\draw[transition] (ia) -- node[left, note] {demande d'aide humaine} (waiting);
+\draw[transition] (waiting) -- node[left, note] {agent assigné} (human);
+\draw[transition] (human) -- node[left, note] {clôture} (resolved);
+\draw[transition] (resolved) -- (end);
+\draw[transition] (human.east) .. controls +(2.0,0) and +(2.0,0) .. node[right, note] {désescalade} (ia.east);
+\draw[transition] (ia.west) .. controls +(-2.0,0) and +(-2.0,0) .. node[left, note] {confirmation / clôture} (resolved.west);
+\end{tikzpicture}
+\caption{Cycle de vie d'une conversation dans SINAPS}
+\label{fig:conversation-state}
+\end{figure}
+
+\section{Authentification et gestion des droits}
 
 Deux familles de jetons JWT signés avec \texttt{JWT\_SECRET} coexistent.
 
@@ -289,36 +340,40 @@ Deux familles de jetons JWT signés avec \texttt{JWT\_SECRET} coexistent.
 \toprule
 Profil & Mécanisme \\
 \midrule
-Client & JWT \texttt{role=client}, 30~jours, après Google (ID token vérifié) ou find-or-create e-mail. Stockage navigateur : \texttt{sinaps\_client}. \\
+Client & JWT \texttt{role=client}, 30~jours, après Google (ID token vérifié) ou identification e-mail. Stockage navigateur : \texttt{sinaps\_client}. \\
 Agent / admin & JWT \texttt{role=agent$\mid$admin}, 7~jours, après e-mail + mot de passe. Refus si agent \texttt{pending}. Stockage : \texttt{sinaps\_token}. \\
 Middleware & \texttt{requireAuth}, \texttt{requireAdmin}, \texttt{requireAgentOrAdmin}, \texttt{requireClientAuth}, \texttt{requireConversationAccess}, \texttt{requireSenderAuth}, \texttt{requireAnySession}. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Règles importantes :
+Les règles de conception sont les suivantes :
 
 \begin{itemize}[leftmargin=1.4em]
   \item un client ne lit et ne modifie que \textbf{sa} conversation ;
   \item \texttt{sender = humain} exige un JWT agent/admin ;
-  \item \texttt{sender = ia} est refusé s'il vient d'une requête externe (création interne seulement) ;
-  \item l'upload exige une session client ou agent (pas d'anonyme).
+  \item \texttt{sender = ia} est refusé s'il vient d'une requête externe ;
+  \item l'upload exige une session client ou agent.
 \end{itemize}
 
-En production, le serveur \textbf{refuse de démarrer} sans \texttt{JWT\_SECRET}. En développement, une clé de test est utilisée avec un avertissement.
+En production, le serveur refuse de démarrer sans \texttt{JWT\_SECRET}. La mise en œuvre détaillée des routes et des middleware est présentée au chapitre~4.
 
-\section{Conception du moteur RAG et de l'escalade}
+\section{Conception du RAG}
 
 \subsection{Retriever}
 
-La base \texttt{data/knowledgeBase.js} contient un tableau \texttt{\{ question, answer \}}. Chaque document est tokenisé (minuscules, suppression de mots vides français), indexé en TF, pondéré par IDF, puis comparé à la requête par \textbf{similarité cosinus}. Les extraits dont le score dépasse $0{,}05$ sont retenus (\texttt{topK = 2} pour le prompt).
+La base \texttt{data/knowledgeBase.js} contient des paires \texttt{\{ question, answer \}}. Chaque document est normalisé et tokenisé, puis indexé en TF et pondéré par IDF. La requête et les documents sont comparés par \textbf{similarité cosinus}. Les extraits dont le score est strictement supérieur à $0{,}35$ sont retenus, avec un maximum de deux documents (\texttt{topK = 2}).
 
-Ce n'est \textbf{pas} un RAG vectoriel (pas d'embeddings, pas de base vectorielle). C'est un RAG \og lexical \fg{} suffisant pour une petite FAQ de démonstration.
+Ce n'est \textbf{pas} un RAG vectoriel : aucun embedding ni base vectorielle n'est utilisé. Il s'agit d'un RAG \og lexical \fg{} adapté à une petite FAQ de démonstration.
 
-\subsection{Génération}
+\subsection{Génération et repli}
 
-Si une clé Gemini valide est présente, un prompt français injecte les extraits \og Savoir pertinent \fg{} et demande une réponse courte, avec consigne d'orienter vers le bouton d'escalade si l'action sur compte est manuelle. Plusieurs noms de modèles sont essayés en cascade (\texttt{gemini-3.5-flash}, \texttt{gemini-3.6-flash}, \texttt{gemini-flash-latest}). En échec, le premier extrait RAG ou un message d'invitation humaine est renvoyé.
+Si une clé Gemini valide est présente, les extraits pertinents sont injectés dans un prompt français afin de produire une réponse courte et fondée sur la base de connaissances. Les modèles Gemini configurés sont essayés en cascade. Si la clé est absente, si l'appel échoue ou si aucun document pertinent n'est disponible, le système renvoie la meilleure réponse locale lorsqu'elle existe, sinon un message invitant à demander l'aide d'un agent humain.
 
 \subsection{Escalade}
 
-L'escalade n'est \textbf{pas automatique} selon un score de confiance. Elle est \textbf{décidée par l'utilisateur} (ou un acteur autorisé sur la conversation) via l'API. C'est un choix volontaire du MVP, cohérent avec le bouton \og Basculer vers un agent humain \fg{} du sujet.
+L'escalade n'est \textbf{pas automatique} selon un score de confiance. Elle est \textbf{décidée par l'utilisateur} ou par un acteur autorisé sur la conversation via l'action prévue à cet effet. Le mécanisme RAG peut conduire à proposer cette aide humaine lorsqu'aucune réponse pertinente n'est disponible, mais le changement de prise en charge reste une action explicite.
+
+\section{Conclusion}
+
+Ce chapitre a présenté l'architecture générale et logicielle, les cas d'utilisation, le modèle de données, les séquences, le cycle de vie des conversations, l'authentification et la conception du RAG. Le chapitre suivant décrit la réalisation concrète de ces choix dans les applications web, mobile et backend.

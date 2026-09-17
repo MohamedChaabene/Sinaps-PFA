@@ -1,93 +1,133 @@
 \chapter{Tests et validation}
 
-Les tests décrits ici sont ceux \textbf{présents dans le dépôt} (\texttt{sinaps-backend/tests}). Aucun pourcentage de couverture, aucun temps de réponse mesuré en production et aucun recettage utilisateur formalisé n'est avancé : ces éléments n'ont pas été fournis comme résultats chiffrés du stage.
+\section{Introduction}
+
+Cette phase vise à vérifier que les principaux comportements du backend de SINAPS correspondent aux besoins retenus : authentification, conversations, messages, traitement IA, prise en charge humaine, administration et téléversement. Les résultats présentés sont fondés sur les tests présents dans le dépôt et sur l'exécution de la suite backend. Aucun pourcentage de couverture, aucun temps de réponse mesuré en production et aucun recettage utilisateur formalisé n'est avancé.
 
 \section{Stratégie de test}
 
-La stratégie retenue est essentiellement \textbf{automatisée côté backend} :
+La stratégie combine plusieurs niveaux de vérification réellement présents dans le projet :
 
 \begin{itemize}[leftmargin=1.4em]
-  \item tests d'\textbf{intégration} HTTP avec Supertest et une base \textbf{MongoDB en mémoire} ;
-  \item tests \textbf{unitaires} du middleware d'authentification (modèle Conversation mocké) ;
-  \item tests du \textbf{téléversement} (Multer) ;
-  \item tests du \textbf{retriever RAG} et du repli \texttt{getAIResponse} sans clé Gemini ;
-  \item tests des \textbf{actions rapides}, du cycle de résolution, des horodatages et de l'isolation des données de démonstration.
+  \item des tests automatisés backend, exécutés avec Jest ;
+  \item des tests d'intégration HTTP avec Supertest, utilisant MongoDB Memory Server pour isoler les données ;
+  \item des tests unitaires ciblés, notamment pour le middleware d'authentification, le formatage des horodatages et le retriever RAG ;
+  \item des tests du téléversement avec Multer, des actions rapides, du cycle de résolution et du filtrage des données de démonstration ;
+  \item Postman est mentionné dans la documentation du projet pour les vérifications manuelles de l'API ; aucun compte rendu détaillé ni collection Postman n'est conservé dans le dépôt.
 \end{itemize}
 
-Le frontend Next.js et le client mobile Expo / React Native ne contiennent pas de suite de tests unitaires dédiée dans le dépôt. Le client mobile passe toutefois la vérification de typage \texttt{npx tsc --noEmit}. Une validation manuelle des écrans est possible avec Google, Gemini et Atlas, mais ses date, scénarios et résultats détaillés ne figurent pas dans les sources disponibles : \acompleter{compléter uniquement si ces éléments sont confirmés}.
+Le frontend Next.js et l'application mobile ne contiennent pas de suite de tests automatisés dédiée dans le dépôt. Une validation manuelle des interfaces est possible, mais ses dates, scénarios détaillés et résultats ne sont pas documentés de manière vérifiable dans les sources disponibles.
 
-Commande :
+La suite backend est lancée avec la commande suivante :
 
 \begin{lstlisting}[caption={Exécution de la suite backend}]
 cd sinaps-backend
 npm test
 \end{lstlisting}
 
-La dernière exécution locale de la commande ci-dessus a produit le résultat suivant : \textbf{13 suites passées, 205 tests passés, 0 échec, 0 snapshot}. Cette validation couvre le backend ; elle ne constitue pas une mesure de couverture ni une garantie de performance en production.
+\section{Tests fonctionnels}
 
-\section{Tests d'intégration API}
-
-Le fichier \texttt{api.test.js} enchaîne notamment :
+Les scénarios fonctionnels ci-dessous sont vérifiés principalement à travers les tests d'API et d'intégration. Ils correspondent aux flux métier implémentés, sans présenter ces vérifications comme une recette complète des interfaces Web ou Mobile.
 
 \begin{table}[H]
 \centering
-\caption{Exemples de cas --- \texttt{api.test.js}}
-\label{tab:t-api}
+\caption{Scénarios fonctionnels vérifiés par les tests backend}
+\label{tab:t-fonctionnels}
 \small
-\begin{tabularx}{\textwidth}{@{}Xll@{}}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
 \toprule
-Cas & Attendu & \\
+Scénario & Vérification principale & Résultat \\
 \midrule
-Création d'utilisateur + jeton client & 200, présence de \texttt{token} & \\
-\texttt{find-or-create} conversation sans session & 401 & \\
-Création de conversation authentifiée & \texttt{handledBy = ia} & \\
-Lecture d'un fil sans session & 401 & \\
-Lecture par un autre client & 403 & \\
-Lecture par le propriétaire & 200 & \\
-Escalade & \texttt{humain}, \texttt{en\_attente} & \\
-Désescalade & \texttt{ia}, \texttt{en\_cours} & \\
-Clôture avec note 5 & \texttt{resolu}, rating 5 & \\
-Clôture avec \texttt{rating: 0} & statut résolu, pas de fausse note & \\
-\texttt{sender: humain} sans jeton & 401 & \\
-\texttt{sender: humain} avec jeton agent & 201 & \\
-\texttt{sender: client} sans jeton & 401 & \\
-Client sur une conversation étrangère & 403 & \\
-Injection \texttt{sender: ia} depuis l'extérieur & 403 & \\
+Authentification et autorisation & Jetons client, agent et administrateur ; rôles incompatibles et accès aux conversations & Réussi \\
+Création et consultation d'une conversation & Conversation active, propriétaire autorisé, autre client refusé & Réussi \\
+Réponse IA / RAG & Message client, réponse IA lorsque \texttt{handledBy = ia}, recherche locale et repli sans clé Gemini & Réussi \\
+Escalade et prise en charge humaine & Passage à \texttt{humain}/\texttt{en\_attente}, assignation, réponse agent et prévention d'un changement non autorisé & Réussi \\
+Retour vers l'IA et actions rapides & Désescalade, confirmation, nouvelle question et demande d'agent & Réussi \\
+Clôture et satisfaction & Passage à \texttt{resolu}, note entière de 1 à 5 et refus d'une note invalide & Réussi \\
+Administration & Validation d'agents, statistiques et exclusion des données \texttt{isTestData} par défaut & Réussi \\
+Pièces jointes & Session obligatoire, types autorisés et limite de taille & Réussi \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\section{Tests du middleware d'authentification}
+\section{Tests backend automatisés}
 
-\texttt{auth-middleware.test.js} vérifie \texttt{requireClientAuth}, \texttt{requireConversationAccess} et \texttt{requireSenderAuth} : absence de header, jeton invalide, rôle inadapté, appartenance de conversation. Ces tests n'ont pas besoin d'une instance Mongo réelle (mock du modèle).
+\subsection{Intégration API}
 
-\section{Tests d'upload}
+Le fichier \texttt{api.test.js} vérifie notamment :
 
-\texttt{upload.test.js} fixe une limite basse (1~Mo) pour rester rapide. Cas couverts : refus sans session (401), refus d'un type non autorisé (400), acceptation JPEG client et PDF agent (200), refus de fichier trop volumineux (413), conservation d'une extension courte alphanumérique pour un sous-type image atypique.
+\begin{table}[H]
+\centering
+\caption{Exemples de cas d'intégration API}
+\label{tab:t-api}
+\small
+\begin{tabularx}{\textwidth}{@{}Xl@{}}
+\toprule
+Cas & Attendu \\
+\midrule
+Création d'utilisateur et jeton client & Code 200 avec un \texttt{token} \\
+\texttt{find-or-create} sans session & Code 401 \\
+Création d'une conversation authentifiée & \texttt{handledBy = ia} \\
+Lecture sans session ou par un autre client & Codes 401 ou 403 \\
+Lecture par le propriétaire & Code 200 \\
+Escalade et désescalade & Modes et statuts mis à jour \\
+Clôture avec note 5 ou note 0 & Résolution ; seule la note valide est enregistrée \\
+Message humain ou client selon le jeton & Accepté avec le rôle approprié, refusé sinon \\
+Injection d'un message \texttt{sender = ia} & Code 403 \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\section{Tests du retriever RAG}
+\subsection{Authentification, conversations et messages}
 
-\texttt{rag.test.js} contrôle que :
+\texttt{auth-middleware.test.js} couvre l'absence de header, les jetons invalides, les rôles inadaptés et l'appartenance à une conversation pour \texttt{requireClientAuth}, \texttt{requireConversationAccess} et \texttt{requireSenderAuth}. Les tests du flux agent vérifient l'escalade, l'assignation, la réponse humaine, la résolution, la protection contre la prise d'une conversation déjà attribuée et le scénario complet IA $\rightarrow$ humain $\rightarrow$ résolution.
+
+Les tests d'actions rapides vérifient notamment leur stockage, leurs identifiants, leur idempotence, la mise à jour de \texttt{lastActivityAt} et les actions de confirmation, de nouvelle question et d'escalade. Les tests d'horodatage contrôlent la présence et la sérialisation de \texttt{createdAt} lors du chargement d'une conversation agent.
+
+\subsection{Upload et retriever RAG}
+
+\texttt{upload.test.js} vérifie le refus d'une requête sans session, le refus d'un type interdit, l'acceptation d'un fichier JPEG côté client et d'un PDF côté agent, la limite de taille fixée par le test à 1~Mo et la sécurisation de l'extension d'un sous-type image atypique.
+
+\texttt{rag.test.js} contrôle que des formulations liées au suivi de commande ou au remboursement récupèrent l'entrée correspondante, qu'une requête sans rapport ne retourne aucun document et qu'une question de facturation n'est pas dirigée vers une réponse de suivi de commande. Le repli de \texttt{getAIResponse} sans clé Gemini est également vérifié. Ces tests valident le retriever local et le repli ; ils ne mesurent pas la qualité linguistique de Gemini en production.
+
+\subsection{Résultat de la suite}
+
+La dernière exécution locale de la commande \texttt{npm test} a produit le résultat suivant :
+
+\begin{center}
+\textbf{13 suites passées, 205 tests passés, 0 échec, 0 snapshot}
+\end{center}
+
+Cette exécution couvre le backend. Elle ne constitue ni une mesure de couverture ni une garantie de performance en production.
+
+\section{Résultats et anomalies corrigées}
+
+Les tests dédiés documentent plusieurs problèmes rencontrés puis corrigés pendant le développement :
 
 \begin{itemize}[leftmargin=1.4em]
-  \item \og Comment suivre ma commande ? \fg{} ramène l'entrée de suivi ;
-  \item une demande de remboursement ramène l'entrée correspondante ;
-  \item une requête sans rapport (\texttt{xyz123...}) ne retourne aucun document ;
-  \item \texttt{getAIResponse} sans clé Gemini contient la consigne \og Mot de passe oublié \fg{} pour la question de réinitialisation.
+  \item \textbf{État de prise en charge IA :} les conversations nouvellement créées devaient conserver \texttt{handledBy = ia} afin de déclencher correctement la réponse IA. Les tests couvrent aussi le comportement par défaut des conversations héritées sans valeur explicite.
+  \item \textbf{Persistance et chargement des messages :} le traitement attend la création du message IA avant de répondre à la requête HTTP, et le rechargement d'une conversation retourne les messages persistés avec leurs horodatages.
+  \item \textbf{Réponses de facturation :} une question concernant une facture ne doit pas recevoir par erreur la réponse relative au suivi d'une commande ; le retriever et le repli sont testés sur ce cas.
+  \item \textbf{Authentification des messages humains :} un message \texttt{sender = humain} exige une session agent ou administrateur, tandis qu'un client ne peut envoyer qu'un message dans sa propre conversation.
+  \item \textbf{Escalade et assignation :} les tests vérifient la séparation entre prise en charge IA et humaine, l'assignation à un agent et la prévention d'un changement silencieux d'agent.
+  \item \textbf{Données de démonstration :} les conversations marquées \texttt{isTestData} sont exclues des listes administratives par défaut afin de ne pas fausser les indicateurs opérationnels.
 \end{itemize}
 
-Ces tests valident le \textbf{retriever local} et le \textbf{repli}. Ils ne mesurent pas la qualité linguistique de Gemini en production.
+\section{Validation finale}
 
-\section{Limites}
+La version évaluée dispose d'une suite backend reproductible qui couvre les principaux flux d'API, la persistance MongoDB en mémoire, l'authentification, les conversations, le RAG local, les réponses de repli, les pièces jointes, les actions rapides, les horodatages et l'administration. L'exécution confirmée aboutit à 205 tests réussis répartis sur 13 suites.
+
+Les limites restantes sont les suivantes :
 
 \begin{itemize}[leftmargin=1.4em]
-  \item pas de tests E2E navigateur (Playwright, Cypress) dans le dépôt ;
-  \item pas de tests de charge Socket.io ;
-  \item aucune recette formelle signée par l'encadrant n'est documentée dans les sources disponibles ;
-  \item les indicateurs du dashboard dépendent des données réelles présentes ; les données du seed sont marquées \texttt{isTestData} et exclues des KPI par défaut ;
-  \item aucune preuve de déploiement public ou de mesure de production n'est présente dans le dépôt.
+  \item aucun test E2E de navigateur avec Playwright ou Cypress n'est présent dans le dépôt ;
+  \item aucun test de charge Socket.io n'est présent ;
+  \item aucune recette formelle signée par l'encadrant n'est documentée ;
+  \item les indicateurs du tableau de bord dépendent des données effectivement présentes ; le jeu de démonstration est marqué \texttt{isTestData} et exclu par défaut ;
+  \item aucune preuve de déploiement public ni mesure de production n'est fournie dans le dépôt ;
+  \item les tests automatisés ne permettent pas de conclure à une validation complète des interfaces Web et Mobile.
 \end{itemize}
 
-\section{Corrections validées avant la version finale}
+\section{Conclusion}
 
-La suite finale vérifie aussi plusieurs corrections directement liées à la fiabilité du produit : prévention des réponses IA hors sujet pour les demandes de facturation, calcul distinct des escalades humaines, conservation des horodatages lors du chargement agent, protection contre les réponses de chargement obsolètes, actions rapides idempotentes, et filtrage des données de démonstration dans l'administration. Ces éléments sont documentés par les tests dédiés présents dans \texttt{sinaps-backend/tests}.
+Les tests backend automatisés ont permis de vérifier les principaux comportements fonctionnels et plusieurs corrections importantes de SINAPS. Les résultats obtenus sont reproductibles et couvrent les flux essentiels de l'API, tout en laissant clairement identifiées les limites liées aux tests d'interface, de charge et de validation en production.

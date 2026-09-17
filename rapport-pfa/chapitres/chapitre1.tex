@@ -1,6 +1,6 @@
-\chapter{Cadre et contexte du projet}
+\chapter{Présentation du cadre du projet}
 
-\section{Présentation de l'établissement d'accueil}
+\section{Présentation de SINAPS TEC}
 
 L'organisme d'accueil du stage est \textbf{SINAPS TEC}, acronyme de \textit{Solutions Innovations For Networks, Applications \& Portable Systems}, en Tunisie. Son domaine d'activité, tel qu'il est pertinent pour ce projet, concerne l'informatique, les logiciels, les réseaux et les systèmes.
 
@@ -13,25 +13,19 @@ L'organisme d'accueil du stage est \textbf{SINAPS TEC}, acronyme de \textit{Solu
 
 Le stage a été proposé et suivi par \textbf{Kais Gharred}, encadrant professionnel, contacté à l'adresse \texttt{sinapstec@gmail.com}. Kais Gharred est également référencé par l'ANCS comme auditeur en cybersécurité agréé rattaché à \textbf{RESYS-CONSULTANTS}. Cette référence professionnelle ne signifie pas que SINAPS TEC et RESYS-CONSULTANTS sont la même entité : il s'agit de deux organisations distinctes, et aucune relation de filiale ou de succursale n'est établie dans les sources disponibles.
 
-Le travail a été réalisé \textbf{à distance}, sans présence physique dans des locaux décrits dans les documents disponibles. Les informations suivantes n'ont pas pu être établies de manière fiable à partir des sources du projet :
-
-\begin{itemize}[leftmargin=1.4em]
-  \item siège social, ville et forme juridique : \acompleter{coordonnées officielles de SINAPS TEC} ;
-  \item date de création, effectif, organigramme : \acompleter{présentation institutionnelle} ;
-  \item historique détaillé des activités : \acompleter{si un livret d'entreprise est fourni}.
-\end{itemize}
+Le travail a été réalisé \textbf{à distance}, sans présence physique dans des locaux décrits dans les documents disponibles. Le présent rapport se limite donc aux informations vérifiables dans le cadre du projet et ne déduit ni coordonnées officielles, ni forme juridique, ni effectif, ni historique institutionnel.
 
 Dans le cadre de ce PFA, SINAPS TEC intervient comme \textbf{entreprise d'accueil et commanditaire du sujet} : le besoin fonctionnel, la stack suggérée et le périmètre (chat de support, RAG, escalade humaine, administration) ont été définis par l'encadrant professionnel, puis réalisés en autonomie.
 
-\section{Présentation de l'ISIMS et du cadre académique}
+\section{Contexte du projet}
+
+\subsection{Cadre académique et déroulement du stage}
 
 L'\textbf{Institut Supérieur d'Informatique et de Multimédia de Sfax} (ISIMS) est un établissement de l'\textbf{Université de Sfax}. Il forme notamment des ingénieurs en informatique. Le présent travail correspond à un \textbf{Projet de Fin d'Année} (PFA) de \textbf{2\textsuperscript{e} année} du \textbf{cycle ingénieur en Génie Logiciel}, année universitaire \textbf{2026--2027}.
 
 Le PFA précède le Projet de Fin d'Études (PFE). Il vise à confronter l'étudiant à un développement logiciel complet --- spécification, conception, implémentation, tests --- dans un volume compatible avec un stage de quelques mois, sans prétendre à l'ampleur d'un PFE de fin de cycle.
 
-L'encadrant académique n'est pas encore renseigné dans ce document : \acompleter{nom, grade et laboratoire ou département}.
-
-\section{Contexte et déroulement du stage}
+L'identité et le grade de l'encadrant académique ne figurent pas dans les sources disponibles pour ce rapport.
 
 \begin{table}[H]
 \centering
@@ -39,24 +33,32 @@ L'encadrant académique n'est pas encore renseigné dans ce document : \acomplet
 \label{tab:fiche-stage}
 \begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
-\textbf{Intitulé} & Conception et réalisation d'une application web de support client assisté par un agent IA (Op Support IA) \\
+\textbf{Intitulé} & Conception et réalisation d'une solution web et mobile de support client assisté par un agent IA (Op Support IA) \\
 \midrule
 Organisme & SINAPS TEC \\
 Encadrant professionnel & Kais Gharred (\texttt{sinapstec@gmail.com}) \\
-Encadrant académique & \acompleter{identité} \\
+Encadrant académique & Non renseigné dans les sources disponibles \\
 Étudiant & Mohamed Chaabene \\
 Période & du 22 juin 2026 au 6 septembre 2026 \\
 Durée & environ deux mois et demi \\
 Modalité & à distance \\
 Équipe projet & un seul stagiaire (réalisation intégrale) \\
-Organisation du travail & informelle, sans sprints ni outils de gestion de projet dédiés \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 Le document de sujet fourni par l'encadrant mentionnait une durée de référence de \textbf{12 semaines} et un calendrier \og juillet 2026 \fg{}. La période retenue pour ce rapport est celle effectivement indiquée pour le stage : \textbf{22 juin -- 6 septembre 2026}. Le même document évoquait une \og équipe agile \fg{} ; dans les faits, le développement a été \textbf{individuel} et \textbf{informel}.
 
-\section{Présentation du projet Op Support IA}
+\subsection{Contexte fonctionnel et projet Op Support IA}
+
+Une demande de support typique (suivi de commande, retard, remboursement, mot de passe, code promotionnel) traverse plusieurs étapes : qualification, recherche d'information, réponse, éventuellement transfert vers un humain, puis clôture et recueil d'avis. Sans outil dédié, ces étapes se perdent dans la messagerie personnelle ou un standard téléphonique. Les conséquences habituelles sont :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item une charge répétitive pour les opérateurs sur des questions déjà documentées ;
+  \item l'absence de \textbf{traçabilité} (statut, interlocuteur, pièces jointes, historique) ;
+  \item l'impossibilité de distinguer ce qui a été résolu par une FAQ de ce qui a nécessité un humain ;
+  \item un faible pilotage (délai de première réponse, satisfaction).
+\end{itemize}
 
 Le projet, intitulé dans le cahier des charges \textit{Projet de stage --- Support by IA} / \textit{Op Support IA}, consiste à concevoir une application de support dans laquelle :
 
@@ -70,9 +72,23 @@ Le projet, intitulé dans le cahier des charges \textit{Projet de stage --- Supp
   \item l'administrateur valide les agents et consulte statistiques et historique.
 \end{enumerate}
 
-Le produit livré comprend une application \textbf{web} (interface responsive) et un client mobile \textbf{Expo / React Native} connecté au même backend. Le client mobile implémente l'authentification client et staff, le chat, les réponses IA fournies par le backend, l'escalade humaine, la clôture avec satisfaction, les pièces jointes, le temps réel Socket.io, ainsi que des écrans agent et administrateur. Il ne faut toutefois pas le présenter comme une version formellement recetteée : le dépôt ne contient pas de suite de tests automatisés ni de compte rendu de validation mobile.
+Le produit livré comprend une application \textbf{web} (interface responsive) et un client mobile \textbf{Expo / React Native} connecté au même backend. Le mobile couvre l'authentification, le chat, les réponses IA, l'escalade humaine, la clôture avec satisfaction, les pièces jointes, le temps réel Socket.io, ainsi que des écrans agent et administrateur. Il ne constitue toutefois pas une copie fonctionnellement identique du web : les actions rapides contextuelles du web sont remplacées par des suggestions statiques, et la connexion Google mobile nécessite une build native Expo configurée. Aucune recette formelle de cette version n'est documentée.
 
-\section{Objectifs du projet}
+\section{Problématique}
+
+Une FAQ seule suffit pour les cas les plus fréquents mais :
+
+\begin{itemize}[leftmargin=1.4em]
+  \item elle n'entretient pas un fil de discussion ;
+  \item elle ne déclenche pas d'escalade ni d'assignation ;
+  \item elle n'enregistre ni SLA ni note de satisfaction.
+\end{itemize}
+
+À l'inverse, un chat 100~\% humain (ou un e-mail) offre la souplesse d'un opérateur, mais chaque message consomme du temps humain, y compris pour les demandes déjà couvertes par la connaissance métier. Le sujet cherche donc un \textbf{compromis} : l'IA en première ligne, l'humain sur demande ou lorsque la base ne suffit pas.
+
+Le sujet du stage pose ainsi la question d'ingénierie logicielle suivante : \textbf{comment automatiser une partie du support tout en conservant une bascule humaine fluide et une supervision administrative ?}
+
+\section{Objectifs}
 
 À partir du cahier des charges et des choix techniques retenus avec l'encadrant (React / Next.js, Express, MongoDB, Gemini, JWT), les objectifs opérationnels ont été :
 
@@ -80,13 +96,17 @@ Le produit livré comprend une application \textbf{web} (interface responsive) e
   \item disposer d'un chat client francophone, authentifié (Google ou identification par nom et e-mail) ;
   \item répondre automatiquement via RAG + Gemini, avec un repli local si l'API générative est indisponible ;
   \item permettre l'escalade et le retour vers l'IA, l'affectation d'un agent, et la clôture notée ;
-  \item offrir un espace agent (file, réponses, pièces jointes) et un espace admin (validation, indicateurs opérationnels orientés SLA, historique) ;
-  \item persister les données sur MongoDB Atlas et diffuser les mises à jour par WebSocket (Socket.io) ;
+  \item offrir un espace agent (file, réponses, pièces jointes) et un espace admin (validation, SLA, historique) ;
+  \item persister les données sur MongoDB et documenter l'utilisation de MongoDB Atlas pour l'environnement distant, puis diffuser les mises à jour par WebSocket (Socket.io) ;
   \item documenter et tester le backend (santé API, autorisations, upload, retriever).
 \end{itemize}
 
-\section{Organisation du travail}
+\section{Méthodologie et démarche}
 
 Le stage n'a pas suivi un cadre Scrum (pas de sprints planifiés, pas de daily, pas de tableau Kanban documenté). Le travail s'est organisé de manière \textbf{itérative et informelle} : lecture du sujet, choix d'architecture, implémentation fullstack, sécurisation des routes, ajout des tests, puis rédaction du présent rapport.
 
-Les outils utilisés en plus du code source sont : \textbf{Visual Studio Code}, \textbf{Cursor}, \textbf{Antigravity}, \textbf{GitHub}, \textbf{Postman}, ainsi que les consoles \textbf{Google} (OAuth, Gemini) et \textbf{MongoDB Atlas}.
+Les outils utilisés en plus du code source sont : \textbf{Visual Studio Code}, \textbf{Cursor}, \textbf{Antigravity}, \textbf{GitHub}, ainsi que les consoles \textbf{Google} (OAuth, Gemini) et \textbf{MongoDB Atlas}. Postman est mentionné dans la documentation du projet pour les vérifications manuelles de l'API ; aucun compte rendu détaillé ni collection Postman n'est conservé dans le dépôt.
+
+\section{Conclusion}
+
+Ce chapitre a présenté le cadre académique et professionnel du PFA, le contexte fonctionnel d'Op Support IA, la problématique du support client ainsi que les objectifs et la démarche retenue. Le chapitre suivant précise les acteurs, les besoins, les exigences et les contraintes qui ont guidé la conception et la réalisation de la solution.
