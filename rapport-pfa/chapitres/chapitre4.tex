@@ -9,20 +9,27 @@ Ce chapitre décrit l'implémentation \textbf{effective} : organisation du code,
 \caption{Stack réellement utilisée}
 \label{tab:stack}
 \begin{tabularx}{\textwidth}{|l|X|}
-\tablelines
-\toprule
+\hline
 Catégorie & Choix réellement utilisés \\
-\midrule
+\hline
 Frontend Web & Next.js 16 (App Router), React 19 et TypeScript \\
+\hline
 Backend / API & Node.js et Express 5, avec une API REST/JSON \\
+\hline
 Application mobile & React Native 0.86, Expo 57 et TypeScript \\
+\hline
 Données & MongoDB avec Mongoose 9 ; MongoDB Atlas pour l'environnement distant documenté \\
+\hline
 IA / RAG & Google Gemini et retriever local fondé sur TF-IDF et la similarité cosinus \\
+\hline
 Communication temps réel & Socket.io côté backend, Web et mobile \\
+\hline
 Authentification & JWT pour les sessions et Google OAuth pour l'identification client \\
+\hline
 Tests & Jest, Supertest et MongoDB Memory Server ; Postman est mentionné dans la documentation pour les vérifications manuelles de l'API \\
+\hline
 Versionnement / déploiement & Git et GitHub ; Vercel pour le Web et Render pour le backend \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -87,25 +94,37 @@ Le dépôt est organisé autour de trois sous-projets : frontend web, backend et
 \caption{Arborescence simplifiée}
 \label{tab:tree}
 \begin{tabularx}{\textwidth}{|l|X|}
-\tablelines
-\toprule
+\hline
 Chemin & Rôle \\
-\midrule
+\hline
 \texttt{sinaps-project/app/} & Routes : \texttt{/}, \texttt{/login}, \texttt{/agent}, \texttt{/agent/signup}, \texttt{/admin} \\
+\hline
 \texttt{sinaps-project/components/chat/} & Chat client (fil, en-tête, compositeur, satisfaction, prompts) \\
+\hline
 \texttt{sinaps-project/components/admin/} & Tableau de bord administrateur \\
+\hline
 \texttt{sinaps-project/lib/api.ts} & Client HTTP et gestion des jetons \\
+\hline
 \texttt{sinaps-project/lib/socket.ts} & Client Socket.io \\
+\hline
 \texttt{sinaps-backend/server.js} & HTTP + Socket.io, CORS, montage des routes \\
+\hline
 \texttt{sinaps-backend/models/} & Schémas Mongoose \\
+\hline
 \texttt{sinaps-backend/controllers/} & Logique métier \\
+\hline
 \texttt{sinaps-backend/middleware/auth.js} & Gardes JWT \\
+\hline
 \texttt{sinaps-backend/services/} & \texttt{ragService.js}, \texttt{geminiService.js} \\
+\hline
 \texttt{sinaps-backend/data/knowledgeBase.js} & FAQ d'exemple \\
+\hline
 \texttt{sinaps-backend/tests/} & Suites Jest \\
+\hline
 \texttt{sinaps-backend/seed.js} & Jeu de démonstration \\
+\hline
 \texttt{sinaps-mobile/src/} & Client Expo / React Native : authentification, chat, temps réel, écrans agent et administrateur \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -121,29 +140,45 @@ Le frontend écoute par défaut \texttt{NEXT\_PUBLIC\_API\_URL=http://localhost:
 \label{tab:api}
 \small
 \begin{tabularx}{\textwidth}{|l|l|X|}
-\tablelines
-\toprule
+\hline
 Méthode & Chemin & Rôle \\
-\midrule
+\hline
 GET & \texttt{/api/health} & Santé du serveur \\
+\hline
 POST & \texttt{/api/users/find-or-create} & Session client (Google ou e-mail) \\
+\hline
 POST & \texttt{/api/conversations/find-or-create} & Conversation active du client \\
+\hline
 GET & \texttt{/api/conversations} & Liste (agent/admin), filtre \texttt{status}, \texttt{search} \\
+\hline
 GET & \texttt{/api/conversations/:id} & Fil + messages (propriétaire ou staff) \\
+\hline
 PATCH & \texttt{/api/conversations/:id/escalate} & Vers humain \\
+\hline
 PATCH & \texttt{/api/conversations/:id/de-escalate} & Retour IA \\
+\hline
 PATCH & \texttt{/api/conversations/:id/assign} & Assignation d'agent \\
+\hline
 PATCH & \texttt{/api/conversations/:id/close} & Clôture $\pm$ satisfaction \\
+\hline
 POST & \texttt{/api/messages} & Envoi ; déclenche l'IA si besoin \\
+\hline
 POST & \texttt{/api/conversations/:id/quick-reply} & Exécution d'une action rapide \\
+\hline
 POST & \texttt{/api/upload} & Fichier (session requise) \\
+\hline
 POST & \texttt{/api/agents/signup} & Inscription \texttt{pending} \\
+\hline
 POST & \texttt{/api/agents/login} & JWT staff \\
+\hline
 GET & \texttt{/api/agents} & Liste (admin) \\
+\hline
 PATCH & \texttt{/api/agents/:id/approve} & Validation \\
+\hline
 DELETE & \texttt{/api/agents/:id} & Rejet (suppression) \\
+\hline
 GET & \texttt{/api/stats} & Indicateurs admin \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 

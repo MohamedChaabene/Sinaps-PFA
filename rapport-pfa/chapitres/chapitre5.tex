@@ -35,19 +35,25 @@ Les scénarios fonctionnels ci-dessous sont vérifiés principalement à travers
 \label{tab:t-fonctionnels}
 \small
 \begin{tabularx}{\textwidth}{|l|X|l|}
-\tablelines
-\toprule
+\hline
 Scénario & Vérification principale & Résultat \\
-\midrule
+\hline
 Authentification et autorisation & Jetons client, agent et administrateur ; rôles incompatibles et accès aux conversations & Réussi \\
+\hline
 Création et consultation d'une conversation & Conversation active, propriétaire autorisé, autre client refusé & Réussi \\
+\hline
 Réponse IA / RAG & Message client, réponse IA lorsque \texttt{handledBy = ia}, recherche locale et repli sans clé Gemini & Réussi \\
+\hline
 Escalade et prise en charge humaine & Passage à \texttt{humain}/\texttt{en\_attente}, assignation, réponse agent et prévention d'un changement non autorisé & Réussi \\
+\hline
 Retour vers l'IA et actions rapides & Désescalade, confirmation, nouvelle question et demande d'agent & Réussi \\
+\hline
 Clôture et satisfaction & Passage à \texttt{resolu}, note entière de 1 à 5 et refus d'une note invalide & Réussi \\
+\hline
 Administration & Validation d'agents, statistiques et exclusion des données \texttt{isTestData} par défaut & Réussi \\
+\hline
 Pièces jointes & Session obligatoire, types autorisés et limite de taille & Réussi \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -63,20 +69,27 @@ Le fichier \texttt{api.test.js} vérifie notamment :
 \label{tab:t-api}
 \small
 \begin{tabularx}{\textwidth}{|X|l|}
-\tablelines
-\toprule
+\hline
 Cas & Attendu \\
-\midrule
+\hline
 Création d'utilisateur et jeton client & Code 200 avec un \texttt{token} \\
+\hline
 \texttt{find-or-create} sans session & Code 401 \\
+\hline
 Création d'une conversation authentifiée & \texttt{handledBy = ia} \\
+\hline
 Lecture sans session ou par un autre client & Codes 401 ou 403 \\
+\hline
 Lecture par le propriétaire & Code 200 \\
+\hline
 Escalade et désescalade & Modes et statuts mis à jour \\
+\hline
 Clôture avec note 5 ou note 0 & Résolution ; seule la note valide est enregistrée \\
+\hline
 Message humain ou client selon le jeton & Accepté avec le rôle approprié, refusé sinon \\
+\hline
 Injection d'un message \texttt{sender = ia} & Code 403 \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 

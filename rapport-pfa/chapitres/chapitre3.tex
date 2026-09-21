@@ -77,15 +77,17 @@ MongoDB stocke quatre collections Mongoose. Les relations sont des références 
 \caption{Collection \texttt{users} (clients)}
 \label{tab:user}
 \begin{tabularx}{\textwidth}{|l|l|X|}
-\tablelines
-\toprule
+\hline
 Champ & Type & Commentaire \\
-\midrule
+\hline
 googleId & String, unique, requis & Identifiant Google ou, en flux direct, souvent l'e-mail \\
+\hline
 name, email & String, requis & Profil affiché \\
+\hline
 avatar & String & URL d'avatar \\
+\hline
 timestamps & Date & \texttt{createdAt}, \texttt{updatedAt} \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -94,17 +96,21 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt} \\
 \caption{Collection \texttt{agents} (opérateurs et administrateurs)}
 \label{tab:agent}
 \begin{tabularx}{\textwidth}{|l|l|X|}
-\tablelines
-\toprule
+\hline
 Champ & Type & Commentaire \\
-\midrule
+\hline
 name, email & String (e-mail unique) & Identité de connexion \\
+\hline
 password & String & Hash bcrypt \\
+\hline
 role & \texttt{agent} $\mid$ \texttt{admin} & Défaut : agent \\
+\hline
 skills & [String] & Saisies à l'inscription ; \textbf{non utilisées} pour un routage automatique \\
+\hline
 status & \texttt{pending} $\mid$ \texttt{approved} & Un agent non approuvé ne peut pas se connecter \\
+\hline
 avatar & String & Optionnel \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -113,22 +119,31 @@ avatar & String & Optionnel \\
 \caption{Collection \texttt{conversations}}
 \label{tab:conv}
 \begin{tabularx}{\textwidth}{|l|l|X|}
-\tablelines
-\toprule
+\hline
 Champ & Type & Commentaire \\
-\midrule
+\hline
 client & ObjectId $\rightarrow$ User & Propriétaire \\
+\hline
 assignedAgent & ObjectId $\rightarrow$ Agent & Peut être nul \\
+\hline
 status & \texttt{en\_cours} $\mid$ \texttt{en\_attente} $\mid$ \texttt{resolu} & Cycle de vie \\
+\hline
 handledBy & \texttt{ia} $\mid$ \texttt{humain} & Qui répond \\
+\hline
 satisfaction.rating & Number 1--5 & Optionnel à la clôture \\
+\hline
 satisfaction.comment & String & Optionnel \\
+\hline
 resolvedBy, resolvedAt & String, Date & Origine et instant de résolution \\
+\hline
 resolutionType & Enum & Résolution confirmée par le client, par l'agent ou abandon \\
+\hline
 lastActivityAt & Date & Sélection de la conversation active la plus récente \\
+\hline
 aiAttemptCount, escalationCount & Number & Suivi des tentatives IA et des escalades \\
+\hline
 isTestData & Boolean & Marqueur exclu des indicateurs opérationnels \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -137,18 +152,23 @@ isTestData & Boolean & Marqueur exclu des indicateurs opérationnels \\
 \caption{Collection \texttt{messages}}
 \label{tab:msg}
 \begin{tabularx}{\textwidth}{|l|l|X|}
-\tablelines
-\toprule
+\hline
 Champ & Type & Commentaire \\
-\midrule
+\hline
 conversation & ObjectId & Fil parent \\
+\hline
 sender & \texttt{client} $\mid$ \texttt{ia} $\mid$ \texttt{humain} & Provenance \\
+\hline
 authorName & String & Affichage \\
+\hline
 content & String & Texte (peut être vide si pièce jointe) \\
+\hline
 attachments[] & url, type, name & \texttt{image} $\mid$ \texttt{video} $\mid$ \texttt{document} $\mid$ \texttt{link} \\
+\hline
 quickReplies[] & id, label, action, metadata & Actions proposées après une réponse IA \\
+\hline
 timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'affichage du fil \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -214,14 +234,15 @@ Deux familles de jetons JWT signés avec \texttt{JWT\_SECRET} coexistent.
 \label{tab:auth}
 \small
 \begin{tabularx}{\textwidth}{|l|X|}
-\tablelines
-\toprule
+\hline
 Profil & Mécanisme \\
-\midrule
+\hline
 Client & JWT \texttt{role=client}, 30~jours, après Google (ID token vérifié) ou identification e-mail. Stockage navigateur : \texttt{sinaps\_client}. \\
+\hline
 Agent / admin & JWT \texttt{role=agent$\mid$admin}, 7~jours, après e-mail + mot de passe. Refus si agent \texttt{pending}. Stockage : \texttt{sinaps\_token}. \\
+\hline
 Middleware & \texttt{requireAuth}, \texttt{requireAdmin}, \texttt{requireAgentOrAdmin}, \texttt{requireClientAuth}, \texttt{requireConversationAccess}, \texttt{requireSenderAuth}, \texttt{requireAnySession}. \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 

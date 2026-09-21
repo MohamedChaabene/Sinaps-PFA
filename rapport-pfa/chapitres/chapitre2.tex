@@ -15,14 +15,15 @@ Quatre rôles ou composants interviennent dans le fonctionnement du système. Le
 \caption{Acteurs du système}
 \label{tab:acteurs}
 \begin{tabularx}{\textwidth}{|l|X|}
-\tablelines
-\toprule
+\hline
 \textbf{Acteur} & \textbf{Rôle} \\
-\midrule
+\hline
 Client & Utilisateur final du support. S'identifie par Google ou par nom et e-mail. Consulte et alimente \textbf{sa} conversation. \\
+\hline
 Agent de support & Compte créé par inscription, \textbf{validé} par l'admin. Traite les fils escaladés. \\
+\hline
 Administrateur & Même modèle de compte qu'un agent, avec le rôle \texttt{admin}. Valide ou refuse les agents, consulte stats et historique. \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -64,40 +65,57 @@ Les exigences ci-dessous sont dérivées du document de sujet \textit{Projet Sta
 
 \small
 \begin{longtable}{|p{1.2cm}|p{9.4cm}|p{5.3cm}|}
-\tablelines
 \caption{Exigences fonctionnelles et statut dans le dépôt}
 \label{tab:exigences}\\
-\toprule
+\hline
 \textbf{Id} & \textbf{Exigence} & \textbf{Statut} \\
-\midrule
+\hline
 \endfirsthead
 \multicolumn{3}{c}{\tablename\ \thetable\ -- suite} \\
-\toprule
+\hline
 \textbf{Id} & \textbf{Exigence} & \textbf{Statut} \\
-\midrule
+\hline
 \endhead
-\midrule
+\hline
 \multicolumn{3}{r}{Suite à la page suivante} \\
+\hline
 \endfoot
-\bottomrule
+\hline
 \endlastfoot
 RF01 & Le client identifie une demande dans une interface de chat. & Réalisé \\
+\hline
 RF02 & Authentification client par compte Google (OAuth). & Réalisé sur le Web et côté serveur (jeton Google vérifié). Une saisie nom/e-mail existe en parallèle ; Google Sign-In natif mobile n'a pas été vérifié. \\
+\hline
 RF03 & L'agent IA répond à partir d'une base de connaissances (RAG). & Réalisé (retriever TF-IDF + Gemini, repli local). \\
+\hline
 RF04 & Workflow de statuts (en cours, en attente, résolu) et mode IA / humain. & Réalisé \\
+\hline
 RF05 & Bascule vers un opérateur humain à l'initiative du client. & Réalisé \\
+\hline
 RF06 & Retour vers l'IA (désescalade). & Réalisé \\
+\hline
 RF07 & Plusieurs agents (comptes distincts, compétences saisies à l'inscription). & Comptes : réalisé. Routage automatique par compétence : \textbf{non réalisé}. \\
+\hline
 RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web), avec indicateur de saisie, verrouillage pendant la réponse IA et retours d'action. \\
+\hline
 RF09 & Échange de documents, images, vidéos. & \textbf{Partiellement réalisé} : upload et échange de fichiers pris en charge par le backend et le Web ; images et documents disponibles sur mobile. Le flux vidéo mobile n'a pas été implémenté ni vérifié, et l'aperçu \og unfurl \fg{} de liens n'est pas documenté comme fonctionnalité distincte. \\
+\hline
 RF10 & Clôture et enquête de satisfaction (note 1--5, commentaire). & Réalisé \\
+\hline
 RF11 & Inscription agent, validation ou rejet par l'admin. & Réalisé \\
+\hline
 RF12 & Historique des conversations, recherche et filtre par statut. & Réalisé (espace admin). \\
+\hline
 RF13 & Statistiques : volume, résolution IA vs humain, satisfaction moyenne, temps de réponse. & Réalisé (agrégations MongoDB, pas de chiffres marketing fictifs). \\
+\hline
 RF14 & Application mobile native (React Native / Flutter). & \textbf{Partiellement réalisé} : client Expo / React Native présent et connecté au backend ; aucune version Flutter ni recette formelle documentée. \\
+\hline
 RF15 & File d'attente / messagerie temps réel. & Réalisé (Socket.io). \\
+\hline
 RF16 & Suggestions d'actions rapides après une réponse IA. & Réalisé (confirmation, nouvelle question, escalade ; actions contextualisées). \\
+\hline
 RF17 & Affichage cohérent des messages et des profils. & Réalisé (horodatages persistés, avatars client de repli déterministes, avatars agent). \\
+\hline
 \end{longtable}
 \normalsize
 

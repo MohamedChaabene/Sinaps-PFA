@@ -7,16 +7,19 @@
 \caption{Statuts et modes de prise en charge}
 \label{tab:annexe-statuts}
 \begin{tabularx}{\textwidth}{|l|l|X|}
-\tablelines
-\toprule
+\hline
 Champ & Valeur & Signification opérationnelle \\
-\midrule
+\hline
 status & \texttt{en\_cours} & Conversation active (IA ou humain déjà en charge) \\
+\hline
 status & \texttt{en\_attente} & Escaladée, en file côté agents \\
+\hline
 status & \texttt{resolu} & Clôturée \\
+\hline
 handledBy & \texttt{ia} & Prochaine réponse automatique possible \\
+\hline
 handledBy & \texttt{humain} & Réponses attendues d'un opérateur \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
 
@@ -43,14 +46,16 @@ Ces identifiants figurent dans le README du projet à des fins de démonstration
 \caption{Comptes créés par \texttt{npm run seed}}
 \label{tab:seed}
 \begin{tabularx}{\textwidth}{|l|l|l|X|}
-\tablelines
-\toprule
+\hline
 Rôle & E-mail & Mot de passe (seed) & Accès \\
-\midrule
+\hline
 Admin & admin@sinaps.com & password123 & \texttt{/admin} \\
+\hline
 Agent & sarah.benali@sinaps.com & password123 & \texttt{/agent} \\
+\hline
 Agent & karim.mansouri@sinaps.com & password123 & \texttt{/agent} \\
+\hline
 Pending & youssef.mehdi@sinaps.com & password123 & login refusé tant que non validé \\
-\bottomrule
+\hline
 \end{tabularx}
 \end{table}
