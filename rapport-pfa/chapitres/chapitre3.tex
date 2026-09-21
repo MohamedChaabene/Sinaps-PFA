@@ -76,7 +76,8 @@ MongoDB stocke quatre collections Mongoose. Les relations sont des références 
 \centering
 \caption{Collection \texttt{users} (clients)}
 \label{tab:user}
-\begin{tabularx}{\textwidth}{@{}llX@{}}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\tablelines
 \toprule
 Champ & Type & Commentaire \\
 \midrule
@@ -92,7 +93,8 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt} \\
 \centering
 \caption{Collection \texttt{agents} (opérateurs et administrateurs)}
 \label{tab:agent}
-\begin{tabularx}{\textwidth}{@{}llX@{}}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\tablelines
 \toprule
 Champ & Type & Commentaire \\
 \midrule
@@ -110,7 +112,8 @@ avatar & String & Optionnel \\
 \centering
 \caption{Collection \texttt{conversations}}
 \label{tab:conv}
-\begin{tabularx}{\textwidth}{@{}llX@{}}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\tablelines
 \toprule
 Champ & Type & Commentaire \\
 \midrule
@@ -133,7 +136,8 @@ isTestData & Boolean & Marqueur exclu des indicateurs opérationnels \\
 \centering
 \caption{Collection \texttt{messages}}
 \label{tab:msg}
-\begin{tabularx}{\textwidth}{@{}llX@{}}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\tablelines
 \toprule
 Champ & Type & Commentaire \\
 \midrule
@@ -209,7 +213,8 @@ Deux familles de jetons JWT signés avec \texttt{JWT\_SECRET} coexistent.
 \caption{Politique d'authentification}
 \label{tab:auth}
 \small
-\begin{tabularx}{\textwidth}{@{}lX@{}}
+\begin{tabularx}{\textwidth}{|l|X|}
+\tablelines
 \toprule
 Profil & Mécanisme \\
 \midrule
