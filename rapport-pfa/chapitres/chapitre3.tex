@@ -6,7 +6,7 @@ Ce chapitre présente les choix de conception retenus pour transformer les besoi
 
 \section{Architecture générale}
 
-Le système est une architecture composée de deux clients (web et mobile) et d'un backend commun, communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB. Le client web repose sur Next.js / React et le client mobile sur Expo / React Native. Le backend expose une API REST/JSON, coordonne l'authentification, les conversations, le moteur RAG/Gemini et les échanges temps réel avec Socket.io.
+Le système est une architecture composée de deux clients (web et mobile) et d'un backend commun, communiquant par HTTP(S) et WebSocket, avec une base documentaire MongoDB. Le client web repose sur Next.js / React et le client mobile sur Expo / React Native. Le backend expose une API REST/JSON, coordonne l'authentification, les conversations, le moteur RAG/Gemini et les échanges temps réel avec Socket.io. Ces choix s'appuient sur les documentations respectives de Next.js, Express, MongoDB et Socket.io \cite{nextjs,express,mongodb,socketio}.
 
 \begin{figure}[H]
 \centering
@@ -50,7 +50,7 @@ Cette séparation permet aux deux clients de partager les mêmes conversations, 
 
 \subsection{CU01 --- S'identifier (client)}
 
-Le client fournit un \textbf{jeton Google}, vérifié avec \texttt{GOOGLE\_CLIENT\_ID}, ou un couple nom / e-mail. Le serveur trouve ou crée le profil client et délivre un JWT de rôle \texttt{client}. Une conversation non résolue est réutilisée, sinon une nouvelle conversation est créée avec \texttt{handledBy = ia} et \texttt{status = en\_cours}.
+Le client fournit un \textbf{jeton Google}, vérifié avec \texttt{GOOGLE\_CLIENT\_ID}, ou un couple nom / e-mail. Le serveur trouve ou crée le profil client et délivre un JWT de rôle \texttt{client}. Ces mécanismes sont décrits respectivement par la documentation Google Identity et la spécification JWT \cite{googleauth,jwt}. Une conversation non résolue est réutilisée, sinon une nouvelle conversation est créée avec \texttt{handledBy = ia} et \texttt{status = en\_cours}.
 
 \subsection{CU02 --- Envoyer un message}
 

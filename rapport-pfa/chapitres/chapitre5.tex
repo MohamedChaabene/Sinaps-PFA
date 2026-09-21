@@ -57,6 +57,38 @@ Pièces jointes & Session obligatoire, types autorisés et limite de taille & R�
 \end{tabularx}
 \end{table}
 
+\subsection{Matrice synthétique des exigences et des preuves}
+
+Le tableau suivant rapproche les capacités principales de leur preuve disponible, sans se substituer au tableau complet des exigences du chapitre~2.
+
+\begin{table}[H]
+\centering
+\caption{Exigences principales et niveau de preuve}
+\label{tab:preuves}
+\scriptsize
+\begin{tabularx}{\textwidth}{|p{2.9cm}|X|X|p{3.3cm}|}
+\hline
+\textbf{Capacité} & \textbf{Preuve d'implémentation} & \textbf{Preuve de vérification} & \textbf{Limite ou portée} \\
+\hline
+Identification client & Routes d'identification directe et Google ; sessions JWT. & Tests API reproduits ; parcours Web et Expo Web exécuté antérieurement. & Google Sign-In natif Android/iOS non vérifié. \\
+\hline
+Réponse IA / RAG & Retriever TF-IDF, appel Gemini et repli local dans le backend. & Tests RAG reproduits ; réponse IA observée dans le parcours Web/Expo Web. & Qualité linguistique de Gemini et performance non mesurées. \\
+\hline
+Échange temps réel & Événements Socket.io pour messages et mises à jour de conversation. & Connexion Socket.io observée dans le parcours Expo Web ; code source inspecté. & Aucun test de charge Socket.io. \\
+\hline
+Escalade humaine & Routes et transitions vers le mode humain, avec prise en charge agent. & Tests backend reproduits ; scénario client vérifié sur Web/Expo Web. & Recette formelle d'un encadrant non documentée. \\
+\hline
+Retour vers l'IA & Action de désescalade et retour au mode \texttt{ia}. & Tests d'actions rapides et de flux humain reproduits ; scénario manuel observé. & Vérification limitée aux parcours disponibles, hors recette native. \\
+\hline
+Clôture et satisfaction & Route de clôture, statut \texttt{resolu}, note 1--5 et commentaire. & Tests backend reproduits ; écran de satisfaction présent dans les captures. & Aucun test E2E d'interface. \\
+\hline
+Agent et administrateur & Rôles, validation d'agent, file, historique et statistiques. & Tests d'autorisation et d'administration reproduits ; code source inspecté. & Interfaces Web/Mobile non couvertes par une suite automatisée. \\
+\hline
+Tests backend automatisés & 13 fichiers de test Jest présents dans \texttt{sinaps-backend/tests/}. & Exécution locale de \texttt{npm test} : 13 suites et 205 tests réussis. & Résultat attaché à cette exécution ; aucune couverture ni performance déduite. \\
+\hline
+\end{tabularx}
+\end{table}
+
 \section{Tests backend automatisés}
 
 \subsection{Intégration API}
@@ -107,7 +139,7 @@ Les tests d'actions rapides vérifient notamment leur stockage, leurs identifian
 
 \subsection{Résultat de la suite}
 
-La dernière exécution locale de la commande \texttt{npm test} a produit le résultat suivant :
+L'exécution locale de la commande \texttt{npm test} reproduite pour cette version a produit le résultat suivant :
 
 \begin{center}
 \textbf{13 suites passées, 205 tests passés, 0 échec, 0 snapshot}
@@ -130,7 +162,7 @@ Les tests dédiés documentent plusieurs problèmes rencontrés puis corrigés p
 
 \section{Validation finale}
 
-La version évaluée dispose d'une suite backend reproductible qui couvre les principaux flux d'API, la persistance MongoDB en mémoire, l'authentification, les conversations, le RAG local, les réponses de repli, les pièces jointes, les actions rapides, les horodatages et l'administration. L'exécution confirmée aboutit à 205 tests réussis répartis sur 13 suites.
+La version évaluée dispose d'une suite backend exécutable qui couvre les principaux flux d'API, la persistance MongoDB en mémoire, l'authentification, les conversations, le RAG local, les réponses de repli, les pièces jointes, les actions rapides, les horodatages et l'administration. Dans l'environnement de vérification utilisé, \texttt{npm test} a abouti à 205 tests réussis répartis sur 13 suites.
 
 Les limites restantes sont les suivantes :
 
@@ -139,10 +171,10 @@ Les limites restantes sont les suivantes :
   \item aucun test de charge Socket.io n'est présent ;
   \item aucune recette formelle signée par l'encadrant n'est documentée ;
   \item les indicateurs du tableau de bord dépendent des données effectivement présentes ; le jeu de démonstration est marqué \texttt{isTestData} et exclu par défaut ;
-  \item aucune preuve de déploiement public ni mesure de production n'est fournie dans le dépôt ;
+  \item la vérification fonctionnelle du déploiement public a été réalisée par une exécution externe, mais sa configuration complète et ses secrets ne sont pas reproductibles depuis le dépôt seul ;
   \item les tests automatisés ne permettent pas de conclure à une validation complète des interfaces Web et Mobile.
 \end{itemize}
 
 \section{Conclusion}
 
-Les tests backend automatisés ont permis de vérifier les principaux comportements fonctionnels et plusieurs corrections importantes de SINAPS. Les résultats obtenus sont reproductibles et couvrent les flux essentiels de l'API, tout en laissant clairement identifiées les limites liées aux tests d'interface, de charge et de validation en production.
+Les tests backend automatisés ont permis de vérifier les principaux comportements fonctionnels et plusieurs corrections importantes de SINAPS. La commande \texttt{npm test} permet de reproduire cette vérification backend ; elle couvre les flux essentiels de l'API, tout en laissant clairement identifiées les limites liées aux tests d'interface, de charge et de validation en production.

@@ -55,7 +55,7 @@ La figure~\ref{fig:sinaps-technologies} présente visuellement les principales t
 
 \textbf{Client mobile.} React Native et Expo constituent une application séparée du frontend Web, partageant le backend REST et Socket.io. Cette stack mobile n'est donc pas une composante supplémentaire de MERN.
 
-\textbf{IA et recherche documentaire.} Le service Google Gemini génère les réponses lorsqu'il est disponible. Avant cette génération, le retriever local normalise les textes, calcule des scores TF-IDF et compare les vecteurs par similarité cosinus afin de sélectionner les éléments pertinents de la base de connaissances. En l'absence de réponse Gemini exploitable, le backend dispose également d'un repli local.
+\textbf{IA et recherche documentaire.} Le service Google Gemini génère les réponses lorsqu'il est disponible. Avant cette génération, le retriever local normalise les textes, calcule des scores TF-IDF et compare les vecteurs par similarité cosinus afin de sélectionner les éléments pertinents de la base de connaissances. Le terme RAG est employé ici au sens de cette récupération préalable de contexte, conformément à la référence conceptuelle \cite{rag}, tandis que l'appel au service Gemini est documenté par Google AI \cite{gemini}. En l'absence de réponse Gemini exploitable, le backend dispose également d'un repli local.
 
 \textbf{Temps réel et authentification.} Socket.io complète l'API REST pour diffuser les messages et les mises à jour de conversations. Google OAuth intervient dans l'identification client, tandis que des jetons JWT représentent les sessions client, agent et administrateur et sont contrôlés par les middleware du backend.
 
