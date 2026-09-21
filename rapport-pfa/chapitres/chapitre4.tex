@@ -25,6 +25,24 @@ Versionnement / déploiement & Git et GitHub ; Vercel pour le Web et Render pour
 \end{tabularx}
 \end{table}
 
+La figure~\ref{fig:sinaps-technologies} présente visuellement les principales technologies mobilisées dans cette stack.
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{@{}cccc@{}}
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/nextjs.png} &
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/react.png} &
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/nodejs.png} &
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/github.png} \\
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/mongodb.png} &
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/gemini.png} &
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/socketio.png} &
+  \includegraphics[height=1.25cm,keepaspectratio]{images/branding/expo.png}
+\end{tabular}
+\caption{Principales technologies mobilisées dans la réalisation de SINAPS}
+\label{fig:sinaps-technologies}
+\end{figure}
+
 \textbf{Lecture de la stack.} Le terme \textbf{MERN} désigne ici l'association MongoDB, Express.js, React et Node.js. Next.js est le framework utilisé autour de l'application React web ; TypeScript apporte un typage statique aux clients web et mobile. Express.js expose l'API REST du backend Node.js, avec des échanges JSON, tandis que MongoDB assure la persistance des utilisateurs, agents, conversations et messages. Mongoose définit les schémas utilisés par le backend.
 
 \textbf{Client mobile.} React Native et Expo constituent une application séparée du frontend Web, partageant le backend REST et Socket.io. Cette stack mobile n'est donc pas une composante supplémentaire de MERN.
@@ -37,7 +55,7 @@ Versionnement / déploiement & Git et GitHub ; Vercel pour le Web et Render pour
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/SINAPS Architecture Diagram.png}
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/architecture/SINAPS Architecture Diagram.png}
 \caption{Architecture générale et stack technologique de SINAPS}
 \label{fig:architecture-stack}
 \end{figure}
@@ -46,11 +64,11 @@ Versionnement / déploiement & Git et GitHub ; Vercel pour le Web et Render pour
 
 \subsection{Déploiement et hébergement}
 
-La chaîne de déploiement vérifiée est \textbf{GitHub $\rightarrow$ Vercel (Web)} et \textbf{GitHub $\rightarrow$ Render (Backend)}. Le frontend public est accessible à \texttt{https://sinaps-pfa.vercel.app} et utilise l'API Render \texttt{https://sinaps-backend-jm1h.onrender.com/api}. L'endpoint \texttt{GET /api/health} a répondu avec le statut HTTP 200, puis une identification par nom et e-mail, la création d'une conversation et un échange avec réponse IA ont été vérifiés depuis le Web. Ces vérifications ne constituent pas une preuve de fonctionnement natif Android ou iOS.
+La chaîne de déploiement vérifiée est \textbf{GitHub $\rightarrow$ Vercel (Web)} et \textbf{GitHub $\rightarrow$ Render (Backend)}. Le frontend public est accessible à \texttt{https://sinaps-pfa.vercel.app} et utilise l'API Render \texttt{https://sinaps-backend-jm1h.onrender.com/api}. L'endpoint \texttt{GET /api/health} a répondu avec le statut HTTP 200, puis une identification par nom et e-mail, la création d'une conversation et un échange avec réponse IA ont été vérifiés depuis le Web. Cette vérification fonctionnelle a été réalisée par une exécution externe ; la configuration complète Vercel/Render et les secrets ne sont pas versionnés et ne sont donc pas reproductibles depuis le dépôt seul. Elle ne constitue pas une preuve de fonctionnement natif Android ou iOS.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/Architecture de déploiement SINAPS.png}
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/architecture/Architecture de déploiement SINAPS.png}
 \caption{Architecture de déploiement et d'hébergement de SINAPS}
 \label{fig:deployment-architecture}
 \end{figure}
@@ -144,7 +162,7 @@ Le fichier \texttt{geminiService.js} enchaîne : retrieval $\rightarrow$ constru
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/Pipeline RAG de SINAPS.png}
+\includegraphics[width=\textwidth,height=0.38\textheight,keepaspectratio]{images/architecture/Pipeline RAG de SINAPS.png}
 \caption{Pipeline de recherche augmentée par génération (RAG) de SINAPS}
 \label{fig:rag-pipeline}
 \end{figure}
@@ -159,7 +177,7 @@ Après identification (\texttt{ClientEntryForm}, bouton Google et/ou formulaire)
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/sinaps-satisfaction-dialog.png}
+  \includegraphics[width=0.9\textwidth]{images/screenshots/web/sinaps-satisfaction-dialog.png}
   \caption{Évaluation de la satisfaction à la clôture d'une conversation}
   \label{fig:satisfaction-dialog}
 \end{figure}
@@ -168,7 +186,7 @@ Les réponses IA peuvent porter des \textbf{actions rapides} : confirmer que la 
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/sinaps-client-chat-ai.png}
+  \includegraphics[width=0.9\textwidth]{images/screenshots/web/sinaps-client-chat-ai.png}
   \caption{Conversation client avec réponse RAG/Gemini et actions rapides}
   \label{fig:client-chat-ai}
 \end{figure}
@@ -179,7 +197,7 @@ La page \texttt{/agent} est protégée (\texttt{AuthGuard}). L'agent se connecte
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/sinaps-human-escalation.png}
+  \includegraphics[width=0.9\textwidth]{images/screenshots/web/sinaps-human-escalation.png}
   \caption{Escalade d'une conversation vers la file des agents}
   \label{fig:human-escalation}
 \end{figure}
@@ -190,7 +208,7 @@ Le tableau de bord affiche les indicateurs opérationnels de satisfaction et de 
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\textwidth]{images/sinaps-admin-dashboard.png}
+  \includegraphics[width=0.95\textwidth]{images/screenshots/web/sinaps-admin-dashboard.png}
   \caption{Tableau de bord administrateur de SINAPS TEC}
   \label{fig:admin-dashboard}
 \end{figure}
@@ -199,43 +217,45 @@ Le tableau de bord affiche les indicateurs opérationnels de satisfaction et de 
 
   Le dossier \texttt{sinaps-mobile/} contient un client Expo / React Native connecté aux mêmes routes HTTP et au même serveur Socket.io que le client web. Il propose l'authentification client par nom / e-mail ou Google, l'authentification agent / administrateur par e-mail et mot de passe, la persistance de session, le chat, les pièces jointes, l'indicateur de frappe, l'escalade, le retour vers l'IA, la clôture avec satisfaction et le mode sombre. Des écrans distincts permettent également à un agent de consulter la file, de prendre en charge une conversation, de répondre et de la résoudre, ainsi qu'à un administrateur de consulter les statistiques, les agents et l'historique.
 
-  Le mobile n'est pas visuellement identique au web, car son interface est adaptée aux petits écrans. Il reprend toutefois les actions rapides contextuelles attachées à certaines réponses IA, l'escalade vers un agent humain, le retour vers l'IA, la clôture avec satisfaction et l'indicateur d'état Socket.io. Son compositeur propose les images et documents ; le parcours vidéo exposé par le web n'a pas été ajouté. L'inscription d'un agent reste disponible uniquement sur \texttt{/agent/signup}. La connexion Google mobile dépend en outre d'une build native Expo configurée. Enfin, les valeurs de secours prévues dans l'écran administrateur mobile lorsque les statistiques sont absentes ne doivent pas être considérées comme des mesures de production. Le client mobile a été lancé en Expo Web sur \texttt{http://localhost:8081} avec l'API Render : l'écran de connexion, l'identification directe, le chargement d'une conversation, l'envoi d'un message, une réponse IA, les actions rapides, l'escalade, le retour vers l'IA, la clôture avec satisfaction et une connexion Socket.io ont été observés. Cette vérification ne couvre ni une build native Android/iOS ni Google Sign-In natif. Le dépôt contient la configuration TypeScript du client mobile, mais aucune suite de tests automatisés mobile n'est présente.
+  Le mobile n'est pas visuellement identique au web, car son interface est adaptée aux petits écrans. Il reprend toutefois des actions rapides \textbf{contextuelles} attachées à certaines réponses IA, l'escalade vers un agent humain, le retour vers l'IA, la clôture avec satisfaction et l'indicateur d'état Socket.io. Son compositeur propose les images et documents ; le parcours vidéo exposé par le web n'a pas été ajouté. L'inscription d'un agent reste disponible uniquement sur \texttt{/agent/signup}. La connexion Google mobile dépend en outre d'une build native Expo configurée. Enfin, les valeurs de secours prévues dans l'écran administrateur mobile lorsque les statistiques sont absentes ne doivent pas être considérées comme des mesures de production.
+
+  Le client mobile a été lancé en Expo Web sur \texttt{http://localhost:8081} avec l'API Render. Le parcours vérifié comprend l'identification directe, l'envoi d'un message, une réponse IA fondée sur le RAG et les actions rapides contextuelles, ainsi que l'indicateur Socket.io \og En direct \fg{}. Une escalade explicite vers un agent humain fait apparaître les états \og En attente \fg{} et \og Agent demandé \fg{} ; le contrôle \og Mode IA \fg{} permet ensuite le retour vers l'assistant, avec une nouvelle réponse IA et des actions rapides. La clôture déclenche enfin le dialogue d'évaluation à cinq étoiles. Cette vérification ne couvre ni une build native Android/iOS ni Google Sign-In natif. Le dépôt contient la configuration TypeScript du client mobile, mais aucune suite de tests automatisés mobile n'est présente.
 
   L'écran d'identification directe par nom et e-mail est présenté en figure~\ref{fig:mobile-login}. La figure~\ref{fig:mobile-chat-ai} montre ensuite une conversation mobile avec une réponse de l'assistant IA fondée sur le RAG et les actions rapides disponibles pour le client.
 
   \begin{figure}[H]
     \centering
-    \includegraphics[width=0.38\textwidth]{images/sinaps-mobile-login.png}
+    \includegraphics[width=0.38\textwidth]{images/screenshots/mobile/sinaps-mobile-login.png}
     \caption{Écran d'identification directe du client dans l'application mobile SINAPS}
     \label{fig:mobile-login}
   \end{figure}
 
   \begin{figure}[H]
     \centering
-    \includegraphics[width=0.38\textwidth]{images/sinaps-mobile-chat-ai.png}
+    \includegraphics[width=0.38\textwidth]{images/screenshots/mobile/sinaps-mobile-chat-ai.png}
     \caption{Conversation mobile avec réponse de l'assistant IA fondée sur le RAG et actions rapides}
     \label{fig:mobile-chat-ai}
   \end{figure}
 
-  La figure~\ref{fig:mobile-human-escalation} illustre la demande explicite de prise en charge humaine et l'état \og En attente \fg{} affiché dans l'en-tête. Après la résolution, la figure~\ref{fig:mobile-satisfaction} présente le dialogue de notation et de clôture de la conversation.
+  La figure~\ref{fig:mobile-human-escalation} illustre la demande explicite de prise en charge humaine, les états \og En attente \fg{} et \og Agent demandé \fg{}, ainsi que le contrôle de retour \og Mode IA \fg{}. Après la résolution, la figure~\ref{fig:mobile-satisfaction} présente le dialogue de notation et de clôture de la conversation.
 
   \begin{figure}[H]
     \centering
-    \includegraphics[width=0.38\textwidth]{images/sinaps-mobile-human-escalation.png}
-    \caption{Escalade explicite d'une conversation mobile vers un agent humain}
+    \includegraphics[width=0.38\textwidth]{images/screenshots/mobile/sinaps-mobile-human-escalation.png}
+    \caption{Escalade explicite vers un agent humain : états En attente, Agent demandé et retour Mode IA}
     \label{fig:mobile-human-escalation}
   \end{figure}
 
   \begin{figure}[H]
     \centering
-    \includegraphics[width=0.38\textwidth]{images/sinaps-mobile-satisfaction.png}
+    \includegraphics[width=0.38\textwidth]{images/screenshots/mobile/sinaps-mobile-satisfaction.png}
     \caption{Évaluation de la satisfaction et clôture d'une conversation mobile}
     \label{fig:mobile-satisfaction}
   \end{figure}
 
   \section{Données de démonstration}
 
-Le script \texttt{npm run seed} recrée des comptes d'exemple (mot de passe de seed : \texttt{password123}) : administrateur \texttt{admin@sinaps.com}, agents validés et un agent en attente, plus des utilisateurs et conversations de démonstration. Ces comptes servent aux captures et aux tests manuels ; ils ne constituent pas une population réelle de production.
+Le script \texttt{npm run seed} recrée des comptes de démonstration avec un mot de passe défini par le script de seed, ainsi que des utilisateurs et conversations de démonstration. Ces comptes servent aux captures et aux tests manuels ; ils constituent uniquement des données locales ou de test et non une population réelle de production.
 
 \section{Mise en route (développement local)}
 

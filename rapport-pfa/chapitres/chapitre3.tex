@@ -10,25 +10,7 @@ Le système est une architecture composée de deux clients (web et mobile) et d'
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-  font=\small,
-  box/.style={draw=sinapsbleu, rounded corners=3pt, align=center, inner sep=7pt, fill=white, drop shadow},
-  title/.style={font=\bfseries\small\color{sinapsbleu}}
-]
-\node[box, fill=sinapsbleu!8, minimum width=4.2cm] (fe) {\textbf{Frontend}\\ Next.js 16 / React 19\\ TypeScript, Tailwind\\ \texttt{:3000}};
-\node[box, fill=sinapsbleu!8, minimum width=4.6cm, right=1.3cm of fe] (be) {\textbf{Backend}\\ Node.js / Express 5\\ Socket.io, JWT, Multer\\ \texttt{:5000}};
-\node[box, fill=sinapsbleu!8, minimum width=4.2cm, below=1.35cm of fe, xshift=-2.5cm] (mobile) {\textbf{Client mobile}\\ Expo / React Native\\ HTTP + Socket.io};
-\node[box, fill=grisclair, minimum width=3.6cm, below=1.5cm of be] (db) {\textbf{MongoDB}\\ User, Agent,\\ Conversation, Message};
-\node[box, fill=grisclair, minimum width=3.6cm, left=1.2cm of db] (ai) {\textbf{IA}\\ Retriever TF-IDF\\ + API Gemini};
-\node[box, fill=grisclair, minimum width=3.4cm, right=1.2cm of db] (ext) {\textbf{Externes}\\ Google OAuth\\ fichiers \texttt{/uploads}};
-
-\draw[-{Latex}] (fe.east) -- node[above, font=\scriptsize, yshift=2pt]{REST / JSON} (be.west);
-\draw[-{Latex}] (be.west) -- node[below, font=\scriptsize, yshift=-2pt]{Socket.io} (fe.east);
-\draw[-{Latex}] (mobile.east) -- node[below, font=\scriptsize]{REST / Socket.io} (be.south west);
-\draw[-{Latex}] (be.south) -- (db.north);
-\draw[-{Latex}] (be.south west) -- (ai.north east);
-\draw[-{Latex}] (be.south east) -- (ext.north west);
-\end{tikzpicture}
+\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{images/architecture/sinaps-logical-architecture.png}
 \caption{Architecture logique d'Op Support IA (vue déployable en local)}
 \label{fig:archi}
 \end{figure}
@@ -61,51 +43,8 @@ Cette séparation permet aux deux clients de partager les mêmes conversations, 
 
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[
-  font=\footnotesize,
-  actor/.style={align=center},
-  uc/.style={draw, ellipse, minimum width=2.9cm, minimum height=0.85cm, align=center, inner sep=1pt},
-  sys/.style={draw=sinapsbleu, thick, dashed, inner sep=12pt, rounded corners}
-]
-\node[actor] (c) at (0,0) {\textbf{Client}};
-\node[actor] (a) at (0,-5.2) {\textbf{Agent}};
-\node[actor] (ad) at (11.2,-2.4) {\textbf{Admin}};
-
-\node[uc] (u1) at (4.6,1.6) {S'identifier};
-\node[uc] (u2) at (4.6,0.5) {Discuter (IA)};
-\node[uc] (u3) at (4.6,-0.6) {Joindre un fichier};
-\node[uc] (u4) at (4.6,-1.7) {Escalader / revenir IA};
-\node[uc] (u5) at (4.6,-2.8) {Clôturer + noter};
-
-\node[uc] (u6) at (4.6,-4.2) {Se connecter};
-\node[uc] (u7) at (4.6,-5.3) {Répondre (humain)};
-\node[uc] (u8) at (4.6,-6.4) {Prendre une conversation};
-
-\node[uc] (u9) at (8.6,-0.4) {Valider / rejeter agent};
-\node[uc] (u10) at (8.6,-1.6) {Voir les statistiques};
-\node[uc] (u11) at (8.6,-2.8) {Filtrer l'historique};
-\node[uc] (u12) at (8.6,-4.2) {S'inscrire (pending)};
-
-\node[sys, fit=(u1)(u2)(u3)(u4)(u5)(u6)(u7)(u8)(u9)(u10)(u11)(u12)] (sys) {};
-\node[above] at (sys.north) {\textbf{Op Support IA}};
-
-\draw (c) -- (u1);
-\draw (c) -- (u2);
-\draw (c) -- (u3);
-\draw (c) -- (u4);
-\draw (c) -- (u5);
-\draw (a) -- (u6);
-\draw (a) -- (u7);
-\draw (a) -- (u8);
-\draw (a) -- (u3);
-\draw (ad) -- (u9);
-\draw (ad) -- (u10);
-\draw (ad) -- (u11);
-\draw (a) -- (u12);
-\end{tikzpicture}%
-}
-\caption{Cas d'utilisation principaux}
+\includesvg[width=\textwidth,keepaspectratio]{images/uml/usecase-global}
+\caption{Diagramme global des cas d'utilisation de SINAPS}
 \label{fig:cu}
 \end{figure}
 
@@ -213,40 +152,8 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'aff
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-  font=\scriptsize,
-  cls/.style={draw=sinapsbleu, rectangle split, rectangle split parts=2, rounded corners=2pt, align=left, fill=white, inner sep=4pt}
-]
-\node[cls] (user) {
-  \textbf{User}\\
-  googleId\\ name\\ email\\ avatar
-  \nodepart{two}
-  timestamps
-};
-\node[cls, right=0.55cm of user] (agent) {
-  \textbf{Agent}\\
-  name\\ email\\ password\\ role\\ skills[]\\ status\\ avatar
-  \nodepart{two}
-  login / signup
-};
-\node[cls, below=1.3cm of user] (conv) {
-  \textbf{Conversation}\\
-  status\\ handledBy\\ satisfaction
-  \nodepart{two}
-  escalate()\\ deescalate()\\ assign()\\ close()
-};
-\node[cls, right=1.25cm of conv] (msg) {
-  \textbf{Message}\\
-  sender\\ authorName\\ content\\ attachments[]
-  \nodepart{two}
-  ---
-};
-
-\draw[-{Latex}] (conv) -- node[pos=0.15, left, font=\tiny]{0..*} node[pos=0.85, right, font=\tiny]{1} (user);
-\draw[-{Latex}] (conv.east) -- node[pos=0.15, right, font=\tiny]{0..1} node[pos=0.85, left, font=\tiny]{0..*} (agent.south);
-\draw[-{Latex}] (msg) -- node[pos=0.15, above, font=\tiny]{1..*} node[pos=0.85, below, font=\tiny]{1} (conv);
-\end{tikzpicture}
-\caption{Diagramme de classes aligné sur les schémas Mongoose}
+\includesvg[width=\textwidth,keepaspectratio]{images/uml/domain-data}
+\caption{Modèle de domaine et principales relations persistées de SINAPS}
 \label{fig:classes}
 \end{figure}
 
@@ -258,30 +165,21 @@ Le client transmet le message au backend, qui le persiste, interroge le retrieve
 
 \begin{figure}[H]
 \centering
-\resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[font=\scriptsize, x=1.7cm, y=-0.55cm]
-\foreach \x/\n in {0/Client, 2/Next.js, 4/Express, 6/MongoDB, 8/RAG+Gemini} {
-  \node[font=\bfseries\scriptsize] at (\x,0) {\n};
-  \draw[thin] (\x,-0.4) -- (\x,-11.2);
-}
-\draw[-{Latex}] (0,-1) -- node[above]{\texttt{POST /messages}} (4,-1);
-\draw[-{Latex}] (4,-2) -- node[above]{insert Message client} (6,-2);
-\draw[-{Latex}] (6,-3) -- (4,-3);
-\draw[-{Latex}] (4,-4) -- node[above]{retrieve + generate} (8,-4);
-\draw[-{Latex}] (8,-5.2) -- (4,-5.2);
-\draw[-{Latex}] (4,-6.4) -- node[above]{insert Message ia} (6,-6.4);
-\draw[-{Latex}] (4,-7.6) -- node[above]{Socket \texttt{message\_received}} (2,-7.6);
-\draw[-{Latex}] (2,-8.8) -- (0,-8.8);
-\node[align=left] at (4,-10.2) {Uniquement si \texttt{handledBy = ia}.\\Sinon, pas d'appel IA.};
-\end{tikzpicture}%
-}
-\caption{Séquence : message client et génération IA}
+\includesvg[width=\textwidth,keepaspectratio]{images/uml/message-rag-ai}
+\caption{Envoi d'un message client, recherche RAG et génération de la réponse IA}
 \label{fig:seq-ia}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includesvg[width=\textwidth,keepaspectratio]{images/uml/escalation-return-ai}
+\caption{Escalade explicite vers un agent humain et retour vers l'assistant IA}
+\label{fig:seq-escalation}
 \end{figure}
 
 \subsection{Escalade vers un humain}
 
-Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe à \texttt{handledBy = humain} et \texttt{status = en\_attente}. Socket.io émet \texttt{conversation\_updated} vers la salle ; un événement global permet à l'espace agent de rafraîchir la file.
+La figure~\ref{fig:seq-escalation} détaille le scénario déclenché explicitement par le client : la conversation est transférée à un agent, puis peut revenir au traitement IA avant sa clôture. Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe à \texttt{handledBy = humain} et \texttt{status = en\_attente}. Socket.io émet \texttt{conversation\_updated} vers la salle ; un événement global permet à l'espace agent de rafraîchir la file.
 
 \subsection{Clôture et satisfaction}
 
@@ -297,33 +195,8 @@ La clôture fait passer le statut à \texttt{resolu}. Une note entière de 1 à 
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-  font=\scriptsize,
-  state/.style={draw=sinapsbleu, thick, rounded corners=3pt, align=center, minimum width=3.7cm, minimum height=0.85cm, fill=sinapsbleu!8},
-  terminal/.style={draw=sinapsbleu, thick, circle, minimum size=0.45cm, fill=sinapsbleu!25},
-  transition/.style={-{Latex}, draw=sinapsbleu, thick},
-  note/.style={font=\scriptsize, align=center}
-]
-\node[terminal] (start) {};
-\node[state, below=0.55cm of start] (ia) {EN\_COURS\\prise en charge par l'IA};
-\node[state, below=1.05cm of ia] (waiting) {EN\_ATTENTE\\demande d'aide humaine};
-\node[state, below=1.05cm of waiting] (human) {EN\_COURS\\prise en charge humaine};
-\node[state, below=1.05cm of human] (resolved) {RESOLU};
-\node[terminal, below=0.55cm of resolved] (end) {};
-\node[note, right=0.55cm of ia] (iaNote) {traitement IA};
-\node[note, right=0.55cm of waiting] (waitNote) {assignation à un agent};
-\node[note, right=0.55cm of human] (humanNote) {retour vers l'IA};
-\node[note, right=0.55cm of resolved] (ratingNote) {évaluation facultative};
-
-\draw[transition] (start) -- (ia);
-\draw[transition] (ia) -- node[left, note] {demande d'aide humaine} (waiting);
-\draw[transition] (waiting) -- node[left, note] {agent assigné} (human);
-\draw[transition] (human) -- node[left, note] {clôture} (resolved);
-\draw[transition] (resolved) -- (end);
-\draw[transition] (human.east) .. controls +(2.0,0) and +(2.0,0) .. node[right, note] {désescalade} (ia.east);
-\draw[transition] (ia.west) .. controls +(-2.0,0) and +(-2.0,0) .. node[left, note] {confirmation / clôture} (resolved.west);
-\end{tikzpicture}
-\caption{Cycle de vie d'une conversation dans SINAPS}
+\includesvg[width=\textwidth,keepaspectratio]{images/uml/conversation-state}
+\caption{Cycle de vie d'une conversation selon son statut et son responsable}
 \label{fig:conversation-state}
 \end{figure}
 

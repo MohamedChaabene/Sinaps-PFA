@@ -80,14 +80,14 @@ Les exigences ci-dessous sont dérivées du document de sujet \textit{Projet Sta
 \bottomrule
 \endlastfoot
 RF01 & Le client identifie une demande dans une interface de chat. & Réalisé \\
-RF02 & Authentification client par compte Google (OAuth). & Réalisé (jeton Google vérifié côté serveur). Une saisie nom/e-mail existe en parallèle. \\
+RF02 & Authentification client par compte Google (OAuth). & Réalisé sur le Web et côté serveur (jeton Google vérifié). Une saisie nom/e-mail existe en parallèle ; Google Sign-In natif mobile n'a pas été vérifié. \\
 RF03 & L'agent IA répond à partir d'une base de connaissances (RAG). & Réalisé (retriever TF-IDF + Gemini, repli local). \\
 RF04 & Workflow de statuts (en cours, en attente, résolu) et mode IA / humain. & Réalisé \\
 RF05 & Bascule vers un opérateur humain à l'initiative du client. & Réalisé \\
 RF06 & Retour vers l'IA (désescalade). & Réalisé \\
 RF07 & Plusieurs agents (comptes distincts, compétences saisies à l'inscription). & Comptes : réalisé. Routage automatique par compétence : \textbf{non réalisé}. \\
 RF08 & Chat avec une UX de type messagerie (bulles, emojis, interface soignée). & Réalisé (web), avec indicateur de saisie, verrouillage pendant la réponse IA et retours d'action. \\
-RF09 & Échange de documents, images, vidéos. & Réalisé (upload Multer, types filtrés). Aperçu \og unfurl \fg{} de liens arbitraires : non spécifié comme module séparé. \\
+RF09 & Échange de documents, images, vidéos. & \textbf{Partiellement réalisé} : upload et échange de fichiers pris en charge par le backend et le Web ; images et documents disponibles sur mobile. Le flux vidéo mobile n'a pas été implémenté ni vérifié, et l'aperçu \og unfurl \fg{} de liens n'est pas documenté comme fonctionnalité distincte. \\
 RF10 & Clôture et enquête de satisfaction (note 1--5, commentaire). & Réalisé \\
 RF11 & Inscription agent, validation ou rejet par l'admin. & Réalisé \\
 RF12 & Historique des conversations, recherche et filtre par statut. & Réalisé (espace admin). \\
@@ -119,7 +119,7 @@ Les chiffres illustratifs du document de sujet (satisfaction 94~\%, 2,4~min, 68~
   \item file de messages (Kafka, RabbitMQ) ;
   \item RAG vectoriel (embeddings, base vectorielle, LangChain) ;
   \item affectation automatique d'un agent selon ses compétences ;
-  \item déploiement public en production (non vérifiable dans le dépôt actuel).
+  \item configuration complète du déploiement public non versionnée dans le dépôt : le Web public et l'API Render ont toutefois été vérifiés fonctionnellement par une exécution externe ; les paramètres Vercel/Render et les secrets ne sont pas reproductibles depuis le dépôt seul.
 \end{itemize}
 
 Ces éléments peuvent figurer parmi les perspectives (conclusion), sans être présentés comme livrés.
