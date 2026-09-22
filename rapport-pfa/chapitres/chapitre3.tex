@@ -43,30 +43,26 @@ Cette séparation permet aux deux clients de partager les mêmes conversations, 
 
 \begin{figure}[H]
 \centering
-\includesvg[width=\textwidth,keepaspectratio]{images/uml/usecase-global}
+\includegraphics[width=0.78\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/sinaps-use-cases.png}
 \caption{Diagramme global des cas d'utilisation de SINAPS}
 \label{fig:cu}
 \end{figure}
 
-\subsection{CU01 --- S'identifier (client)}
+\subsection{Authentification commune}
 
-Le client fournit un \textbf{jeton Google}, vérifié avec \texttt{GOOGLE\_CLIENT\_ID}, ou un couple nom / e-mail. Le serveur trouve ou crée le profil client et délivre un JWT de rôle \texttt{client}. Ces mécanismes sont décrits respectivement par la documentation Google Identity et la spécification JWT \cite{googleauth,jwt}. Une conversation non résolue est réutilisée, sinon une nouvelle conversation est créée avec \texttt{handledBy = ia} et \texttt{status = en\_cours}.
+Le cas \textbf{S'authentifier} est commun aux actions visibles des trois acteurs. Le client fournit un \textbf{jeton Google}, vérifié avec \texttt{GOOGLE\_CLIENT\_ID}, ou un couple nom / e-mail. Le serveur trouve ou crée le profil client et délivre un JWT de rôle \texttt{client}. Ces mécanismes sont décrits respectivement par la documentation Google Identity et la spécification JWT \cite{googleauth,jwt}. Les agents et administrateurs utilisent une session e-mail / mot de passe avec un rôle contrôlé par le backend.
 
-\subsection{CU02 --- Envoyer un message}
+\subsection{Actions du client}
 
-Avec une session client et une conversation ouverte, le message est persisté. Si \texttt{handledBy = ia}, le service IA produit une réponse enregistrée comme message \texttt{ia}. Les deux messages sont émis sur Socket.io.
+Une fois authentifié, le client peut envoyer un message ou une pièce jointe, utiliser une action rapide, demander un agent humain, revenir vers l'IA, puis clôturer la conversation et évaluer sa satisfaction. Avec une conversation ouverte, le message est persisté ; si \texttt{handledBy = ia}, le service IA produit une réponse enregistrée comme message \texttt{ia}. Les messages et mises à jour sont émis sur Socket.io.
 
-\subsection{CU03 --- Escalader}
+\subsection{Actions de l'agent humain}
 
-Le client, ou un profil autorisé sur la conversation, passe \texttt{handledBy} à \texttt{humain} et \texttt{status} à \texttt{en\_attente}. Les agents voient alors le fil dans la file.
+Après authentification, l'agent consulte la file de conversations, prend en charge une conversation, répond au client, peut la rendre à l'IA et peut résoudre la conversation. Le passage au mode humain utilise \texttt{handledBy = humain} et \texttt{status = en\_attente}, puis l'agent traite le fil qui lui est attribué.
 
-\subsection{CU04 --- Traiter une demande (agent)}
+\subsection{Actions de l'administrateur}
 
-L'agent authentifié et approuvé consulte la liste, peut être assigné, répond avec \texttt{sender = humain}, puis clôture la conversation.
-
-\subsection{CU05 --- Administrer}
-
-L'administrateur consulte \texttt{GET /api/stats} et \texttt{GET /api/conversations}, approuve ou supprime un agent en attente et filtre les conversations.
+L'administrateur authentifié consulte et filtre l'historique, valide ou supprime un agent et consulte les statistiques via les routes d'administration, notamment \texttt{GET /api/stats} et \texttt{GET /api/conversations}.
 
 \section{Modèle de données}
 
@@ -211,15 +207,15 @@ La figure~\ref{fig:seq-escalation} détaille le scénario déclenché explicitem
 
 \section{Cycle de vie d'une conversation}
 
-Une conversation est créée ou réutilisée lors de l'identification du client. Elle commence avec \texttt{handledBy = ia} et \texttt{status = en\_cours}. Les messages sont alors traités par l'IA lorsque le client écrit dans une conversation ouverte. La figure~\ref{fig:conversation-state} synthétise les états et transitions décrits ci-dessous.
+Une nouvelle demande du client démarre sous la prise en charge de l'IA. En revanche, lorsqu'une conversation active existante est retrouvée, elle est restaurée dans son état courant au lieu d'être réinitialisée. Les échanges avec l'IA se poursuivent tant que cette prise en charge est conservée. La figure~\ref{fig:conversation-state} synthétise les états et transitions décrits ci-dessous.
 
-Lorsque le client demande une prise en charge humaine, ou lorsqu'un acteur autorisé effectue cette action, la conversation passe à \texttt{handledBy = humain} et \texttt{status = en\_attente}. Un agent approuvé peut la prendre en charge ; elle est alors éventuellement associée à \texttt{assignedAgent} et repasse à \texttt{status = en\_cours}. L'agent peut répondre, puis clôturer la conversation.
+Le client peut demander un agent humain ; la conversation passe alors en attente jusqu'à ce qu'un agent la prenne en charge. Une conversation en attente peut être clôturée directement, tandis qu'une conversation traitée par un humain peut revenir vers l'IA par désescalade. Les échanges se poursuivent avec l'interlocuteur correspondant à l'état courant.
 
-La clôture fait passer le statut à \texttt{resolu}. Une note entière de 1 à 5 et un commentaire peuvent être enregistrés ; la résolution conserve également son origine et son instant. Le retour vers l'IA est possible avant la clôture par désescalade. Les statuts et modes associés sont récapitulés dans l'annexe~\ref{tab:annexe-statuts}.
+Une conversation peut être résolue depuis la prise en charge IA, depuis l'attente ou pendant le traitement humain. La résolution peut être confirmée par le client ou effectuée par l'agent lorsque le flux le prévoit ; une note de satisfaction et un commentaire peuvent alors être enregistrés. Les statuts et modes associés sont récapitulés dans l'annexe~\ref{tab:annexe-statuts}.
 
 \begin{figure}[H]
 \centering
-\includesvg[width=\textwidth,keepaspectratio]{images/uml/conversation-state}
+\includegraphics[width=0.78\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/sinaps-conversation-lifecycle.png}
 \caption{Cycle de vie d'une conversation selon son statut et son responsable}
 \label{fig:conversation-state}
 \end{figure}
