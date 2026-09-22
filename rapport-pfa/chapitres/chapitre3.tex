@@ -179,31 +179,113 @@ timestamps & Date & \texttt{createdAt}, \texttt{updatedAt}, utilisés pour l'aff
 
 \section{Diagrammes de séquence}
 
-\subsection{Envoi d'un message client et réponse IA}
+\noindent Chaque cas d'utilisation important de SINAPS est représenté par son propre diagramme de séquence. Les scénarios sont regroupés selon l'acteur concerné afin de rendre lisibles les échanges métier, sans détailler les choix d'implémentation.
 
-Le client transmet le message au backend, qui le persiste, interroge le retriever et le service Gemini lorsque la conversation est prise en charge par l'IA. La réponse éventuelle est enregistrée puis diffusée aux clients par Socket.io.
+\subsection{Authentification}
 
 \begin{figure}[H]
 \centering
-\includesvg[width=\textwidth,keepaspectratio]{images/uml/message-rag-ai}
-\caption{Envoi d'un message client, recherche RAG et génération de la réponse IA}
-\label{fig:seq-ia}
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/01-authentification.png}
+\caption{Diagramme de séquence du cas d'utilisation « S'authentifier »}
+\label{fig:seq-authentification}
+\end{figure}
+
+\subsection{Parcours client}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/02-envoyer-message-piece-jointe.png}
+\caption{Diagramme de séquence du cas d'utilisation « Envoyer un message ou une pièce jointe »}
+\label{fig:seq-message}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includesvg[width=\textwidth,keepaspectratio]{images/uml/escalation-return-ai}
-\caption{Escalade explicite vers un agent humain et retour vers l'assistant IA}
-\label{fig:seq-escalation}
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/03-action-rapide.png}
+\caption{Diagramme de séquence du cas d'utilisation « Utiliser une action rapide »}
+\label{fig:seq-action-rapide}
 \end{figure}
 
-\subsection{Escalade vers un humain}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/04-demander-agent-humain.png}
+\caption{Diagramme de séquence du cas d'utilisation « Demander un agent humain »}
+\label{fig:seq-demander-agent}
+\end{figure}
 
-La figure~\ref{fig:seq-escalation} détaille le scénario déclenché explicitement par le client : la conversation est transférée à un agent, puis peut revenir au traitement IA avant sa clôture. Le client appelle \texttt{PATCH /conversations/:id/escalate}. Le document passe à \texttt{handledBy = humain} et \texttt{status = en\_attente}. Socket.io émet \texttt{conversation\_updated} vers la salle ; un événement global permet à l'espace agent de rafraîchir la file.
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/05-revenir-vers-ia.png}
+\caption{Diagramme de séquence du cas d'utilisation « Revenir vers l'IA »}
+\label{fig:seq-retour-ia-client}
+\end{figure}
 
-\subsection{Clôture et satisfaction}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/06-cloturer-evaluer.png}
+\caption{Diagramme de séquence du cas d'utilisation « Clôturer et évaluer »}
+\label{fig:seq-cloture-evaluation}
+\end{figure}
 
-\texttt{PATCH /conversations/:id/close} accepte une note entière entre 1 et 5. Une valeur hors intervalle, par exemple 0, n'est pas enregistrée comme satisfaction. Le statut devient \texttt{resolu} et la cause de résolution est tracée dans \texttt{resolutionType}. Les actions rapides permettent notamment de confirmer une résolution IA, de poser une nouvelle question ou de demander un agent.
+\subsection{Parcours agent humain}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/07-file-conversations.png}
+\caption{Diagramme de séquence du cas d'utilisation « Consulter la file de conversations »}
+\label{fig:seq-file-conversations}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/08-prendre-en-charge.png}
+\caption{Diagramme de séquence du cas d'utilisation « Prendre en charge une conversation »}
+\label{fig:seq-prise-en-charge}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/09-repondre-client.png}
+\caption{Diagramme de séquence du cas d'utilisation « Répondre au client »}
+\label{fig:seq-reponse-client}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/10-resoudre-conversation.png}
+\caption{Diagramme de séquence du cas d'utilisation « Résoudre une conversation »}
+\label{fig:seq-resolution}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/11-rendre-conversation-ia.png}
+\caption{Diagramme de séquence du cas d'utilisation « Rendre la conversation à l'IA »}
+\label{fig:seq-retour-ia-agent}
+\end{figure}
+
+\subsection{Administration}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/12-valider-supprimer-agent.png}
+\caption{Diagramme de séquence du cas d'utilisation « Valider ou supprimer un agent »}
+\label{fig:seq-validation-agent}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/13-historique-filtre.png}
+\caption{Diagramme de séquence du cas d'utilisation « Consulter et filtrer l'historique »}
+\label{fig:seq-historique}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.68\textheight,keepaspectratio]{images/uml/14-statistiques.png}
+\caption{Diagramme de séquence du cas d'utilisation « Consulter les statistiques »}
+\label{fig:seq-statistiques}
+\end{figure}
 
 \section{Cycle de vie d'une conversation}
 
