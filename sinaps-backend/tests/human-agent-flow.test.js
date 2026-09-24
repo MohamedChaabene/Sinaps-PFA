@@ -108,6 +108,28 @@ describe('Human Agent Conversation Flow - Phase 6', () => {
   });
 
   describe('Agent Assignment', () => {
+    test('deleted agent tokens are refused for protected agent actions', async () => {
+      await Agent.findByIdAndDelete(agent1._id);
+
+      const res = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', `Bearer ${agent1Token}`);
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toBe('Session agent invalide ou expirée');
+    });
+
+    test('unapproved agent tokens are refused for protected agent actions', async () => {
+      await Agent.findByIdAndUpdate(agent1._id, { status: 'pending' });
+
+      const res = await request(app)
+        .get('/api/conversations')
+        .set('Authorization', `Bearer ${agent1Token}`);
+
+      expect(res.statusCode).toBe(401);
+      expect(res.body.error).toBe('Session agent invalide ou expirée');
+    });
+
     test('agent can take an eligible waiting conversation', async () => {
       // Escalate to human first
       await request(app)

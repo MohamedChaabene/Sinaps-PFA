@@ -8,9 +8,9 @@ exports.getStats = async (req, res) => {
       Conversation.countDocuments({ status: 'resolu', handledBy: 'ia', isTestData: { $ne: true } }),
       Conversation.countDocuments({
         $or: [
-          { handledBy: 'humain' },
-          { assignedAgent: { $ne: null } },
-          { escalationCount: { $gt: 0 } },
+          { status: 'resolu', handledBy: 'humain' },
+          { status: 'resolu', assignedAgent: { $ne: null } },
+          { status: 'resolu', escalationCount: { $gt: 0 } },
         ],
         isTestData: { $ne: true },
       }),

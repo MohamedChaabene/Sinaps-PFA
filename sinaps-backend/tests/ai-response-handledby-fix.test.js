@@ -13,6 +13,7 @@ require('../models/Message');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const Agent = require('../models/Agent');
 
 const jwt = require('jsonwebtoken');
 
@@ -75,7 +76,14 @@ describe('AI Response handledBy Fix - Production Issue', () => {
         name: 'Test Agent',
         email: `agent-${Date.now()}@example.com`
       });
-      const agentToken = jwt.sign({ id: agent._id.toString(), role: 'agent' }, process.env.JWT_SECRET);
+      const supportAgent = await Agent.create({
+        name: 'Support Agent',
+        email: `support-agent-${Date.now()}@example.com`,
+        password: 'hashed-password',
+        role: 'agent',
+        status: 'approved',
+      });
+      const agentToken = jwt.sign({ id: supportAgent._id.toString(), role: 'agent' }, process.env.JWT_SECRET);
 
       const res = await request(app)
         .post('/api/conversations')

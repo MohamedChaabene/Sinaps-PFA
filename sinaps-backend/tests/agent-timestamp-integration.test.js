@@ -47,6 +47,7 @@ describe('Agent Timestamp Integration Test', () => {
       email: 'agent-timestamp@example.com',
       password: 'password123',
       role: 'agent',
+      status: 'approved',
     });
 
     // Generate agent token

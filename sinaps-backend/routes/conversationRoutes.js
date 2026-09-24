@@ -15,7 +15,7 @@ const {
 
 router.post('/find-or-create', requireClientAuth, findOrCreateConversation);
 router.post('/', requireAuth, requireAgentOrAdmin, createConversation);
-router.get('/', requireAuth, getConversations);
+router.get('/', requireAuth, requireAgentOrAdmin, getConversations);
 router.get('/:id', requireConversationAccess, getConversationById);
 router.patch('/:id/escalate', requireConversationAccess, escalateConversation);
 router.patch('/:id/de-escalate', requireConversationAccess, deescalateConversation);

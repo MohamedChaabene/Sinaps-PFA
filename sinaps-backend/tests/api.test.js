@@ -70,6 +70,35 @@ describe('User and Conversation API Integration Tests', () => {
     conversationId = res.body._id;
   });
 
+  test('GET /api/conversations refuses a client and allows an approved agent', async () => {
+    const clientResponse = await request(app)
+      .get('/api/conversations')
+      .set('Authorization', `Bearer ${clientToken}`);
+
+    expect(clientResponse.statusCode).toBe(403);
+    expect(clientResponse.body.error).toBe('Accès réservé aux agents de support');
+
+    const agent = await Agent.create({
+      name: 'Conversation List Agent',
+      email: 'conversation-list-agent@example.com',
+      password: 'hashed-password',
+      role: 'agent',
+      status: 'approved',
+    });
+    const agentToken = require('jsonwebtoken').sign(
+      { id: agent._id.toString(), role: 'agent' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const agentResponse = await request(app)
+      .get('/api/conversations')
+      .set('Authorization', `Bearer ${agentToken}`);
+
+    expect(agentResponse.statusCode).toBe(200);
+    expect(Array.isArray(agentResponse.body)).toBe(true);
+  });
+
   test('GET /api/conversations/:id rejects a request with no session at all', async () => {
     const res = await request(app).get(`/api/conversations/${conversationId}`);
     expect(res.statusCode).toBe(401);
@@ -115,6 +144,7 @@ describe('User and Conversation API Integration Tests', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.handledBy).toBe('ia');
     expect(res.body.status).toBe('en_cours');
+    expect(res.body.assignedAgent).toBeNull();
   });
 
   test('PATCH /api/conversations/:id/close closes conversation with a valid satisfaction rating', async () => {

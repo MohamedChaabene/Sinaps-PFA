@@ -55,6 +55,7 @@ describe('Admin Test Data Filtering (P1-2)', () => {
       email: 'admin@example.com',
       password: 'password123',
       role: 'admin',
+      status: 'approved',
     });
 
     // Generate admin token
@@ -159,5 +160,23 @@ describe('Admin Test Data Filtering (P1-2)', () => {
     expect(convIds).toContain(prodConversation._id.toString());
     expect(convIds).toContain(prodConversation2._id.toString());
     expect(convIds).not.toContain(testConversation._id.toString());
+  });
+
+  test('Statistics do not count an open escalated conversation as resolved by human', async () => {
+    await Conversation.create({
+      client: testUser._id,
+      status: 'en_attente',
+      handledBy: 'humain',
+      assignedAgent: adminAgent._id,
+      escalationCount: 1,
+      isTestData: false,
+    });
+
+    const response = await request(app)
+      .get('/api/stats')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(response.body.resolvedByHuman).toBe(0);
   });
 });

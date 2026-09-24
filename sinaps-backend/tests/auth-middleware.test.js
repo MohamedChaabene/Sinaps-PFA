@@ -2,6 +2,11 @@
 // ownership, and message sender authorization), mocking the Conversation
 // model so these run without a real MongoDB instance.
 jest.mock('../models/Conversation');
+jest.mock('../models/Agent', () => ({
+  findOne: jest.fn(() => ({
+    select: jest.fn().mockResolvedValue({ _id: 'agent1', role: 'agent', status: 'approved' }),
+  })),
+}));
 
 const jwt = require('jsonwebtoken');
 const Conversation = require('../models/Conversation');

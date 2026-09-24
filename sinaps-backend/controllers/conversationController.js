@@ -222,7 +222,7 @@ exports.deescalateConversation = async (req, res) => {
     const conversation = await populateConversation(
       Conversation.findByIdAndUpdate(
         req.params.id,
-        { handledBy: 'ia', status: 'en_cours' },
+        { handledBy: 'ia', status: 'en_cours', assignedAgent: null },
         { returnDocument: 'after' }
       )
     );
@@ -310,6 +310,7 @@ exports.handleQuickReply = async (req, res) => {
         update.aiAttemptCount = (conversation.aiAttemptCount || 0) + 1;
         update.handledBy = 'ia';
         update.status = 'en_cours';
+        update.assignedAgent = null;
         break;
 
       default:

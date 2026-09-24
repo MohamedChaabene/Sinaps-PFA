@@ -8,6 +8,12 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
 // Keep the "file too large" test fast and cheap instead of uploading 15MB+.
 process.env.MAX_UPLOAD_SIZE_MB = '1';
 
+jest.mock('../models/Agent', () => ({
+  findOne: jest.fn(() => ({
+    select: jest.fn().mockResolvedValue({ _id: 'agent1', role: 'agent', status: 'approved' }),
+  })),
+}));
+
 const uploadRoutes = require('../routes/uploadRoutes');
 
 let app;

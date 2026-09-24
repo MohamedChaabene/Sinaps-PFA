@@ -1,5 +1,18 @@
 const jwt = require('jsonwebtoken');
 const Conversation = require('../models/Conversation');
+const Agent = require('../models/Agent');
+
+async function findActiveAgent(decoded) {
+  if (!decoded || (decoded.role !== 'agent' && decoded.role !== 'admin')) {
+    return null;
+  }
+
+  return Agent.findOne({
+    _id: decoded.id,
+    role: decoded.role,
+    status: 'approved',
+  }).select('_id role status');
+}
 
 function decodeBearerToken(req) {
   const authHeader = req.headers.authorization;
@@ -13,13 +26,19 @@ function decodeBearerToken(req) {
   }
 }
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Non authentifié' });
 
   try {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role === 'agent' || decoded.role === 'admin') {
+      const agent = await findActiveAgent(decoded);
+      if (!agent) return res.status(401).json({ error: 'Session agent invalide ou expirée' });
+    }
+
     req.agent = decoded;
     next();
   } catch (error) {
@@ -61,6 +80,8 @@ async function requireConversationAccess(req, res, next) {
   if (decoded === undefined) return res.status(401).json({ error: 'Session invalide ou expirée' });
 
   if (decoded.role === 'agent' || decoded.role === 'admin') {
+    const agent = await findActiveAgent(decoded);
+    if (!agent) return res.status(401).json({ error: 'Session agent invalide ou expirée' });
     req.agent = decoded;
     return next();
   }
@@ -120,13 +141,19 @@ async function requireSenderAuth(req, res, next) {
 // role. Currently used by the upload endpoint: anyone with a client or
 // agent/admin session can attach a file to their own conversation, but a
 // completely anonymous request cannot use the server as a free file host.
-function requireAnySession(req, res, next) {
+async function requireAnySession(req, res, next) {
   const decoded = decodeBearerToken(req);
   if (decoded === null) return res.status(401).json({ error: 'Authentification requise' });
   if (decoded === undefined) return res.status(401).json({ error: 'Session invalide ou expirée' });
 
-  if (decoded.role === 'client') req.client = decoded;
-  else req.agent = decoded;
+  if (decoded.role === 'client') {
+    req.client = decoded;
+    return next();
+  }
+
+  const agent = await findActiveAgent(decoded);
+  if (!agent) return res.status(401).json({ error: 'Session agent invalide ou expirée' });
+  req.agent = decoded;
   next();
 }
 

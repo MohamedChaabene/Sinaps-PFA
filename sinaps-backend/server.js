@@ -20,6 +20,7 @@ const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const { setIO } = require('./socket');
 const Conversation = require('./models/Conversation');
+const Agent = require('./models/Agent');
 const app = require('./app');
 
 const server = http.createServer(app);
@@ -42,25 +43,31 @@ const io = new Server(server, {
 setIO(io);
 
 // IMP-002: Authenticate Socket.io connection handshake via JWT token
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   const token =
     socket.handshake.auth?.token ||
     (socket.handshake.headers?.authorization
       ? socket.handshake.headers.authorization.replace(/^Bearer\s+/i, '')
       : null);
 
-  if (!token) {
-    socket.user = null;
-    return next();
-  }
+  if (!token) return next(new Error('Authentification requise'));
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role === 'agent' || decoded.role === 'admin') {
+      const agent = await Agent.findOne({
+        _id: decoded.id,
+        role: decoded.role,
+        status: 'approved',
+      }).select('_id');
+      if (!agent) return next(new Error('Session agent invalide ou expirée'));
+    } else if (decoded.role !== 'client') {
+      return next(new Error('Token invalide'));
+    }
     socket.user = decoded;
     next();
   } catch (err) {
-    socket.user = null;
-    next();
+    next(new Error('Token invalide'));
   }
 });
 
@@ -88,9 +95,6 @@ io.on('connection', (socket) => {
           console.warn('Socket join_conversation error:', error.message);
         }
       }
-    } else {
-      // Allow connection during initial handshake, join room
-      socket.join(`conversation_${conversationId}`);
     }
   });
 
@@ -101,14 +105,27 @@ io.on('connection', (socket) => {
   });
 
   // IMP-012: Real-time typing status event
-  socket.on('typing_status', ({ conversationId, isTyping, sender, authorName }) => {
-    if (conversationId) {
+  socket.on('typing_status', async ({ conversationId, isTyping, authorName } = {}) => {
+    if (!conversationId || !socket.user) return;
+
+    try {
+      const conversation = await Conversation.findById(conversationId).select('client');
+      if (!conversation) return;
+
+      const isStaff = socket.user.role === 'agent' || socket.user.role === 'admin';
+      const ownsConversation =
+        socket.user.role === 'client' && conversation.client.toString() === socket.user.id;
+
+      if (!isStaff && !ownsConversation) return;
+
       socket.to(`conversation_${conversationId}`).emit('typing_status', {
         conversationId,
         isTyping,
-        sender: sender || socket.user?.role || 'client',
+        sender: isStaff ? 'humain' : 'client',
         authorName,
       });
+    } catch (error) {
+      console.warn('Socket typing_status authorization error:', error.message);
     }
   });
 
