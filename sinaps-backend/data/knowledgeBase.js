@@ -38,6 +38,14 @@ const knowledgeBase = [
     answer: "Vérifiez que le code est bien orthographié, qu'il n'est pas expiré, et qu'il correspond aux conditions (ex: réservé aux nouveaux comptes).",
     keywords: ["code promo", "réduction", "promo", "coupon", "fonctionne", "marche", "expiré", "conditions", "nouveau"],
     source: "FAQ Facturation"
+  },
+  {
+    id: "invoice-payment-question",
+    category: "billing",
+    question: "J'ai une question sur ma facture et mon paiement",
+    answer: "Bien sûr. Votre demande concerne-t-elle le montant de votre facture, un paiement refusé, une facture impayée ou le téléchargement d’une facture ? Indiquez-moi les détails et je vous aiderai.",
+    keywords: ["facture", "factures", "facturation", "paiement", "paiements", "payer", "payé", "montant", "impayé", "impayee", "paiement refusé", "paiement refuse", "téléchargement facture"],
+    source: "FAQ Facturation"
   }
 ];
 

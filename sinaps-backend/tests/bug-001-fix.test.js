@@ -93,7 +93,8 @@ describe('BUG-001 Fix - Stale Conversation State Prevention', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.body.aiMessage.content).not.toContain('suivre votre commande');
-    expect(res.body.aiMessage.content).toContain("Je n'ai pas trouvé de réponse exacte");
+    expect(res.body.aiMessage.content).toContain("montant de votre facture");
+    expect(res.body.aiMessage.content).not.toContain("Je n'ai pas trouvé de réponse exacte");
   });
 
   describe('Test 2: AI message is saved to database before response', () => {

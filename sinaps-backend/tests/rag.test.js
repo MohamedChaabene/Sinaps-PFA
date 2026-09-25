@@ -216,5 +216,13 @@ describe('Gemini Service', () => {
       expect(response).not.toContain('suivre votre commande');
       expect(response).toContain("Je n'ai pas trouvé de réponse exacte");
     });
+
+    test('answers the French invoice and payment question from the billing knowledge base', async () => {
+      const response = await getAIResponse("J'ai une question sur ma facture et mon paiement.");
+
+      expect(response).toContain("montant de votre facture");
+      expect(response).toContain("paiement refusé");
+      expect(response).not.toContain("Je n'ai pas trouvé de réponse exacte");
+    });
   });
 });
