@@ -35,6 +35,7 @@ import { logout } from "@/components/auth-guard"
 import { fetchAgents, approveAgent, rejectAgent, fetchStats } from "@/lib/api"
 import { ConversationHistory } from "@/components/admin/conversation-history"
 import type { Agent, Stats } from "@/lib/types"
+import { getInitials } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
 // Data mapping helper
@@ -94,10 +95,10 @@ function AdminContent({
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            ["Conversations", stats?.totalConversations || "—", "Donnée non connectée"],
-            ["Demandes résolues", stats?.resolvedConversations || "—", "Donnée non connectée"],
-            ["Agents actifs", stats?.activeAgents || "—", "Donnée non connectée"],
-            ["Avis clients", "—", "Donnée non connectée"],
+            ["Conversations", stats?.total ?? "—", "Données du service"],
+            ["Demandes résolues", stats ? stats.resolvedByIA + stats.resolvedByHuman : "—", "Données du service"],
+            ["Agents actifs", approved.length, "Agents validés"],
+            ["Temps moyen de réponse", stats ? `${stats.avgResponseTimeSeconds} s` : "—", "Données du service"],
           ].map(([label,value,note]) => (
             <article key={label} className="rounded-lg border border-border bg-card p-5">
               <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>
@@ -295,7 +296,6 @@ export function AdminDashboard() {
         <div className="hidden border-t border-border p-4 md:absolute md:bottom-0 md:block md:w-[240px]">
           <p className="mb-3 text-xs font-bold">Admin SINAPS</p>
           <Button
-            asChild
             variant="outline"
             size="sm"
             className="w-full"

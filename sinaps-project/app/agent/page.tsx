@@ -257,12 +257,12 @@ function AgentPageContent() {
                 </Badge>
               )}
               <Button
-                asChild
                 size="icon-sm"
                 variant="ghost"
+                aria-label="Quitter"
                 onClick={() => logout(router)}
               >
-                <LogOutIcon aria-label="Quitter" />
+                <LogOutIcon />
               </Button>
             </div>
           </header>
