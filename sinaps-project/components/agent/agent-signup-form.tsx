@@ -2,22 +2,34 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Check, ChevronDown, X } from "lucide-react"
+import {
+    ArrowLeft,
+    Check,
+    FileText,
+    Headphones,
+    Info,
+    Network,
+    Smartphone,
+    Truck,
+    Wrench,
+} from "lucide-react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { signupAgent } from "@/lib/api"
 
-const skills = ["Réseau", "Facturation", "Application mobile", "Livraison", "Technique"]
+const skills = [
+    { name: "Facturation", icon: FileText },
+    { name: "Technique", icon: Wrench },
+    { name: "Livraison", icon: Truck },
+    { name: "Réseau", icon: Network },
+    { name: "Application mobile", icon: Smartphone },
+    { name: "Service après-vente", icon: Headphones },
+]
 
 export function AgentSignupForm() {
     const [selectedSkills, setSelectedSkills] = useState<string[]>([])
-    const [open, setOpen] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const [loading, setLoading] = useState(false)
 
@@ -47,124 +59,108 @@ export function AgentSignupForm() {
 
     if (submitted) {
         return (
-            <Card className="w-full max-w-lg border-primary/15 shadow-xl shadow-primary/5">
-                <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center sm:px-10">
-                    <div className="flex size-16 items-center justify-center rounded-full bg-success/15 text-success">
-                        <Check className="size-8" aria-hidden="true" />
+            <main className="grid min-h-screen place-items-center bg-background px-4 py-10 sm:px-6">
+                <section className="w-full max-w-[440px] animate-enter">
+                    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                        <div className="px-6 pb-6 pt-7 sm:px-8">
+                            <div className="mb-7 flex justify-center">
+                                <div className="flex size-16 items-center justify-center rounded-full bg-mint/15 text-mint-foreground">
+                                    <Check className="size-8" aria-hidden="true" />
+                                </div>
+                            </div>
+                            <div className="mb-7 text-center">
+                                <h1 className="text-2xl font-bold">Demande envoyée</h1>
+                                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">Votre compte a été créé et est en attente de validation par un administrateur.</p>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <Link href="/" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Retour au support</Link>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                        <h1 className="font-heading text-2xl font-bold text-foreground">Demande envoyée</h1>
-                        <p className="text-sm leading-6 text-muted-foreground">Votre compte a été créé et est en attente de validation par un administrateur.</p>
-                    </div>
-                    <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                        <Link href="/" className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Retour au support</Link>
-                        <Link href="/admin" className="inline-flex h-9 items-center justify-center rounded-lg border border-input bg-background px-4 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground">Voir l&apos;administration</Link>
-                    </div>
-                </CardContent>
-            </Card>
+                </section>
+            </main>
         )
     }
 
     return (
-        <Card className="w-full max-w-lg border-primary/15 shadow-xl shadow-primary/5">
-            <CardHeader className="gap-3 px-6 pb-5 pt-7 sm:px-10 sm:pt-9">
-                <div className="flex items-center">
-                    <img src="/sinaps-logo-light.png" alt="SINAPS" className="h-8 w-auto object-contain dark:hidden" />
-                    <img src="/sinaps-logo-dark.png" alt="SINAPS" className="h-8 w-auto object-contain hidden dark:block" />
-                </div>
-                <div className="flex flex-col gap-1">
-                    <CardTitle className="font-heading text-2xl font-bold">Rejoindre l&apos;équipe support</CardTitle>
-                    <CardDescription>Créez votre profil d&apos;agent pour aider nos clients.</CardDescription>
-                </div>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-                <CardContent className="flex flex-col gap-5 px-6 pb-3 sm:px-10 sm:pb-4">
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="name">Nom complet</Label>
-                        <Input id="name" name="name" placeholder="Ex. Sophie Martin" required />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="email">Adresse e-mail</Label>
-                        <Input id="email" name="email" type="email" placeholder="vous@entreprise.com" required />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="password">Mot de passe</Label>
-                        <Input id="password" name="password" type="password" minLength={8} placeholder="8 caractères minimum" required />
-                    </div>
-                    <div className="flex flex-col gap-2.5 pb-2">
-                        <Label id="skills-label">Vos compétences</Label>
-                        <Popover open={open} onOpenChange={setOpen}>
-                            <PopoverTrigger
-                                render={
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="w-full justify-between font-normal text-muted-foreground"
-                                    />
-                                }
-                            >
-                                <span>
-                                    {selectedSkills.length
-                                        ? `${selectedSkills.length} compétence${selectedSkills.length > 1 ? "s" : ""} sélectionnée${selectedSkills.length > 1 ? "s" : ""}`
-                                        : "Sélectionnez vos domaines"}
-                                </span>
-                                <ChevronDown className="size-4" />
-                            </PopoverTrigger>
-                            <PopoverContent
-                                align="start"
-                                sideOffset={8}
-                                className="w-[var(--anchor-width)] p-0"
-                            >
+        <main className="grid min-h-screen place-items-center bg-background px-4 py-10 sm:px-6">
+            <div className="w-full max-w-[440px] animate-enter">
+                <Link
+                    href="/login"
+                    className="mb-5 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    <ArrowLeft className="size-3.5" /> Retour à la connexion
+                </Link>
+                <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                    <div className="px-6 pb-6 pt-7 sm:px-8">
+                        <div className="mb-7 flex justify-center">
+                            <img
+                                src="/sinaps-logo-light.png"
+                                alt="SINAPS"
+                                className="h-7 w-auto object-contain dark:hidden"
+                            />
+                            <img
+                                src="/sinaps-logo-dark.png"
+                                alt="SINAPS"
+                                className="h-7 w-auto object-contain hidden dark:block"
+                            />
+                        </div>
+                        <h1 className="text-2xl font-bold">Rejoindre l'équipe support</h1>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">Créez votre profil pour demander un accès agent.</p>
+                        <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="full-name" className="text-xs font-semibold">Nom complet</Label>
+                                <Input id="full-name" name="name" className="h-10 bg-background" placeholder="Votre nom" required />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="signup-email" className="text-xs font-semibold">Adresse e-mail</Label>
+                                <Input id="signup-email" name="email" type="email" className="h-10 bg-background" placeholder="nom@entreprise.fr" required />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="signup-password" className="text-xs font-semibold">Mot de passe</Label>
+                                <Input id="signup-password" name="password" type="password" className="h-10 bg-background" placeholder="8 caractères minimum" required />
+                            </div>
+                            <div className="space-y-2 pb-2">
+                                <Label id="skills-label">Vos compétences</Label>
                                 <div
-                                    id="skills-list"
-                                    className="flex max-h-56 w-full flex-col gap-1 overflow-y-auto p-2"
+                                    className="flex flex-wrap gap-2"
                                     role="group"
                                     aria-labelledby="skills-label"
                                 >
-                                    {skills.map((skill) => (
-                                        <label
-                                            key={skill}
-                                            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent"
-                                        >
-                                            <Checkbox
-                                                checked={selectedSkills.includes(skill)}
-                                                onCheckedChange={() => toggleSkill(skill)}
-                                            />
-                                            {skill}
-                                        </label>
-                                    ))}
+                                    {skills.map(({ name, icon: Icon }) => {
+                                        const isSelected = selectedSkills.includes(name)
+
+                                        return (
+                                            <button
+                                                key={name}
+                                                type="button"
+                                                aria-pressed={isSelected}
+                                                onClick={() => toggleSkill(name)}
+                                                className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                                                    isSelected
+                                                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                                                        : "border-transparent bg-primary/5 text-foreground hover:bg-primary/10"
+                                                }`}
+                                            >
+                                                <Icon className="size-3 shrink-0" aria-hidden="true" />
+                                                {name}
+                                            </button>
+                                        )
+                                    })}
                                 </div>
-                            </PopoverContent>
-                        </Popover>
-                        {selectedSkills.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                                {selectedSkills.map((skill) => (
-                                    <Badge key={skill} variant="secondary" className="gap-1 rounded-md">
-                                        {skill}
-                                        <button type="button" aria-label={`Retirer ${skill}`} onClick={() => toggleSkill(skill)}>
-                                            <X className="size-3" />
-                                        </button>
-                                    </Badge>
-                                ))}
                             </div>
-                        )}
+                            <Button type="submit" className="h-10 w-full" disabled={loading}>
+                                {loading ? "Envoi..." : "Envoyer la demande"}
+                            </Button>
+                            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/60 px-3 py-2 text-xs leading-5 text-muted-foreground" role="status">
+                                <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                                <span>L'envoi et la validation nécessitent une connexion au service d'accès existant.</span>
+                            </div>
+                        </form>
+                        <p className="mt-5 text-center text-xs text-muted-foreground">Déjà un compte ? <Link href="/login" className="font-bold text-primary hover:underline">Se connecter</Link></p>
                     </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-3.5 px-6 pb-7 pt-6 sm:px-10">
-                    <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? "Envoi..." : "S'inscrire"}
-                    </Button>
-                    <div className="flex flex-col items-center gap-1.5 text-center text-xs leading-5 text-muted-foreground">
-                        <p>Votre compte sera vérifié par un administrateur avant activation.</p>
-                        <p>
-                            Déjà un compte ?{" "}
-                            <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
-                                Se connecter
-                            </Link>
-                        </p>
-                    </div>
-                </CardFooter>
-            </form>
-        </Card>
+                </section>
+            </div>
+        </main>
     )
 }

@@ -10,6 +10,7 @@ import { QuickPrompts } from "@/components/chat/quick-prompts"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Conversation, ChatMessage, MessageAttachment } from "@/lib/chat-data"
 import { formatTime } from "@/lib/utils"
 import {
@@ -476,52 +477,54 @@ export function SupportChatApp() {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:p-3 lg:p-5">
+    <div className="flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background p-3 sm:p-6">
       <h1 className="sr-only">Assistance client SINAPS — Discussion en direct</h1>
-      <ChatHeader
-        conversation={conversation}
-        onEscalate={handleEscalate}
-        onSwitchToIA={handleSwitchToIA}
-        onClose={() => setSatisfactionOpen(true)}
-        onLogout={handleReset}
-      />
-      <ChatThread 
-        conversation={conversation} 
-        onQuickReplyClick={handleQuickReplyClick}
-        disabledQuickReplies={conversation.status === "resolu" || !!conversation.isTyping}
-        loadingQuickReplyAction={loadingQuickReplyAction}
-        dismissedQuickReplyId={dismissedQuickReplyId}
-      />
+      <section className="flex h-[calc(100dvh-1.5rem)] min-h-0 w-full max-w-6xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm sm:h-[calc(100dvh-3rem)] sm:rounded-xl">
+        <ChatHeader
+          conversation={conversation}
+          onEscalate={handleEscalate}
+          onSwitchToIA={handleSwitchToIA}
+          onClose={() => setSatisfactionOpen(true)}
+          onLogout={handleReset}
+        />
+        <ChatThread
+          conversation={conversation}
+          onQuickReplyClick={handleQuickReplyClick}
+          disabledQuickReplies={conversation.status === "resolu" || !!conversation.isTyping}
+          loadingQuickReplyAction={loadingQuickReplyAction}
+          dismissedQuickReplyId={dismissedQuickReplyId}
+        />
 
-      {conversation.status === "resolu" ? (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border bg-card/90 backdrop-blur-xs px-4 py-3 sm:px-6 shadow-2xs">
-          <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="size-4 shrink-0" />
-            <span>Cette conversation est résolue et clôturée. Merci pour votre confiance !</span>
+        {conversation.status === "resolu" ? (
+          <div className="flex flex-col items-start justify-between gap-3 border-t border-border bg-emerald-500/[0.04] px-4 py-3 sm:flex-row sm:items-center sm:px-6">
+            <div className="flex items-center gap-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="size-4 shrink-0" />
+              <span>Cette conversation est résolue et clôturée. Merci pour votre confiance !</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 rounded-md text-xs"
+              onClick={handleReset}
+            >
+              Nouvelle demande
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="rounded-lg text-xs shrink-0 shadow-2xs"
-            onClick={handleReset}
-          >
-            Nouvelle demande
-          </Button>
-        </div>
-      ) : (
-        <>
-          <QuickPrompts onSelect={(q) => handleSend(q)} disabled={conversation.isTyping} />
-          <MessageComposer onSend={handleSend} disabled={!!conversation.isTyping} inputRef={composerInputRef} />
-        </>
-      )}
+        ) : (
+          <>
+            <QuickPrompts onSelect={(q) => handleSend(q)} disabled={conversation.isTyping} />
+            <MessageComposer onSend={handleSend} disabled={!!conversation.isTyping} inputRef={composerInputRef} />
+          </>
+        )}
 
-      <SatisfactionDialog
-        open={satisfactionOpen}
-        onOpenChange={setSatisfactionOpen}
-        clientName={conversation.clientName}
-        conversationId={conversationId!}
-        onClosed={() => loadConversation(conversationId!)}
-      />
+        <SatisfactionDialog
+          open={satisfactionOpen}
+          onOpenChange={setSatisfactionOpen}
+          clientName={conversation.clientName}
+          conversationId={conversationId!}
+          onClosed={() => loadConversation(conversationId!)}
+        />
+      </section>
     </div>
   )
 }

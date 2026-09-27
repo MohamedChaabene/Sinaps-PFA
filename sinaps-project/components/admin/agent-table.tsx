@@ -96,7 +96,7 @@ export function PendingAgentsSection({
         </div>
       </div>
 
-      <Card className="border border-border/80 bg-card shadow-xs overflow-hidden rounded-xl">
+      <Card className="overflow-hidden rounded-lg border border-border bg-card shadow-none">
         <CardContent className="p-0">
           {agents.length ? (
             <div className="divide-y divide-border/60">
@@ -163,7 +163,7 @@ export function PendingAgentsSection({
 
 export function ValidatedAgentsSection({ agents }: { agents: Agent[] }) {
   return (
-    <section id="overview" className="flex flex-col gap-4 scroll-mt-6">
+    <section id="validated" className="flex flex-col gap-4 scroll-mt-6">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export function ValidatedAgentsSection({ agents }: { agents: Agent[] }) {
         </div>
       </div>
 
-      <Card className="border border-border/80 bg-card shadow-xs overflow-hidden rounded-xl">
+      <Card className="overflow-hidden rounded-lg border border-border bg-card shadow-none">
         <CardContent className="overflow-x-auto p-0">
           <Table>
             <TableHeader className="bg-muted/30">

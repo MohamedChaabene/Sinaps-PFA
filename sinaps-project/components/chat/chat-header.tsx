@@ -25,17 +25,16 @@ export function ChatHeader({
   const isResolved = conversation.status === "resolu"
 
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-border/70 bg-card px-4 py-3 sm:rounded-t-2xl sm:px-6 shadow-xs sticky top-0 z-20">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-3 sm:gap-4 sm:px-5">
       <div className="flex min-w-0 items-center gap-3">
-        {/* User avatar with live presence ring */}
         <div className="relative">
-          <Avatar aria-label={`Avatar de ${conversation.clientName}`} className="size-9.5 shrink-0 rounded-xl ring-2 ring-primary/20 shadow-xs">
+          <Avatar aria-label={`Avatar de ${conversation.clientName}`} className="size-10 shrink-0 rounded-lg ring-1 ring-border shadow-none">
             <AvatarImage
               src={conversation.clientAvatar || undefined}
               alt={`Avatar de ${conversation.clientName}`}
               className="rounded-xl object-cover"
             />
-            <AvatarFallback aria-label={`Avatar de ${conversation.clientName}`} className="rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent text-primary font-bold text-xs">
+            <AvatarFallback aria-label={`Avatar de ${conversation.clientName}`} className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
               {getInitials(conversation.clientName)}
             </AvatarFallback>
           </Avatar>
@@ -46,7 +45,6 @@ export function ChatHeader({
           />
         </div>
 
-        {/* Brand & Conversation metadata - simplified */}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
@@ -60,9 +58,8 @@ export function ChatHeader({
                 alt="SINAPS"
                 className="h-6 sm:h-7 w-auto object-contain hidden dark:block"
               />
-              <span className="text-sm font-semibold text-foreground">SINAPS Copilot</span>
+              <span className="text-sm font-bold text-foreground">Assistance SINAPS</span>
             </div>
-            {/* Realtime indicator - simple green dot */}
             <span 
               className="size-2 rounded-full bg-emerald-500 shrink-0"
               title="Connecté en temps réel"
@@ -70,23 +67,22 @@ export function ChatHeader({
             />
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+          <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
             <span className="truncate">{conversation.clientName}</span>
             <span className="text-muted-foreground/30">·</span>
-            <span className="truncate">{isHumanMode ? "Support humain" : "Gemini & RAG"}</span>
+            <span className="truncate">{isHumanMode ? (hasAssignedAgent ? `Avec ${conversation.assignedAgent?.name}` : "Support humain demandé") : "Assistant IA"}</span>
           </div>
         </div>
       </div>
 
-      {/* Action Controls */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {!isResolved && (
           isHumanMode ? (
             <Button
               onClick={onSwitchToIA}
               variant="outline"
               size="sm"
-              className="rounded-lg border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs font-semibold transition-all duration-150 active:scale-[0.98] shadow-2xs"
+              className="h-9 rounded-md border-emerald-500/30 bg-emerald-500/5 text-xs font-semibold text-emerald-600 shadow-none transition-colors hover:border-emerald-500/60 hover:bg-emerald-500/15 active:scale-[0.98] dark:text-emerald-400"
               title="Rétablir l'assistance par l'agent IA"
             >
               <Bot className="size-3.5 text-emerald-500" />
@@ -98,7 +94,7 @@ export function ChatHeader({
               onClick={onEscalate}
               variant="outline"
               size="sm"
-              className="rounded-lg border-primary/30 hover:border-primary/60 bg-primary/5 hover:bg-primary/15 text-primary text-xs font-semibold transition-all duration-150 active:scale-[0.98] shadow-2xs"
+              className="h-9 rounded-md border-primary/30 bg-primary/5 text-xs font-semibold text-primary shadow-none transition-colors hover:border-primary/60 hover:bg-primary/15 active:scale-[0.98]"
               title="Demander l'assistance d'un agent humain"
             >
               <UserRoundIcon className="size-3.5 text-primary" />
@@ -113,7 +109,7 @@ export function ChatHeader({
             onClick={onClose}
             variant="secondary"
             size="sm"
-            className="rounded-lg border border-border/80 text-xs font-semibold hover:bg-muted transition-all duration-150 active:scale-[0.98] shadow-2xs"
+            className="h-9 rounded-md border border-border text-xs font-semibold shadow-none transition-colors hover:bg-muted active:scale-[0.98]"
             title="Clôturer et évaluer l'assistance"
           >
             <CheckCircle2 className="size-3.5 text-emerald-500" />
@@ -126,7 +122,7 @@ export function ChatHeader({
             onClick={onLogout}
             variant="ghost"
             size="sm"
-            className="rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors p-2"
+            className="size-9 rounded-md px-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             title="Quitter la session"
             aria-label="Se déconnecter"
           >

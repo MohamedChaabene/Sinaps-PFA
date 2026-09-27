@@ -4,10 +4,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, Lock, ArrowLeft, ShieldCheck, Headphones, Loader2 } from "lucide-react"
+import { Mail, LockKeyhole, ArrowLeft, Info } from "lucide-react"
 import { toast } from "sonner"
 import { loginAgent } from "@/lib/api"
 
@@ -42,113 +41,57 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background via-background/95 to-primary/10 p-4 sm:p-6 overflow-hidden">
-      {/* Decorative background glow elements */}
-      <div className="pointer-events-none absolute -top-40 -left-40 size-96 rounded-full bg-primary/15 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -right-40 size-96 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative w-full max-w-md">
-        {/* Return to client chat link */}
-        <div className="mb-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>Retour au chat d&apos;assistance client</span>
-          </Link>
-        </div>
-
-        <Card className="w-full border-border/80 bg-card/95 shadow-xl shadow-primary/5 backdrop-blur-md">
-          <CardHeader className="gap-3 px-6 pb-4 pt-7 sm:px-8 sm:pt-8 text-center">
-            <div className="mx-auto flex items-center justify-center mb-1">
+    <main className="grid min-h-screen place-items-center bg-background px-4 py-10 sm:px-6">
+      <div className="w-full max-w-[440px] animate-enter">
+        <Link
+          href="/"
+          className="mb-5 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" /> Retour à l'assistance client
+        </Link>
+        <section className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div className="px-6 pb-6 pt-7 sm:px-8">
+            <div className="mb-7 flex justify-center">
               <img
                 src="/sinaps-logo-light.png"
                 alt="SINAPS"
-                className="h-10 sm:h-12 w-auto object-contain dark:hidden"
+                className="h-7 w-auto object-contain dark:hidden"
               />
               <img
                 src="/sinaps-logo-dark.png"
                 alt="SINAPS"
-                className="h-10 sm:h-12 w-auto object-contain hidden dark:block"
+                className="h-7 w-auto object-contain hidden dark:block"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                Portail Opérateur
-              </h1>
-              <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Connectez-vous pour accéder à votre console d&apos;agent de support ou d&apos;administration.
-              </CardDescription>
-            </div>
-          </CardHeader>
-
-          <form onSubmit={handleSubmit}>
-            <CardContent className="flex flex-col gap-4 px-6 pb-4 sm:px-8 sm:pb-6">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email" className="text-xs font-semibold text-foreground">
-                  Adresse e-mail professionnelle
-                </Label>
+            <h1 className="text-2xl font-bold">Portail opérateur</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Connectez-vous pour accéder à votre espace agent ou administrateur.</p>
+            <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-email" className="text-xs font-semibold">Adresse e-mail professionnelle</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground/70" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    className="pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
-                    required
-                  />
+                  <Mail className="absolute left-3 top-2.5 size-4 text-muted-foreground"/>
+                  <Input id="staff-email" name="email" type="email" className="h-10 bg-background pl-9" placeholder="nom@entreprise.fr" required />
                 </div>
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="password" className="text-xs font-semibold text-foreground">
-                  Mot de passe
-                </Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="staff-password" className="text-xs font-semibold">Mot de passe</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 size-4 text-muted-foreground/70" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-9 rounded-xl border-input/80 bg-background/80 text-sm focus-visible:ring-primary/20"
-                    required
-                  />
+                  <LockKeyhole className="absolute left-3 top-2.5 size-4 text-muted-foreground"/>
+                  <Input id="staff-password" name="password" type="password" className="h-10 bg-background pl-9" placeholder="••••••••" required />
                 </div>
               </div>
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-3 px-6 pb-7 pt-1 sm:px-8">
-              <Button
-                type="submit"
-                className="w-full rounded-xl bg-primary py-2.5 font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 active:scale-[0.99]"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="size-4 animate-spin" />
-                    <span>Authentification...</span>
-                  </span>
-                ) : (
-                  <span>Se connecter au portail</span>
-                )}
+              <Button type="submit" className="h-10 w-full" disabled={loading}>
+                {loading ? "Authentification..." : "Se connecter au portail"}
               </Button>
-
-              <p className="text-center text-xs leading-5 text-muted-foreground pt-1">
-                Nouvel agent de support ?{" "}
-                <Link
-                  href="/agent/signup"
-                  className="font-semibold text-primary underline-offset-4 hover:underline"
-                >
-                  Créer une demande d&apos;accès
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
+              <div className="flex items-start gap-2 rounded-md border border-border bg-muted/60 px-3 py-2 text-xs leading-5 text-muted-foreground" role="status">
+                <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                <span>Connexion reliée au backend SINAPS existant.</span>
+              </div>
+            </form>
+            <p className="mt-5 text-center text-xs text-muted-foreground">Nouvel agent ? <Link href="/agent/signup" className="font-bold text-primary hover:underline">Demander un accès</Link></p>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   )
 }

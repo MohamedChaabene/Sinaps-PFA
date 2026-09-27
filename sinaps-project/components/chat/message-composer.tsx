@@ -71,7 +71,7 @@ export function MessageComposer({
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !uploading && !disabled
 
   return (
-    <div className="border-t border-border/80 bg-card px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-3 sm:rounded-b-2xl shrink-0 transition-[padding] duration-150">
+    <div className="shrink-0 border-t border-border bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] transition-[padding] duration-150 sm:px-6 sm:py-4">
       <input
         type="file"
         ref={fileInputRef}
@@ -108,11 +108,11 @@ export function MessageComposer({
       {/* Composer Input Group */}
       <div
         className={cn(
-          "relative rounded-xl border border-border/80 bg-background/95 shadow-xs focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15 transition-all duration-150",
+          "relative rounded-lg border border-border bg-background transition-all duration-150 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15",
           disabled && "opacity-70 bg-muted/40 cursor-not-allowed"
         )}
       >
-        <InputGroup className="rounded-xl border-0 shadow-none focus-within:ring-0 focus-within:border-transparent bg-transparent">
+        <InputGroup className="rounded-lg border-0 bg-transparent shadow-none focus-within:border-transparent focus-within:ring-0">
           <InputGroupTextarea
             ref={inputRef}
             placeholder={disabled ? "SINAPS Copilot compose une réponse..." : "Écrivez votre message à l'assistance..."}

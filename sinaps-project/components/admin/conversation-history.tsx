@@ -174,7 +174,7 @@ export function ConversationHistory() {
       </div>
 
       {/* Conversations table */}
-      <Card className="border border-border/80 bg-card shadow-xs overflow-hidden rounded-xl">
+      <Card className="overflow-hidden rounded-lg border border-border bg-card shadow-none">
         <CardContent className="overflow-x-auto p-0">
           <Table>
             <TableHeader className="bg-muted/30">

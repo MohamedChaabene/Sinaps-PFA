@@ -9,12 +9,7 @@ import {
   ChevronLeft,
   Loader2,
   SearchIcon,
-  XIcon,
-  Clock,
-  Sparkles,
   Inbox,
-  ShieldCheck,
-  UserCheck
 } from "lucide-react"
 import { logout } from "@/components/auth-guard"
 import * as React from "react"
@@ -225,7 +220,7 @@ function AgentPageContent() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background">
+      <div className="flex h-dvh w-full flex-col items-center justify-center gap-3 bg-background">
         <Loader2 className="size-8 animate-spin text-primary" />
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Chargement de l&apos;espace agent...
@@ -235,28 +230,26 @@ function AgentPageContent() {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
-        {/* Sidebar Ticket Queue */}
-        <aside
-          className={`${
-            activeId ? "hidden md:flex" : "flex"
-          } w-full md:w-84 shrink-0 border-r border-border/70 bg-card/60 backdrop-blur-sm flex-col transition-all duration-200`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 bg-card/90">
-            <div className="flex items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                <HeadsetIcon className="size-4" />
-              </div>
-              <div>
-                <h1 className="font-heading text-sm font-bold leading-tight">File de Support</h1>
-                <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-semibold">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Agent en ligne</span>
-                </div>
+    <main className="h-dvh min-h-[560px] overflow-hidden bg-background p-2 sm:p-4">
+      <section className="mx-auto grid h-full max-w-[1500px] animate-enter grid-rows-[minmax(0,210px)_minmax(0,1fr)] overflow-hidden rounded-lg border border-border bg-card shadow-sm md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="flex min-h-0 min-w-0 flex-col border-b border-border bg-card md:border-b-0 md:border-r">
+          <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <img
+                src="/sinaps-logo-light.png"
+                alt="SINAPS"
+                className="h-6 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/sinaps-logo-dark.png"
+                alt="SINAPS"
+                className="h-6 w-auto object-contain hidden dark:block"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold">File de support</p>
+                <p className="text-[10px] text-mint-foreground">Agent en ligne</p>
               </div>
             </div>
-
             <div className="flex items-center gap-1">
               {conversations.length > 0 && (
                 <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 border border-primary/20">
@@ -264,42 +257,27 @@ function AgentPageContent() {
                 </Badge>
               )}
               <Button
-                variant="ghost"
+                asChild
                 size="icon-sm"
+                variant="ghost"
                 onClick={() => logout(router)}
-                className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                title="Se déconnecter"
-                aria-label="Déconnexion"
               >
-                <LogOutIcon className="size-4" />
+                <LogOutIcon aria-label="Quitter" />
               </Button>
             </div>
-          </div>
-
-          {/* Search Box */}
-          <div className="p-3 border-b border-border/60 bg-muted/20">
+          </header>
+          <div className="border-b border-border p-3">
             <div className="relative">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <SearchIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground"/>
               <Input
-                placeholder="Filtrer les demandes..."
+                placeholder="Filtrer les demandes…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 pl-8 pr-7 text-xs rounded-lg bg-background border-border/80 shadow-2xs"
+                className="pl-9"
               />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <XIcon className="size-3" />
-                </button>
-              )}
             </div>
           </div>
-
-          {/* Conversation List */}
-          <div className="flex flex-col flex-1 overflow-y-auto">
+          <div className="flex min-h-0 flex-1 gap-1 overflow-x-auto p-2 md:block md:overflow-y-auto">
             {conversations.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground space-y-3 my-auto">
                 <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
@@ -317,7 +295,7 @@ function AgentPageContent() {
                 Aucune demande ne correspond à votre recherche.
               </div>
             ) : (
-              filteredConversations.map((c) => {
+              filteredConversations.map((c, index) => {
                 const isSelected = c.id === activeId
                 const isWaiting = c.status === "en_attente"
                 const isAssignedToMe = c.assignedAgent?.id === currentAgentId
@@ -325,55 +303,51 @@ function AgentPageContent() {
                   <button
                     key={c.id}
                     onClick={() => handleSelect(c.id)}
-                    className={`flex items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    className={`mb-1 min-w-[210px] rounded-md border p-3 text-left transition-colors md:w-full md:min-w-0 ${
                       isSelected
-                        ? "border-l-3 border-l-primary bg-primary/10 font-medium"
-                        : "hover:bg-muted/60"
+                        ? "border-primary/25 bg-primary/5"
+                        : "border-transparent hover:bg-muted"
                     }`}
                   >
-                    <Avatar aria-label={`Avatar de ${c.clientName}`} className="size-9 shrink-0 rounded-xl ring-1 ring-primary/20 shadow-2xs">
-                      <AvatarImage src={c.clientAvatar || undefined} alt={`Avatar de ${c.clientName}`} className="rounded-xl object-cover" />
-                      <AvatarFallback aria-label={`Avatar de ${c.clientName}`} className="rounded-xl bg-primary/10 text-primary text-xs font-bold">
-                        {getInitials(c.clientName)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="flex-1 min-w-0 truncate text-xs font-bold text-foreground">{c.clientName}</p>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <StatusBadge status={c.status} />
-                          {isWaiting && !isSelected && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleTakeConversation(c.id)
-                              }}
-                              className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
-                            >
-                              Prendre
-                            </Button>
-                          )}
-                        </div>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                      <span className="truncate text-xs font-bold">{c.clientName}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-bold ${
+                          isWaiting
+                            ? "bg-warning/20 text-warning-foreground"
+                            : "bg-primary/10 text-primary"
+                        }`}>
+                          {isWaiting ? "En attente" : "En cours"}
+                        </span>
+                        {isWaiting && !isSelected && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleTakeConversation(c.id)
+                            }}
+                            className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
+                          >
+                            Prendre
+                          </Button>
+                        )}
                       </div>
-                      <p className="truncate text-xs text-muted-foreground mt-0.5 font-normal">
-                        {c.lastMessage || "Nouvelle demande reçue..."}
-                      </p>
-                      {c.assignedAgent && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          Assigné à: {c.assignedAgent.name}
-                        </p>
-                      )}
                     </div>
+                    <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                      {c.lastMessage || "Nouvelle demande reçue…"}
+                    </p>
+                    {c.assignedAgent && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Assigné à: {c.assignedAgent.name}
+                      </p>
+                    )}
                   </button>
                 )
               })
             )}
           </div>
         </aside>
-
-        {/* Main Conversation Panel */}
         <main
           className={`${
             !activeId ? "hidden md:flex" : "flex"
@@ -381,8 +355,7 @@ function AgentPageContent() {
         >
           {activeConversation ? (
             <>
-              {/* Active Ticket Header */}
-              <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-card/85 backdrop-blur-md px-4 py-2.5 sm:px-6 shadow-xs">
+              <div className="flex items-center justify-between gap-2 border-b border-border bg-card px-3 py-3 sm:gap-3 sm:px-5">
                 <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
@@ -412,18 +385,16 @@ function AgentPageContent() {
                   onClick={handleResolve}
                   variant="secondary"
                   size="sm"
-                  className="rounded-lg text-xs font-semibold hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-500/30 transition-all duration-150 active:scale-[0.98] shadow-2xs border border-border/80"
+                  className="h-9 shrink-0 rounded-md border border-border text-xs font-semibold shadow-none transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-600 active:scale-[0.98] dark:hover:text-emerald-400"
                 >
                   <CheckIcon className="size-3.5 text-emerald-500" data-icon="inline-start" />
                   <span>Résoudre la demande</span>
                 </Button>
               </div>
 
-              {/* Chat Thread */}
               <ChatThread conversation={activeConversation} />
 
-              {/* Canned Responses Toolbar */}
-              <div className="border-t border-border/60 bg-muted/25 px-4 py-2 sm:px-6">
+              <div className="border-t border-border bg-background/70 px-3 py-2 sm:px-5">
                 <div className="flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
                   <div className="flex items-center gap-1 font-semibold text-muted-foreground shrink-0 select-none">
                     <Zap className="size-3.5 text-amber-500" />
@@ -448,7 +419,6 @@ function AgentPageContent() {
                 </div>
               </div>
 
-              {/* Message Composer */}
               <MessageComposer onSend={handleSend} />
             </>
           ) : (
@@ -465,7 +435,8 @@ function AgentPageContent() {
             </div>
           )}
         </main>
-      </div>
+      </section>
+    </main>
     )
 }
 

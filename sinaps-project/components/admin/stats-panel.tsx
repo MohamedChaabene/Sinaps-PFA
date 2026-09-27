@@ -53,15 +53,15 @@ function StatCard({
   }
 
   return (
-    <Card className="relative overflow-hidden rounded-xl border border-border/80 bg-card/90 shadow-2xs hover:shadow-md hover:border-primary/40 transition-all duration-200">
+    <Card className="relative overflow-hidden rounded-lg border border-border bg-card shadow-none transition-colors duration-200 hover:border-primary/40">
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4">
-        <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{title}</CardTitle>
+        <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:text-[11px]">{title}</CardTitle>
         <div className={`flex size-8 items-center justify-center rounded-lg border ${colorMap[color]} shadow-2xs`}>
           <Icon className="size-4" />
         </div>
       </CardHeader>
       <CardContent className="space-y-2 px-4 pb-4">
-        <p className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">{value}</p>
+        <p className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{value}</p>
         {progress !== undefined ? (
           <div className="space-y-1.5">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
@@ -140,7 +140,7 @@ export function StatsPanel({ stats }: { stats: Stats | null }) {
       </section>
 
       {/* AI autonomy vs human escalation breakdown */}
-      <Card className="rounded-xl border border-border/80 bg-card/85 p-5 shadow-xs backdrop-blur-xs">
+      <Card className="rounded-lg border border-border bg-card p-4 shadow-none sm:p-5">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">

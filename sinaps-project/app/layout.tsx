@@ -1,14 +1,20 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans } from 'next/font/google'
+import { Manrope, Sora } from 'next/font/google'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
-const fontSans = Plus_Jakarta_Sans({
+const fontSans = Manrope({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-body',
   weight: ['400', '500', '600', '700', '800'],
+})
+
+const fontDisplay = Sora({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -62,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" className={`${fontSans.variable} font-sans bg-background`}>
+    <html lang="fr" className={`${fontSans.variable} ${fontDisplay.variable} font-sans bg-background`}>
       <body className="antialiased font-sans min-h-screen">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster />
