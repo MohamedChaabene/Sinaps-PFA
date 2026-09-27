@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,23 @@ export function ClientEntryForm({
   onSubmit: (name: string, email: string, credential?: string, avatar?: string) => void
 }) {
   const [loading, setLoading] = useState(false)
+  const googleButtonContainerRef = useRef<HTMLDivElement>(null)
+  const [googleButtonWidth, setGoogleButtonWidth] = useState(400)
+
+  useEffect(() => {
+    const container = googleButtonContainerRef.current
+    if (!isGoogleConfigured || !container) return
+
+    const updateWidth = () => {
+      const availableWidth = Math.floor(container.getBoundingClientRect().width)
+      setGoogleButtonWidth(Math.min(400, Math.max(120, availableWidth)))
+    }
+
+    updateWidth()
+    const observer = new ResizeObserver(updateWidth)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -117,13 +134,13 @@ export function ClientEntryForm({
             {/* Google Authentication */}
             <div className="flex flex-col items-center justify-center w-full gap-2 mb-4">
               {isGoogleConfigured ? (
-                <div className="w-full flex justify-center">
+                <div ref={googleButtonContainerRef} className="w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={() => toast.error("Échec de la connexion Google")}
                     shape="rectangular"
                     text="signin_with"
-                    width="100%"
+                    width={googleButtonWidth}
                   />
                 </div>
               ) : (
