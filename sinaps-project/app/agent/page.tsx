@@ -32,7 +32,7 @@ import {
   mapBackendConversation,
 } from "@/lib/api"
 import { getSocket } from "@/lib/socket"
-import { getInitials } from "@/lib/utils"
+import { getInitials, getClientAvatar } from "@/lib/utils"
 
 function AgentPageContent() {
   const [conversations, setConversations] = React.useState<Conversation[]>([])
@@ -220,11 +220,16 @@ function AgentPageContent() {
 
   if (loading) {
     return (
-      <div className="flex h-dvh w-full flex-col items-center justify-center gap-3 bg-background">
-        <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Chargement de l&apos;espace agent...
-        </p>
+      <div className="flex h-dvh w-full flex-col items-center justify-center gap-4 bg-background p-6">
+        <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-semibold text-foreground">Sinaps Support</p>
+          <p className="text-xs text-muted-foreground">
+            Initialisation de votre session de support...
+          </p>
+        </div>
       </div>
     )
   }
@@ -309,39 +314,49 @@ function AgentPageContent() {
                         : "border-transparent hover:bg-muted"
                     }`}
                   >
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                      <span className="truncate text-xs font-bold">{c.clientName}</span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-bold ${
-                          isWaiting
-                            ? "bg-warning/20 text-warning-foreground"
-                            : "bg-primary/10 text-primary"
-                        }`}>
-                          {isWaiting ? "En attente" : "En cours"}
-                        </span>
-                        {isWaiting && !isSelected && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleTakeConversation(c.id)
-                            }}
-                            className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
-                          >
-                            Prendre
-                          </Button>
+                    <div className="flex items-start gap-2">
+                      <Avatar aria-label={`Avatar de ${c.clientName}`} className="size-8 rounded-lg ring-2 ring-primary/20 shrink-0">
+                        <AvatarImage src={c.clientAvatar || undefined} alt={`Avatar de ${c.clientName}`} className="rounded-lg object-cover" />
+                        <AvatarFallback aria-label={`Avatar de ${c.clientName}`} className="rounded-lg bg-primary/10 text-primary font-semibold text-xs">
+                          {getInitials(c.clientName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                          <span className="truncate text-xs font-bold">{c.clientName}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className={`shrink-0 rounded-sm px-1.5 py-0.5 text-[9px] font-bold ${
+                              isWaiting
+                                ? "bg-warning/20 text-warning-foreground"
+                                : "bg-primary/10 text-primary"
+                            }`}>
+                              {isWaiting ? "En attente" : "En cours"}
+                            </span>
+                            {isWaiting && !isSelected && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleTakeConversation(c.id)
+                                }}
+                                className="shrink-0 rounded-lg text-xs font-medium shadow-2xs"
+                              >
+                                Prendre
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                          {c.lastMessage || "Nouvelle demande reçue…"}
+                        </p>
+                        {c.assignedAgent && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            Assigné à: {c.assignedAgent.name}
+                          </p>
                         )}
                       </div>
                     </div>
-                    <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                      {c.lastMessage || "Nouvelle demande reçue…"}
-                    </p>
-                    {c.assignedAgent && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Assigné à: {c.assignedAgent.name}
-                      </p>
-                    )}
                   </button>
                 )
               })

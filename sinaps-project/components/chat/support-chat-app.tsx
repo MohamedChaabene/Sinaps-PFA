@@ -427,26 +427,26 @@ export function SupportChatApp() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center gap-3 bg-background p-4">
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/15 bg-card p-8 shadow-lg text-center max-w-sm">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary animate-pulse">
-            <Loader2 className="size-6 animate-spin text-primary" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-heading text-base font-bold text-foreground">Sinaps Support</p>
-            <p className="text-xs text-muted-foreground">Initialisation de votre session de support...</p>
-          </div>
-          {initError && (
-            <div className="pt-2 flex gap-2">
-              <Button variant="outline" size="sm" className="rounded-lg" onClick={() => window.location.reload()}>
-                Réessayer
-              </Button>
-              <Button size="sm" className="rounded-lg" onClick={handleReset}>
-                Recommencer
-              </Button>
-            </div>
-          )}
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background p-6">
+        <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-semibold text-foreground">Sinaps Support</p>
+          <p className="text-xs text-muted-foreground">
+            Initialisation de votre session de support...
+          </p>
+        </div>
+        {initError && (
+          <div className="pt-2 flex gap-2">
+            <Button variant="outline" size="sm" className="rounded-lg" onClick={() => window.location.reload()}>
+              Réessayer
+            </Button>
+            <Button size="sm" className="rounded-lg" onClick={handleReset}>
+              Recommencer
+            </Button>
+          </div>
+        )}
       </div>
     )
   }

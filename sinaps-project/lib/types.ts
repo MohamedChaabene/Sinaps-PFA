@@ -50,6 +50,7 @@ export interface Conversation {
     id: string
     name: string
     email: string
+    avatar?: string
   }
   isTyping?: boolean
   messages: ChatMessage[]

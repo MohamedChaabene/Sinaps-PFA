@@ -86,8 +86,11 @@ export function StatsPanel({ stats }: { stats: Stats | null }) {
       ? {
           ia: Math.round((stats.resolvedByIA / stats.total) * 100),
           human: Math.round((stats.resolvedByHuman / stats.total) * 100),
+          unresolved: Math.round(((stats.total - stats.resolvedByIA - stats.resolvedByHuman) / stats.total) * 100),
         }
-      : { ia: 0, human: 0 }
+      : { ia: 0, human: 0, unresolved: 0 }
+
+  const unresolvedCount = stats ? Math.max(0, stats.total - stats.resolvedByIA - stats.resolvedByHuman) : 0
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,42 +151,56 @@ export function StatsPanel({ stats }: { stats: Stats | null }) {
                 <Sparkles className="size-3.5" />
               </div>
               <h3 className="font-heading text-sm font-bold text-foreground">
-                Performance du Copilot IA &amp; Relais Humain
+                Répartition des résolutions
               </h3>
             </div>
-            <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-3 sm:gap-4 text-xs flex-wrap">
               <span className="flex items-center gap-1.5 font-medium text-foreground">
                 <span className="size-2 rounded-full bg-primary" />
-                Résolution autonome : <strong className="text-primary">{resolvedPct.ia}%</strong>
+                IA : <strong className="text-primary">{resolvedPct.ia}%</strong>
               </span>
               <span className="flex items-center gap-1.5 font-medium text-foreground">
                 <span className="size-2 rounded-full bg-blue-500" />
-                Escalade conseiller : <strong className="text-blue-500">{resolvedPct.human}%</strong>
+                Humain : <strong className="text-blue-500">{resolvedPct.human}%</strong>
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-foreground">
+                <span className="size-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+                Non résolu : <strong className="text-slate-600 dark:text-slate-400">{resolvedPct.unresolved}%</strong>
               </span>
             </div>
           </div>
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/70 flex p-0.5 border border-border/40">
             <div
-              className="h-full rounded-l-full bg-primary transition-all duration-500"
-              style={{ width: `${resolvedPct.ia || (stats?.total === 0 ? 50 : 0)}%` }}
+              className="h-full rounded-l-md bg-primary transition-all duration-500"
+              style={{ width: `${resolvedPct.ia || (stats?.total === 0 ? 33 : 0)}%` }}
               title={`IA: ${resolvedPct.ia}%`}
             />
             <div
-              className="h-full rounded-r-full bg-blue-500 transition-all duration-500"
-              style={{ width: `${resolvedPct.human || (stats?.total === 0 ? 50 : 0)}%` }}
-              title={`Conseiller: ${resolvedPct.human}%`}
+              className="h-full bg-blue-500 transition-all duration-500"
+              style={{ width: `${resolvedPct.human || (stats?.total === 0 ? 33 : 0)}%` }}
+              title={`Humain: ${resolvedPct.human}%`}
+            />
+            <div
+              className="h-full rounded-r-md bg-slate-400 dark:bg-slate-500 transition-all duration-500"
+              style={{ width: `${resolvedPct.unresolved || (stats?.total === 0 ? 34 : 0)}%` }}
+              title={`Non résolu: ${resolvedPct.unresolved}%`}
             />
           </div>
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-medium flex-wrap gap-2">
             <span>
               {(stats?.resolvedByIA ?? 0) > 1
                 ? `${stats?.resolvedByIA} conversations traitées`
-                : `${stats?.resolvedByIA ?? 0} conversation traitée`} directement par Gemini &amp; la base vectorielle
+                : `${stats?.resolvedByIA ?? 0} conversation traitée`} par l'IA
             </span>
             <span>
               {(stats?.resolvedByHuman ?? 0) > 1
                 ? `${stats?.resolvedByHuman} conversations escaladées`
-                : `${stats?.resolvedByHuman ?? 0} conversation escaladée`} vers un agent de support
+                : `${stats?.resolvedByHuman ?? 0} conversation escaladée`} vers un agent
+            </span>
+            <span>
+              {unresolvedCount > 1
+                ? `${unresolvedCount} conversations non résolues`
+                : `${unresolvedCount} conversation non résolue`}
             </span>
           </div>
         </div>

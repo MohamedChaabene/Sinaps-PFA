@@ -62,6 +62,7 @@ export function mapBackendConversation(conv: any, messages: any[] = []): Convers
       id: conv.assignedAgent._id,
       name: conv.assignedAgent.name,
       email: conv.assignedAgent.email,
+      avatar: conv.assignedAgent.avatar,
     } : undefined,
     messages: messages.map(mapBackendMessage),
   }

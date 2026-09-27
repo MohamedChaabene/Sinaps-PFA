@@ -31,11 +31,13 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { logout } from "@/components/auth-guard"
 import { fetchAgents, approveAgent, rejectAgent, fetchStats } from "@/lib/api"
 import { ConversationHistory } from "@/components/admin/conversation-history"
+import { StatsPanel } from "@/components/admin/stats-panel"
 import type { Agent, Stats } from "@/lib/types"
-import { getInitials } from "@/lib/utils"
+import { getInitials, getAgentAvatarColor } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
 // Data mapping helper
@@ -49,7 +51,7 @@ function mapAgent(a: any): Agent {
     initials: getInitials(a.name),
     skills: a.skills || [],
     conversations: 0,
-    avatar: "",
+    avatar: a.avatar || "",
     status: a.status,
     role: a.role,
   }
@@ -90,23 +92,7 @@ function AdminContent({
         </Button>
       </header>
       <section id="stats" className="scroll-mt-24 py-7">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Statistiques</h2>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["Conversations", stats?.total ?? "—", "Données du service"],
-            ["Demandes résolues", stats ? stats.resolvedByIA + stats.resolvedByHuman : "—", "Données du service"],
-            ["Agents actifs", approved.length, "Agents validés"],
-            ["Temps moyen de réponse", stats ? `${stats.avgResponseTimeSeconds} s` : "—", "Données du service"],
-          ].map(([label,value,note]) => (
-            <article key={label} className="rounded-lg border border-border bg-card p-5">
-              <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>
-              <p className="mt-3 text-3xl font-bold">{value}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{note}</p>
-            </article>
-          ))}
-        </div>
+        <StatsPanel stats={stats} />
       </section>
       <section id="agents" className="scroll-mt-24 py-5">
         <div className="mb-4">
@@ -129,18 +115,28 @@ function AdminContent({
           </div>
         </div>
         <div className="overflow-hidden rounded-lg border border-border bg-card">
-          <div className="hidden grid-cols-[1.3fr_1fr_120px] bg-muted px-5 py-3 text-[10px] font-bold uppercase text-muted-foreground sm:grid">
+          <div className="hidden grid-cols-[auto_1.3fr_1fr_120px] bg-muted px-5 py-3 text-[10px] font-bold uppercase text-muted-foreground sm:grid">
+            <span className="w-10"></span>
             <span>Agent</span>
             <span>Compétences</span>
             <span>Statut</span>
           </div>
-          {approved.map((agent) => (
-            <div key={agent.id} className="grid gap-2 border-t border-border px-5 py-4 first:border-t-0 sm:grid-cols-[1.3fr_1fr_120px] sm:items-center">
-              <span className="text-sm font-bold">{agent.name}</span>
-              <span className="text-xs text-muted-foreground">{agent.skills.join(", ")}</span>
-              <span className="w-fit rounded-sm bg-mint/15 px-2 py-1 text-[10px] font-bold text-mint-foreground">{agent.status}</span>
-            </div>
-          ))}
+          {approved.map((agent) => {
+            const color = getAgentAvatarColor(agent.id || agent.name)
+            return (
+              <div key={agent.id} className="grid gap-2 border-t border-border px-5 py-4 first:border-t-0 sm:grid-cols-[auto_1.3fr_1fr_120px] sm:items-center">
+                <Avatar aria-label={`Avatar de ${agent.name}`} className={`size-9 rounded-lg ring-2 ${color.ring} shrink-0`}>
+                  <AvatarImage src={agent.avatar || undefined} alt={`Avatar de ${agent.name}`} className="rounded-lg object-cover" />
+                  <AvatarFallback aria-label={`Avatar de ${agent.name}`} className={`rounded-lg ${color.bg} ${color.text} font-semibold text-xs`}>
+                    {agent.initials || getInitials(agent.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-bold">{agent.name}</span>
+                <span className="text-xs text-muted-foreground">{agent.skills.join(", ")}</span>
+                <span className="w-fit rounded-sm bg-mint/15 px-2 py-1 text-[10px] font-bold text-mint-foreground">{agent.status}</span>
+              </div>
+            )
+          })}
         </div>
       </section>
       <section id="history" className="scroll-mt-24 py-7">
@@ -209,9 +205,16 @@ export function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background text-foreground">
-        <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted-foreground">Chargement du tableau de bord...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6">
+        <div className="flex size-12 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-semibold text-foreground">Sinaps Support</p>
+          <p className="text-xs text-muted-foreground">
+            Chargement du tableau de bord...
+          </p>
+        </div>
       </div>
     )
   }

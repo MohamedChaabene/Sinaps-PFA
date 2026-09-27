@@ -2,13 +2,13 @@ import { cn } from "@/lib/utils"
 import { statusLabels, type ConversationStatus } from "@/lib/chat-data"
 
 const statusStyles: Record<ConversationStatus, string> = {
-  resolu: "bg-success/10 text-success border-success/20",
+  resolu: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   en_cours: "bg-primary/10 text-primary border-primary/20",
   en_attente: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
 }
 
 const statusDot: Record<ConversationStatus, string> = {
-  resolu: "bg-success",
+  resolu: "bg-emerald-500",
   en_cours: "bg-primary",
   en_attente: "bg-amber-500",
 }
